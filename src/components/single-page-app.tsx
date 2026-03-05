@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useId, useState } from "react"
+import { useCallback, useEffect, useId, useState } from "react"
 import {
   SiOpenai,
   SiAnthropic,
@@ -86,6 +86,8 @@ import {
 } from "@/components/ui/accordion"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
+import { ArtifactCanvas } from "@/components/artifacts/artifact-canvas"
+import { type ArtifactType, artifactTypeFromLabel, getArtifactsByType } from "@/components/artifacts/artifact-store"
 
 // ── Mock Data ──
 
@@ -349,6 +351,18 @@ export function SinglePageApp() {
   const [chatInput, setChatInput] = useState("")
   const [agentOpen, setAgentOpen] = useState(false)
   const [voiceMode, setVoiceMode] = useState(true)
+  const [activeArtifactType, setActiveArtifactType] = useState<ArtifactType | null>(null)
+  const [scrollToArtifactId, setScrollToArtifactId] = useState<string | null>(null)
+
+  const handleOpenArtifactType = useCallback((type: ArtifactType, scrollToId?: string) => {
+    setActiveArtifactType(type)
+    setScrollToArtifactId(scrollToId ?? null)
+  }, [])
+
+  const handleCloseCanvas = useCallback(() => {
+    setActiveArtifactType(null)
+    setScrollToArtifactId(null)
+  }, [])
 
   const selectedTopic = TOPICS.find((t) => t.id === selectedTopicId) ?? TOPICS[0]
   const selectedProject =
@@ -502,23 +516,33 @@ export function SinglePageApp() {
           {/* Left Sidebar - Create artifacts */}
           <aside className="hidden w-48 shrink-0 border-r lg:flex lg:flex-col">
             <div className="flex-1 overflow-y-auto p-3">
-              <ArtifactGrid />
+              <ArtifactGrid onOpenType={handleOpenArtifactType} activeType={activeArtifactType} />
             </div>
           </aside>
 
           {/* Main Content */}
-          <main className="relative flex-1 overflow-y-auto">
-            <TabsContent value={0} className="p-4 sm:p-6">
-              <GuideTab blocks={GUIDE_BLOCKS} />
-            </TabsContent>
+          <main className="relative flex-1 overflow-hidden">
+            {activeArtifactType ? (
+              <ArtifactCanvas
+                activeType={activeArtifactType}
+                scrollToId={scrollToArtifactId}
+                onClose={handleCloseCanvas}
+              />
+            ) : (
+              <div className="h-full overflow-y-auto">
+                <TabsContent value={0} className="p-4 sm:p-6">
+                  <GuideTab blocks={GUIDE_BLOCKS} />
+                </TabsContent>
 
-            <TabsContent value={1} className="p-4 sm:p-6">
-              <FilesTab files={FILES} />
-            </TabsContent>
+                <TabsContent value={1} className="p-4 sm:p-6">
+                  <FilesTab files={FILES} />
+                </TabsContent>
 
-            <TabsContent value={2} className="p-4 sm:p-6">
-              <ProgressTab mastery={MASTERY_DATA} project={selectedProject} />
-            </TabsContent>
+                <TabsContent value={2} className="p-4 sm:p-6">
+                  <ProgressTab mastery={MASTERY_DATA} project={selectedProject} />
+                </TabsContent>
+              </div>
+            )}
           </main>
 
           {/* Agent Right Sidebar - Desktop: always visible, Mobile: toggleable */}
@@ -572,6 +596,7 @@ export function SinglePageApp() {
               messages={CHAT_HISTORY}
               chatInput={chatInput}
               onChatInputChange={setChatInput}
+              onOpenArtifact={handleOpenArtifactType}
             />
           )}
         </aside>
@@ -1075,22 +1100,78 @@ function VoiceAgent({ onSwitchToText }: { onSwitchToText: () => void }) {
 
 // ── Agent Chat Tab ──
 
+type ToolCallButton = {
+  label: string
+  artifactType: ArtifactType
+  artifactId: string
+}
+
+type EnhancedMessage = MockMessage & {
+  toolCalls?: ToolCallButton[]
+}
+
+const ENHANCED_CHAT_HISTORY: EnhancedMessage[] = [
+  ...CHAT_HISTORY,
+  {
+    id: "msg-7",
+    role: "assistant",
+    content: "I've generated several learning artifacts for you. Click any button below to view them:",
+    timestamp: "2026-03-03T14:33:00Z",
+    toolCalls: [
+      { label: "View Eigenvalue Quiz", artifactType: "quiz", artifactId: "quiz-1" },
+      { label: "View Flashcards", artifactType: "flashcards", artifactId: "fc-1" },
+      { label: "View Mind Map", artifactType: "mindmap", artifactId: "mm-1" },
+      { label: "View Progress Table", artifactType: "datatable", artifactId: "dt-1" },
+    ],
+  },
+  {
+    id: "msg-8",
+    role: "user",
+    content: "Can you also create a video explanation and a slide deck?",
+    timestamp: "2026-03-03T14:34:00Z",
+  },
+  {
+    id: "msg-9",
+    role: "assistant",
+    content: "Done! I've created a video walkthrough of eigenvalue computation and a slide deck review. Here they are:",
+    timestamp: "2026-03-03T14:34:30Z",
+    toolCalls: [
+      { label: "Play Eigenvalues Video", artifactType: "video", artifactId: "vid-1" },
+      { label: "View Slide Deck", artifactType: "slidedeck", artifactId: "sd-1" },
+      { label: "Listen to Audio Summary", artifactType: "audio", artifactId: "aud-1" },
+    ],
+  },
+  {
+    id: "msg-10",
+    role: "assistant",
+    content: "I've also prepared a weekly learning report and an infographic of your progress:",
+    timestamp: "2026-03-03T14:35:00Z",
+    toolCalls: [
+      { label: "View Weekly Report", artifactType: "report", artifactId: "rpt-1" },
+      { label: "View Infographic", artifactType: "infographic", artifactId: "ig-1" },
+    ],
+  },
+]
+
 function AgentTab({
   messages,
   chatInput,
   onChatInputChange,
+  onOpenArtifact,
 }: {
   messages: MockMessage[]
   chatInput: string
   onChatInputChange: (v: string) => void
+  onOpenArtifact: (type: ArtifactType, scrollToId?: string) => void
 }) {
   const msgId = useId()
+  const enhancedMessages = ENHANCED_CHAT_HISTORY
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <ScrollArea className="flex-1 overflow-y-auto p-4">
         <div className="space-y-4">
-          {messages.map((msg) => (
+          {enhancedMessages.map((msg) => (
             <div
               key={`${msgId}-${msg.id}`}
               className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}
@@ -1100,14 +1181,31 @@ function AgentTab({
                   <AvatarFallback>AI</AvatarFallback>
                 </Avatar>
               )}
-              <div
-                className={`max-w-[85%] rounded-2xl px-3.5 py-1.5 text-sm leading-relaxed ${
-                  msg.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
-                }`}
-              >
-                {msg.content}
+              <div className={`max-w-[85%] ${msg.role === "user" ? "" : ""}`}>
+                <div
+                  className={`rounded-2xl px-3.5 py-1.5 text-sm leading-relaxed ${
+                    msg.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
+                  }`}
+                >
+                  {msg.content}
+                </div>
+                {msg.toolCalls && msg.toolCalls.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {msg.toolCalls.map((tc) => (
+                      <button
+                        type="button"
+                        key={`${msg.id}-tc-${tc.artifactId}`}
+                        onClick={() => onOpenArtifact(tc.artifactType, tc.artifactId)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10 hover:border-primary/50"
+                      >
+                        <ChevronRight className="size-3" />
+                        {tc.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               {msg.role === "user" && (
                 <Avatar size="sm" className="mt-0.5 shrink-0">
@@ -1646,32 +1744,46 @@ const ARTIFACT_TYPES = [
   { label: "Data Table", icon: Table2, count: 0, unread: 0 },
 ] as const
 
-function ArtifactGrid() {
+function ArtifactGrid({
+  onOpenType,
+  activeType,
+}: {
+  onOpenType: (type: ArtifactType) => void
+  activeType: ArtifactType | null
+}) {
   const gridId = useId()
 
   return (
     <div className="grid grid-cols-2 gap-1.5">
       {ARTIFACT_TYPES.map((artifact) => {
         const Icon = artifact.icon
-        const hasItems = artifact.count > 0
+        const artifactType = artifactTypeFromLabel(artifact.label)
+        const realCount = artifactType ? getArtifactsByType(artifactType).length : 0
+        const hasItems = realCount > 0
+        const isActive = activeType === artifactType
         return (
           <button
             type="button"
             key={`${gridId}-${artifact.label}`}
+            onClick={() => artifactType && onOpenType(artifactType)}
             className={`group relative flex flex-col items-start gap-1.5 rounded-xl border p-2.5 text-left transition-colors ${
-              hasItems
-                ? "border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/50"
-                : "border-border/50 bg-muted/30 hover:bg-muted hover:border-border"
+              isActive
+                ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                : hasItems
+                  ? "border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/50"
+                  : "border-border/50 bg-muted/30 hover:bg-muted hover:border-border"
             }`}
           >
-            <Icon className={`size-4 ${hasItems ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
-            <span className={`truncate text-xs font-medium ${hasItems ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"}`}>
+            <Icon className={`size-4 ${hasItems || isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
+            <span className={`truncate text-xs font-medium ${hasItems || isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"}`}>
               {artifact.label}
             </span>
-            {artifact.unread > 0 && (
-              <span className="absolute top-2.5 right-2.5 size-3 rounded-full bg-primary" />
+            {realCount > 0 && (
+              <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+                {realCount}
+              </span>
             )}
-            {!hasItems && (
+            {!hasItems && !isActive && (
               <Pencil className="absolute top-2.5 right-2.5 size-3 text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100" />
             )}
           </button>
