@@ -119,7 +119,15 @@
   * {
     @apply border-border outline-ring/50;
     }
+    html {
+      @apply h-dvh overscroll-none;
+    }
   body {
     @apply bg-background text-foreground;
     }
+}
+
+@keyframes voice-pulse {
+  0% { transform: scaleY(0.4); }
+  100% { transform: scaleY(1); }
 }

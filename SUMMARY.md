@@ -1,0 +1,4 @@
+- How to build Learning profile DNA (Amy)
+- Possible source materials, and Personas (Jacqueline)
+- Ideas for AI -generated learning materials, using DNA + Source materials (Gerson)
+- Setup Chatbot AI agent with Evals (Matt)
