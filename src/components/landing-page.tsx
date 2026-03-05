@@ -47,6 +47,7 @@ import { BsMicrosoftTeams } from "react-icons/bs"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { FeedbackForm } from "@/components/feedback-form"
 
 // ── Personas & Case Studies Data ──
 
@@ -358,6 +359,7 @@ export function LandingPage() {
           </nav>
 
           <div className="hidden items-center gap-3 md:flex">
+            <FeedbackForm />
             <a href="/dashboard">
               <Button variant="ghost" size="sm">Sign In</Button>
             </a>
