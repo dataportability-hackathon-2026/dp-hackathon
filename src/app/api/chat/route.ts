@@ -2,6 +2,7 @@ import { stepCountIs, streamText } from "ai";
 import { getCitationGuardrails } from "@/lib/ai/citations";
 import { openai } from "@/lib/ai/provider";
 import { tools } from "@/lib/ai/tools";
+import { stateTools } from "@/lib/ai/state-tools";
 
 export async function POST(req: Request) {
   const { messages, priorContext } = await req.json()
@@ -22,6 +23,7 @@ export async function POST(req: Request) {
     system: `You are CoreModel, an evidence-based learning assistant.
 You help students learn effectively using validated cognitive science research.
 You have access to three categories of tools — use them proactively:
+You also have tools to navigate the app UI — switch views, select topics, show progress, etc.
 
 ## Profile Tools (Learning Profile Generation)
 - assess_learning_profile: Full profile analysis from intake data
@@ -60,6 +62,13 @@ You have access to three categories of tools — use them proactively:
 - Student asks for strategy help → recommend_study_strategies
 - Student needs step-by-step help → create_worked_example
 
+When a student asks to see their progress, use show_progress.
+When they ask about their study plan or guide, use show_guide.
+When they ask about their files or materials, use show_sources.
+When they want to switch topics, use select_topic.
+When they mention completing a study block, use complete_guide_block.
+When they want to see a specific artifact type, use open_artifact.
+
 ${getCitationGuardrails()}
 
 Always explain what you're creating and WHY it helps (cite the evidence basis).
@@ -69,7 +78,7 @@ Present estimates with uncertainty, not false precision.
 
 Note: The conversation may include messages from a prior voice session. Treat these as part of the ongoing conversation and maintain continuity.`,
     messages: allMessages,
-    tools,
+    tools: { ...tools, ...stateTools },
     stopWhen: stepCountIs(5),
   });
 
