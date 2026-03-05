@@ -116,10 +116,12 @@ import { AgentAudioVisualizerAura } from "@/components/agents-ui/agent-audio-vis
 import { AgentAudioVisualizerWave } from "@/components/agents-ui/agent-audio-visualizer-wave"
 import { useChat } from "@ai-sdk/react"
 import type { UIMessage } from "ai"
+import { conversationStore, type MessageEntry } from "@/lib/conversation-store"
 
 type VisualizerType = "bars" | "aura" | "wave"
 
-// ── Voice Transcript Store (module-level so AuditDialog can read it outside LiveKitRoom) ──
+// ── Unified Conversation Store (voice + text in one timeline) ──
+// Re-export the legacy TranscriptEntry shape for components that still use it.
 
 type TranscriptEntry = {
   id: string
@@ -127,48 +129,29 @@ type TranscriptEntry = {
   text: string
   timestamp: number
   isFinal: boolean
+  modality?: "voice" | "text"
 }
 
-const transcriptStore = {
-  entries: [] as TranscriptEntry[],
-  /** Tracks IDs we've already persisted so we don't duplicate on re-render */
-  knownIds: new Set<string>(),
-  listeners: new Set<() => void>(),
-  getSnapshot(): TranscriptEntry[] {
-    return transcriptStore.entries
-  },
-  subscribe(listener: () => void): () => void {
-    transcriptStore.listeners.add(listener)
-    return () => transcriptStore.listeners.delete(listener)
-  },
-  /** Merge new/updated entries — accumulates across sessions */
-  merge(incoming: TranscriptEntry[]) {
-    let changed = false
-    for (const entry of incoming) {
-      if (!entry.isFinal) continue // only persist final segments
-      if (transcriptStore.knownIds.has(entry.id)) continue
-      transcriptStore.knownIds.add(entry.id)
-      transcriptStore.entries = [...transcriptStore.entries, entry]
-      changed = true
-    }
-    if (changed) {
-      transcriptStore.entries.sort((a, b) => a.timestamp - b.timestamp)
-      for (const listener of transcriptStore.listeners) listener()
-    }
-  },
-  clear() {
-    transcriptStore.entries = []
-    transcriptStore.knownIds.clear()
-    for (const listener of transcriptStore.listeners) listener()
-  },
-}
-
-function useVoiceTranscript() {
+/** Read-only hook for the full conversation (voice + text). */
+function useConversation() {
   return useSyncExternalStore(
-    transcriptStore.subscribe,
-    transcriptStore.getSnapshot,
-    transcriptStore.getSnapshot,
+    conversationStore.subscribe,
+    conversationStore.getSnapshot,
+    conversationStore.getSnapshot,
   )
+}
+
+/** Legacy alias used by AuditDialog — maps MessageEntry[] → TranscriptEntry[] */
+function useVoiceTranscript(): TranscriptEntry[] {
+  const entries = useConversation()
+  return entries.map((e) => ({
+    id: e.id,
+    role: e.role === "user" ? "user" : ("agent" as const),
+    text: e.text,
+    timestamp: e.timestamp,
+    isFinal: e.isFinal,
+    modality: e.modality,
+  }))
 }
 
 const MOCK_UPLOADS: MockUpload[] = [
@@ -582,9 +565,9 @@ function VoiceTranscriptTab({ entries }: { entries: TranscriptEntry[] }) {
           <Mic className="size-5 text-muted-foreground" />
         </div>
         <div>
-          <p className="text-sm font-medium">No transcriptions yet</p>
+          <p className="text-sm font-medium">No conversation yet</p>
           <p className="text-xs text-muted-foreground">
-            Start a voice session to see transcriptions here.
+            Start a voice or text session to see the conversation here.
           </p>
         </div>
       </div>
@@ -600,7 +583,7 @@ function VoiceTranscriptTab({ entries }: { entries: TranscriptEntry[] }) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => transcriptStore.clear()}
+          onClick={() => conversationStore.clear()}
           className="text-xs text-muted-foreground"
         >
           <Trash2 className="mr-1 size-3" />
@@ -616,14 +599,22 @@ function VoiceTranscriptTab({ entries }: { entries: TranscriptEntry[] }) {
             <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
               {entry.role === "user" ? "You" : "AI"}
             </div>
-            <div
-              className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
-                entry.role === "user"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted"
-              } ${!entry.isFinal ? "opacity-60 italic" : ""}`}
-            >
-              {entry.text}
+            <div className="flex flex-col gap-0.5 max-w-[80%]">
+              {entry.modality && (
+                <span className="text-[9px] uppercase tracking-wider text-muted-foreground flex items-center gap-0.5">
+                  {entry.modality === "text" ? <MessageSquare className="size-2" /> : <Mic className="size-2" />}
+                  {entry.modality}
+                </span>
+              )}
+              <div
+                className={`rounded-lg px-3 py-2 text-sm ${
+                  entry.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
+                } ${!entry.isFinal ? "opacity-60 italic" : ""}`}
+              >
+                {entry.text}
+              </div>
             </div>
           </div>
         ))}
@@ -1340,15 +1331,18 @@ function VoiceAgentUI({
     : undefined
   const { segments: userSegments } = useTrackTranscription(localTrackRef)
 
-  // Build merged transcript entries
+  const [textInput, setTextInput] = useState("")
+
+  // Build merged transcript entries from voice segments
   const transcriptEntries = useMemo(() => {
-    const entries: TranscriptEntry[] = []
+    const entries: MessageEntry[] = []
     for (const seg of agentTranscriptions) {
       entries.push({
         id: `agent-${seg.id}`,
-        role: "agent",
+        role: "assistant",
         text: seg.text,
         timestamp: seg.firstReceivedTime,
+        modality: "voice",
         isFinal: seg.final,
       })
     }
@@ -1358,6 +1352,7 @@ function VoiceAgentUI({
         role: "user",
         text: seg.text,
         timestamp: seg.firstReceivedTime,
+        modality: "voice",
         isFinal: seg.final,
       })
     }
@@ -1365,10 +1360,13 @@ function VoiceAgentUI({
     return entries
   }, [agentTranscriptions, userSegments])
 
-  // Sync to module-level store so AuditDialog can read it
+  // Sync voice transcripts into the unified conversation store
   useEffect(() => {
-    transcriptStore.merge(transcriptEntries)
+    conversationStore.merge(transcriptEntries)
   }, [transcriptEntries])
+
+  // Read the full conversation (voice + any text messages sent during voice mode)
+  const allEntries = useConversation()
 
   // Auto-scroll transcript
   useEffect(() => {
@@ -1421,7 +1419,7 @@ function VoiceAgentUI({
       {showTranscript ? (
         <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden px-4">
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto py-2">
-            {transcriptEntries.length === 0 ? (
+            {allEntries.length === 0 ? (
               <div className="flex flex-1 items-center justify-center">
                 <p className="text-xs text-muted-foreground">
                   Transcriptions will appear here...
@@ -1429,14 +1427,19 @@ function VoiceAgentUI({
               </div>
             ) : (
               <div className="flex flex-col gap-2">
-                {transcriptEntries.map((entry) => (
+                {allEntries.map((entry) => (
                   <div
                     key={entry.id}
                     className={`flex flex-col gap-0.5 ${
                       entry.role === "user" ? "items-end" : "items-start"
                     }`}
                   >
-                    <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                      {entry.modality === "text" ? (
+                        <MessageSquare className="size-2.5" />
+                      ) : (
+                        <Mic className="size-2.5" />
+                      )}
                       {entry.role === "user" ? "You" : "Agent"}
                     </span>
                     <p
@@ -1522,6 +1525,45 @@ function VoiceAgentUI({
           </div>
         </>
       )}
+
+      {/* Text input during voice mode */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          const msg = textInput.trim()
+          if (!msg) return
+          // Add to unified conversation store
+          conversationStore.addMessage({
+            id: `text-${Date.now()}`,
+            role: "user",
+            text: msg,
+            timestamp: Date.now(),
+            modality: "text",
+            isFinal: true,
+          })
+          // Send to voice agent via LiveKit data channel
+          if (room?.localParticipant) {
+            const encoder = new TextEncoder()
+            const payload = JSON.stringify({ type: "text_input", text: msg })
+            room.localParticipant.publishData(encoder.encode(payload), { reliable: true })
+          }
+          setTextInput("")
+          if (!showTranscript) setShowTranscript(true)
+        }}
+        className="shrink-0 border-t px-3 py-2"
+      >
+        <div className="flex gap-2">
+          <Input
+            placeholder="Type a message while in voice mode..."
+            value={textInput}
+            onChange={(e) => setTextInput(e.target.value)}
+            className="h-8 text-sm"
+          />
+          <Button type="submit" size="icon-xs" disabled={!textInput.trim()}>
+            <Send className="size-3.5" />
+          </Button>
+        </div>
+      </form>
 
       {/* Controls */}
       <div className="flex shrink-0 items-center justify-center gap-3 border-t p-4 pb-6">
@@ -1738,7 +1780,10 @@ function AgentTab({
 }) {
   const msgId = useId()
   const scrollRef = useRef<HTMLDivElement>(null)
-  const { messages, sendMessage, status, error } = useChat()
+  const priorContext = conversationStore.toMessageHistory()
+  const { messages, sendMessage, status, error } = useChat({
+    body: { priorContext },
+  })
   const [input, setInput] = useState("")
 
   const isLoading = status === "streaming" || status === "submitted"
@@ -1750,6 +1795,15 @@ function AgentTab({
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!input.trim() || isLoading) return
+    // Also add to unified store so voice mode picks it up
+    conversationStore.addMessage({
+      id: `text-chat-${Date.now()}`,
+      role: "user",
+      text: input,
+      timestamp: Date.now(),
+      modality: "text",
+      isFinal: true,
+    })
     sendMessage({ text: input })
     setInput("")
   }
