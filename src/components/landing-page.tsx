@@ -60,6 +60,7 @@ import {
   type MotionValue,
 } from "motion/react"
 import dynamic from "next/dynamic"
+import { BlurText } from "@/components/reactbits/blur-text"
 
 const HeroShader = dynamic(
   () => import("@/components/landing/hero-shader").then((m) => m.HeroShader),
@@ -541,20 +542,21 @@ export function LandingPage() {
               </Badge>
             </motion.div>
 
-            <motion.h1
-              className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tight leading-[0.9] mb-6"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3, ease: [0.21, 0.47, 0.32, 0.98] }}
+            <motion.div
+              className="mb-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
             >
-              Learn with
-              <br />
-              <span className="bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 bg-clip-text text-transparent">
-                evidence,
-              </span>
-              <br />
-              not guesswork.
-            </motion.h1>
+              <BlurText
+                text="Learn with evidence, not guesswork."
+                className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tight leading-[0.9] justify-center"
+                delay={75}
+                animateBy="words"
+                direction="bottom"
+                stepDuration={0.4}
+              />
+            </motion.div>
 
             <motion.p
               className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed"

@@ -95,6 +95,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import dynamic from "next/dynamic"
+import { ShinyText } from "@/components/reactbits/shiny-text"
 
 const ArtifactCanvas = dynamic(
   () => import("@/components/artifacts/artifact-canvas").then((m) => ({ default: m.ArtifactCanvas })),
@@ -2142,7 +2143,13 @@ function GuideTab({ blocks }: { blocks: MockGuideBlock[] }) {
     <div className="mx-auto max-w-2xl space-y-4">
       <div className="rounded-xl border p-6">
         <h1 className="text-2xl font-bold tracking-tight">
-          Welcome to your generated guide
+          <ShinyText
+            text="Welcome to your generated guide"
+            speed={3}
+            color="#64748b"
+            shineColor="#8b5cf6"
+            className="text-2xl font-bold tracking-tight"
+          />
         </h1>
         <p className="mt-2 text-muted-foreground">
           Upload your study materials, and Core Model builds a scientific profile of how you actually learn — then generates an adaptive guide with evidence-traced recommendations that evolve as you do.

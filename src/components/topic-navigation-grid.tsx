@@ -36,6 +36,7 @@ import { TOPICS, slugify, type MockTopic } from "@/lib/topics"
 import { cn } from "@/lib/utils"
 import { ProfileSheetContent } from "@/components/profile-sheet-content"
 import { ACADEMIC_RESOURCES } from "@/lib/academic-resources"
+import { SpotlightCard } from "@/components/reactbits/spotlight-card"
 
 type ViewMode = "bento" | "list"
 type SortOption = "name" | "mastery" | "deadline" | "recently-updated" | "files"
@@ -377,66 +378,70 @@ function TopicBentoCard({
     <Link
       href={`/dashboard/${topicSlug}/${firstProjectSlug}`}
       className={cn(
-        "group relative flex flex-col justify-between overflow-hidden rounded-xl",
-        "bg-background",
-        "[box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)]",
-        "dark:[border:1px_solid_rgba(255,255,255,.1)]",
-        "transition-all hover:shadow-lg hover:scale-[1.01]",
+        "group block",
         spanClass
       )}
     >
-      <div className="flex-1 p-5">
-        <div>
-          <h3 className="text-2xl font-semibold truncate">
-            {topic.name}
-          </h3>
-          <p className="text-sm text-muted-foreground">{topic.domain}</p>
-        </div>
-
-        {large && (
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            {topic.projects.map((p) => (
-              <Badge key={p.id} variant="secondary" className="text-xs">
-                {p.name}
-              </Badge>
-            ))}
-          </div>
+      <SpotlightCard
+        className={cn(
+          "flex h-full flex-col justify-between rounded-xl",
+          "bg-background",
+          "[box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)]",
+          "dark:[border:1px_solid_rgba(255,255,255,.1)]",
+          "transition-all hover:shadow-lg hover:scale-[1.01]",
         )}
-
-      </div>
-
-      <div className="border-t border-border/40 px-5 py-3">
-        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1">
-              <FileText className="size-3" />
-              {topic.fileCount}
-            </span>
-            <span className="flex items-center gap-1">
-              <MessageSquare className="size-3" />
-              {topic.chatHistory.length}
-            </span>
-            <span className="flex items-center gap-1">
-              <TrendingUp className="size-3" />
-              {formatPercent(totalMastery)}
-            </span>
+        spotlightColor="rgba(139, 92, 246, 0.15)"
+      >
+        <div className="flex-1 p-5">
+          <div>
+            <h3 className="text-2xl font-semibold truncate">
+              {topic.name}
+            </h3>
+            <p className="text-sm text-muted-foreground">{topic.domain}</p>
           </div>
-          {deadline && (
-            <span className="flex items-center gap-1">
-              <Calendar className="size-3" />
-              {new Date(deadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-            </span>
+
+          {large && (
+            <div className="mt-4 flex flex-wrap gap-1.5">
+              {topic.projects.map((p) => (
+                <Badge key={p.id} variant="secondary" className="text-xs">
+                  {p.name}
+                </Badge>
+              ))}
+            </div>
           )}
         </div>
-        <div className="mt-2 h-1.5 w-full rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-primary/60 transition-all"
-            style={{ width: `${Math.round(totalMastery * 100)}%` }}
-          />
-        </div>
-      </div>
 
-      <div className="pointer-events-none absolute inset-0 transition-all duration-300 group-hover:bg-black/[.02] group-hover:dark:bg-neutral-800/10" />
+        <div className="border-t border-border/40 px-5 py-3">
+          <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1">
+                <FileText className="size-3" />
+                {topic.fileCount}
+              </span>
+              <span className="flex items-center gap-1">
+                <MessageSquare className="size-3" />
+                {topic.chatHistory.length}
+              </span>
+              <span className="flex items-center gap-1">
+                <TrendingUp className="size-3" />
+                {formatPercent(totalMastery)}
+              </span>
+            </div>
+            {deadline && (
+              <span className="flex items-center gap-1">
+                <Calendar className="size-3" />
+                {new Date(deadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              </span>
+            )}
+          </div>
+          <div className="mt-2 h-1.5 w-full rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary/60 transition-all"
+              style={{ width: `${Math.round(totalMastery * 100)}%` }}
+            />
+          </div>
+        </div>
+      </SpotlightCard>
     </Link>
   )
 }
