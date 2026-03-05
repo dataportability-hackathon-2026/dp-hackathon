@@ -50,6 +50,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { FeedbackForm } from "@/components/feedback-form"
 import { siteConfig } from "@/lib/white-label"
+import { ACADEMIC_RESOURCES } from "@/lib/academic-resources"
 import {
   motion,
   useScroll,
@@ -660,6 +661,27 @@ export function LandingPage() {
                   <span className="text-xs font-medium hidden sm:inline">{item.label}</span>
                 </motion.div>
               ))}
+            </div>
+          </FadeInOnScroll>
+
+          <FadeInOnScroll delay={0.3}>
+            <div className="mt-8 pt-6 border-t border-border/30">
+              <p className="text-center text-xs text-muted-foreground/60 mb-4">
+                Powered by leading academic resources
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+                {ACADEMIC_RESOURCES.map((resource) => (
+                  <motion.div
+                    key={resource.id}
+                    className={`flex items-center gap-2 rounded-lg border ${resource.borderColor} ${resource.bgColor} px-3 py-2 transition-colors cursor-pointer`}
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                  >
+                    <resource.icon className={`h-4 w-4 ${resource.color}`} />
+                    <span className="text-xs font-medium">{resource.shortName}</span>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           </FadeInOnScroll>
         </div>
