@@ -43,12 +43,13 @@ import {
   type QuizArtifact,
   type ReportArtifact,
   type SlideArtifact,
-  type SpatialArtifact,
+  type ManimArtifact,
   type VideoArtifact,
   artifactTypeLabel,
   getArtifactsByType,
 } from "./artifact-store"
 import { SpatialCard } from "./spatial-card"
+import { GeoCard } from "./geo-card"
 
 // ── Main Canvas ──
 
@@ -139,6 +140,10 @@ function ArtifactRenderer({ artifact }: { artifact: Artifact }) {
       return <SlideCard artifact={artifact} />
     case "spatial":
       return <SpatialCard artifact={artifact} />
+    case "manim":
+      return <ManimCard artifact={artifact} />
+    case "geo":
+      return <GeoCard artifact={artifact} />
   }
 }
 
@@ -146,7 +151,30 @@ function ArtifactRenderer({ artifact }: { artifact: Artifact }) {
 
 function VideoCard({ artifact }: { artifact: VideoArtifact }) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [playing, setPlaying] = useState(false)
+
+  useEffect(() => {
+    const container = containerRef.current
+    const video = videoRef.current
+    if (!container || !video) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          video.play().catch(() => {})
+          setPlaying(true)
+        } else {
+          video.pause()
+          setPlaying(false)
+        }
+      },
+      { threshold: 0.5 },
+    )
+
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [])
 
   const toggle = () => {
     if (!videoRef.current) return
@@ -165,12 +193,13 @@ function VideoCard({ artifact }: { artifact: VideoArtifact }) {
         <CardDescription>{artifact.description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="relative overflow-hidden rounded-lg bg-black">
+        <div ref={containerRef} className="relative overflow-hidden rounded-lg bg-black">
           <video
             ref={videoRef}
             src={artifact.videoUrl}
             className="aspect-video w-full"
             playsInline
+            muted
             onEnded={() => setPlaying(false)}
             data-testid={`video-${artifact.id}`}
           />
@@ -669,6 +698,47 @@ function SlideCard({ artifact }: { artifact: SlideArtifact }) {
             Next
             <ChevronRight className="size-4" data-icon="inline-end" />
           </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ── Manim ──
+
+function ManimCard({ artifact }: { artifact: ManimArtifact }) {
+  const [showCode, setShowCode] = useState(true)
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{artifact.title}</CardTitle>
+        <CardDescription>{artifact.description}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {artifact.videoUrl && (
+          <div className="overflow-hidden rounded-lg border bg-black">
+            <video
+              src={artifact.videoUrl}
+              controls
+              className="w-full"
+              preload="metadata"
+            />
+          </div>
+        )}
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowCode(!showCode)}
+            className="mb-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showCode ? "Hide" : "Show"} source code
+          </button>
+          {showCode && (
+            <pre className="overflow-x-auto rounded-lg border bg-muted/50 p-4 text-xs leading-relaxed">
+              <code>{artifact.code}</code>
+            </pre>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -16,6 +16,7 @@ import {
   Sparkles,
   Target,
   ThumbsUp,
+  X,
   Zap,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -1345,13 +1346,15 @@ export function LearningProfileForm({
 
   if (saved) {
     return (
-      <SavedConfirmation
-        onRegenerateGuide={() => {
-          onSave(data)
-          onCancel()
-        }}
-        onDismiss={onCancel}
-      />
+      <div className="fixed inset-0 z-50 flex flex-col bg-background">
+        <SavedConfirmation
+          onRegenerateGuide={() => {
+            onSave(data)
+            onCancel()
+          }}
+          onDismiss={onCancel}
+        />
+      </div>
     )
   }
 
@@ -1386,32 +1389,34 @@ export function LearningProfileForm({
   ]
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="fixed inset-0 z-50 flex flex-col bg-background">
       {/* Header */}
-      <div className="shrink-0 border-b px-6 py-4">
+      <div className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
+        <div className="flex items-center gap-2 px-1 py-1">
+          <Brain className="size-5 text-primary" />
+          <span className="text-sm font-semibold">Learning Profile Assessment</span>
+        </div>
+        <span className="text-sm text-muted-foreground">
+          Screen {screen + 1} of {TOTAL_SCREENS}: {screenLabels[screen]}
+        </span>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="ml-auto flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <X className="size-4" />
+          Close
+        </button>
+      </div>
+
+      {/* Progress bar + dots */}
+      <div className="shrink-0 border-b px-6 py-3">
         <div className="mx-auto max-w-2xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Brain className="size-5 text-primary" />
-              <div>
-                <h1 className="text-base font-semibold">Learning Profile Assessment</h1>
-                <p className="text-xs text-muted-foreground">
-                  Screen {screen + 1} of {TOTAL_SCREENS}: {screenLabels[screen]}
-                </p>
-              </div>
-            </div>
-            <Button variant="ghost" size="sm" onClick={onCancel}>
-              Cancel
-            </Button>
-          </div>
-          <div className="mt-3">
-            <Progress value={((screen + 1) / TOTAL_SCREENS) * 100}>
-              <ProgressLabel className="sr-only">
-                Assessment progress: {screen + 1} of {TOTAL_SCREENS}
-              </ProgressLabel>
-            </Progress>
-          </div>
-          {/* Screen dots */}
+          <Progress value={((screen + 1) / TOTAL_SCREENS) * 100}>
+            <ProgressLabel className="sr-only">
+              Assessment progress: {screen + 1} of {TOTAL_SCREENS}
+            </ProgressLabel>
+          </Progress>
           <div className="mt-2 flex justify-center gap-1">
             {Array.from({ length: TOTAL_SCREENS }).map((_, i) => (
               <button

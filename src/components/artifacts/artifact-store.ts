@@ -11,6 +11,8 @@ export type ArtifactType =
   | "infographic"
   | "slidedeck"
   | "spatial"
+  | "manim"
+  | "geo"
 
 export type VideoArtifact = {
   id: string
@@ -146,6 +148,38 @@ export type SpatialArtifact = {
   createdAt: string
 }
 
+export type ManimArtifact = {
+  id: string
+  type: "manim"
+  title: string
+  description: string
+  code: string
+  videoUrl?: string
+  createdAt: string
+}
+
+export type GeoArcData = {
+  from: { name: string; coordinates: [longitude: number, latitude: number] }
+  to: { name: string; coordinates: [longitude: number, latitude: number] }
+  value: number
+}
+
+export type GeoArtifact = {
+  id: string
+  type: "geo"
+  title: string
+  description: string
+  arcs: GeoArcData[]
+  viewState?: {
+    longitude: number
+    latitude: number
+    zoom: number
+    pitch?: number
+    bearing?: number
+  }
+  createdAt: string
+}
+
 export type Artifact =
   | VideoArtifact
   | AudioArtifact
@@ -157,6 +191,8 @@ export type Artifact =
   | InfographicArtifact
   | SlideArtifact
   | SpatialArtifact
+  | ManimArtifact
+  | GeoArtifact
 
 // ── Mock Data ──
 
@@ -471,6 +507,134 @@ export const MOCK_SPATIALS: SpatialArtifact[] = [
   },
 ]
 
+export const MOCK_MANIMS: ManimArtifact[] = [
+  {
+    id: "manim-1",
+    type: "manim",
+    title: "Matrix Transformation Animation",
+    description: "Visualizes how a 2x2 matrix transforms the unit square, showing shearing and scaling effects.",
+    code: `from manim import *
+
+class MatrixTransform(Scene):
+    def construct(self):
+        grid = NumberPlane()
+        self.add(grid)
+
+        matrix = [[2, 1], [0, 1]]
+        square = Square(side_length=1, color=BLUE, fill_opacity=0.3)
+        square.move_to(ORIGIN)
+
+        self.play(Create(square))
+        self.wait(0.5)
+        self.play(ApplyMatrix(matrix, grid), ApplyMatrix(matrix, square), run_time=3)
+        self.wait()`,
+    videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
+    createdAt: "2026-03-04",
+  },
+  {
+    id: "manim-2",
+    type: "manim",
+    title: "Eigenvalue Visualization",
+    description: "Shows eigenvectors staying on their span while other vectors rotate under a linear transformation.",
+    code: `from manim import *
+
+class EigenViz(Scene):
+    def construct(self):
+        plane = NumberPlane()
+        self.add(plane)
+
+        matrix = [[2, 1], [1, 2]]
+        # Eigenvectors: [1,1] with λ=3, [1,-1] with λ=1
+        ev1 = Arrow(ORIGIN, [2, 2, 0], color=YELLOW, buff=0)
+        ev2 = Arrow(ORIGIN, [2, -2, 0], color=GREEN, buff=0)
+        other = Arrow(ORIGIN, [1, 0, 0], color=RED, buff=0)
+
+        self.play(Create(ev1), Create(ev2), Create(other))
+        self.play(
+            ApplyMatrix(matrix, plane),
+            ApplyMatrix(matrix, ev1),
+            ApplyMatrix(matrix, ev2),
+            ApplyMatrix(matrix, other),
+            run_time=3,
+        )
+        self.wait()`,
+    videoUrl: "https://www.w3schools.com/html/movie.mp4",
+    createdAt: "2026-03-03",
+  },
+  {
+    id: "manim-3",
+    type: "manim",
+    title: "Vector Field Flow",
+    description: "Animated vector field showing how vectors flow under a differential system dx/dt = Ax.",
+    code: `from manim import *
+import numpy as np
+
+class VectorFieldFlow(Scene):
+    def construct(self):
+        plane = NumberPlane()
+        self.add(plane)
+
+        A = np.array([[0, 1], [-1, -0.5]])
+
+        def func(pos):
+            x, y = pos[:2]
+            v = A @ np.array([x, y])
+            return np.array([v[0], v[1], 0])
+
+        field = ArrowVectorField(func, x_range=[-4, 4], y_range=[-4, 4])
+        self.play(Create(field), run_time=2)
+
+        dots = [Dot(point=[x, y, 0], color=YELLOW) for x, y in [(2, 0), (-1, 2), (0, -3)]]
+        for dot in dots:
+            self.add(dot)
+        self.play(*[dot.animate.shift(func(dot.get_center()) * 0.5) for dot in dots], run_time=3)
+        self.wait()`,
+    videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
+    createdAt: "2026-03-02",
+  },
+]
+
+export const MOCK_GEOS: GeoArtifact[] = [
+  {
+    id: "geo-1",
+    type: "geo",
+    title: "Global Trade Routes",
+    description: "Major international trade flows between world cities visualized as arcs.",
+    arcs: [
+      { from: { name: "Los Angeles", coordinates: [-118.24, 34.05] }, to: { name: "Shanghai", coordinates: [121.47, 31.23] }, value: 850 },
+      { from: { name: "New York", coordinates: [-74.0, 40.71] }, to: { name: "London", coordinates: [-0.12, 51.51] }, value: 720 },
+      { from: { name: "Tokyo", coordinates: [139.69, 35.69] }, to: { name: "Singapore", coordinates: [103.85, 1.29] }, value: 640 },
+      { from: { name: "Dubai", coordinates: [55.27, 25.2] }, to: { name: "Mumbai", coordinates: [72.88, 19.08] }, value: 530 },
+      { from: { name: "Rotterdam", coordinates: [4.47, 51.92] }, to: { name: "New York", coordinates: [-74.0, 40.71] }, value: 480 },
+      { from: { name: "Shanghai", coordinates: [121.47, 31.23] }, to: { name: "Hamburg", coordinates: [9.99, 53.55] }, value: 610 },
+      { from: { name: "San Francisco", coordinates: [-122.42, 37.77] }, to: { name: "Tokyo", coordinates: [139.69, 35.69] }, value: 420 },
+      { from: { name: "Sydney", coordinates: [151.21, -33.87] }, to: { name: "Singapore", coordinates: [103.85, 1.29] }, value: 380 },
+      { from: { name: "London", coordinates: [-0.12, 51.51] }, to: { name: "Dubai", coordinates: [55.27, 25.2] }, value: 510 },
+      { from: { name: "Sao Paulo", coordinates: [-46.63, -23.55] }, to: { name: "Rotterdam", coordinates: [4.47, 51.92] }, value: 350 },
+    ],
+    viewState: { longitude: 0, latitude: 20, zoom: 1.5, pitch: 30, bearing: 0 },
+    createdAt: "2026-03-04",
+  },
+  {
+    id: "geo-2",
+    type: "geo",
+    title: "US University Collaboration Network",
+    description: "Research collaboration arcs between major US universities.",
+    arcs: [
+      { from: { name: "MIT", coordinates: [-71.09, 42.36] }, to: { name: "Stanford", coordinates: [-122.17, 37.43] }, value: 920 },
+      { from: { name: "Harvard", coordinates: [-71.12, 42.37] }, to: { name: "UC Berkeley", coordinates: [-122.26, 37.87] }, value: 780 },
+      { from: { name: "Caltech", coordinates: [-118.13, 34.14] }, to: { name: "MIT", coordinates: [-71.09, 42.36] }, value: 650 },
+      { from: { name: "Princeton", coordinates: [-74.66, 40.35] }, to: { name: "U Chicago", coordinates: [-87.6, 41.79] }, value: 540 },
+      { from: { name: "Stanford", coordinates: [-122.17, 37.43] }, to: { name: "Carnegie Mellon", coordinates: [-79.94, 40.44] }, value: 470 },
+      { from: { name: "Georgia Tech", coordinates: [-84.4, 33.77] }, to: { name: "MIT", coordinates: [-71.09, 42.36] }, value: 410 },
+      { from: { name: "U Michigan", coordinates: [-83.74, 42.28] }, to: { name: "Stanford", coordinates: [-122.17, 37.43] }, value: 380 },
+      { from: { name: "UT Austin", coordinates: [-97.73, 30.29] }, to: { name: "UC Berkeley", coordinates: [-122.26, 37.87] }, value: 320 },
+    ],
+    viewState: { longitude: -98, latitude: 39, zoom: 3.5, pitch: 30, bearing: 0 },
+    createdAt: "2026-03-03",
+  },
+]
+
 // Helper to get all artifacts of a given type
 export function getArtifactsByType(type: ArtifactType): Artifact[] {
   switch (type) {
@@ -484,6 +648,8 @@ export function getArtifactsByType(type: ArtifactType): Artifact[] {
     case "infographic": return MOCK_INFOGRAPHICS
     case "slidedeck": return MOCK_SLIDEDECKS
     case "spatial": return MOCK_SPATIALS
+    case "manim": return MOCK_MANIMS
+    case "geo": return MOCK_GEOS
   }
 }
 
@@ -499,6 +665,8 @@ export function artifactTypeFromLabel(label: string): ArtifactType | null {
     "Slide Deck": "slidedeck",
     "Data Table": "datatable",
     "3D Spatial": "spatial",
+    "Manim": "manim",
+    "Geo": "geo",
   }
   return map[label] ?? null
 }
@@ -515,6 +683,8 @@ export function artifactTypeLabel(type: ArtifactType): string {
     infographic: "Infographic",
     slidedeck: "Slide Deck",
     spatial: "3D Spatial",
+    manim: "Manim",
+    geo: "Geo",
   }
   return map[type]
 }
