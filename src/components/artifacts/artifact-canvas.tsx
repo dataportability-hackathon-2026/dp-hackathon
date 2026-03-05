@@ -1,10 +1,8 @@
 "use client"
 
 import { useEffect, useId, useRef, useState } from "react"
+import dynamic from "next/dynamic"
 import {
-  ReactFlow,
-  Background,
-  Controls,
   type Node,
   type Edge,
   Position,
@@ -30,7 +28,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-// Progress/ProgressLabel available if needed
 import {
   type Artifact,
   type ArtifactType,
@@ -48,8 +45,26 @@ import {
   artifactTypeLabel,
   getArtifactsByType,
 } from "./artifact-store"
-import { SpatialCard } from "./spatial-card"
-import { GeoCard } from "./geo-card"
+
+// Lazy load heavy 3D/map components — these pull in three.js, deck.gl, maplibre
+const SpatialCard = dynamic(
+  () => import("./spatial-card").then((m) => ({ default: m.SpatialCard })),
+  { loading: () => <HeavyArtifactFallback label="3D scene" />, ssr: false },
+)
+const GeoCard = dynamic(
+  () => import("./geo-card").then((m) => ({ default: m.GeoCard })),
+  { loading: () => <HeavyArtifactFallback label="map" />, ssr: false },
+)
+
+function HeavyArtifactFallback({ label }: { label: string }) {
+  return (
+    <Card>
+      <CardContent className="flex h-[400px] items-center justify-center">
+        <p className="text-sm text-muted-foreground">Loading {label}…</p>
+      </CardContent>
+    </Card>
+  )
+}
 
 // ── Main Canvas ──
 
@@ -338,6 +353,19 @@ function buildFlowGraph(artifact: MindMapArtifact) {
   return { nodes, edges }
 }
 
+const LazyReactFlow = dynamic(
+  () => import("@xyflow/react").then((m) => ({ default: m.ReactFlow })),
+  { ssr: false },
+)
+const LazyBackground = dynamic(
+  () => import("@xyflow/react").then((m) => ({ default: m.Background })),
+  { ssr: false },
+)
+const LazyControls = dynamic(
+  () => import("@xyflow/react").then((m) => ({ default: m.Controls })),
+  { ssr: false },
+)
+
 function MindMapCard({ artifact }: { artifact: MindMapArtifact }) {
   const { nodes, edges } = buildFlowGraph(artifact)
 
@@ -349,15 +377,15 @@ function MindMapCard({ artifact }: { artifact: MindMapArtifact }) {
       </CardHeader>
       <CardContent>
         <div className="h-[400px] rounded-lg border" data-testid={`mindmap-${artifact.id}`}>
-          <ReactFlow
+          <LazyReactFlow
             nodes={nodes}
             edges={edges}
             fitView
             proOptions={{ hideAttribution: true }}
           >
-            <Background />
-            <Controls />
-          </ReactFlow>
+            <LazyBackground />
+            <LazyControls />
+          </LazyReactFlow>
         </div>
         <div className="mt-2 text-xs text-muted-foreground text-right">
           {artifact.createdAt}
