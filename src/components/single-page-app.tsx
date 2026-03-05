@@ -1467,6 +1467,8 @@ function VoiceAgentUI({
                 themeMode="dark"
                 color="#FFFFFF"
                 colorShift={0}
+                style={{ width: 280, height: 280 }}
+                className="!aspect-auto"
               />
             ) : visualizer === "wave" ? (
               <AgentAudioVisualizerWave
@@ -1475,6 +1477,8 @@ function VoiceAgentUI({
                 size="lg"
                 color="#FFFFFF"
                 colorShift={0}
+                style={{ width: 280, height: 280 }}
+                className="!aspect-auto"
               />
             ) : (
               <AgentAudioVisualizerBar
