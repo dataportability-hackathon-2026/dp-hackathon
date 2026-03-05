@@ -86,6 +86,12 @@ import {
 } from "@/components/ui/accordion"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
+import {
+  LearningProfileForm,
+  MOCK_COMPLETED_PROFILE,
+  type LearningProfileData,
+} from "@/components/learning-profile-form"
+import { ClipboardList } from "lucide-react"
 
 // ── Mock Data ──
 
@@ -349,6 +355,8 @@ export function SinglePageApp() {
   const [chatInput, setChatInput] = useState("")
   const [agentOpen, setAgentOpen] = useState(false)
   const [voiceMode, setVoiceMode] = useState(true)
+  const [assessmentMode, setAssessmentMode] = useState(false)
+  const [userProfile, setUserProfile] = useState<LearningProfileData>(MOCK_COMPLETED_PROFILE)
 
   const selectedTopic = TOPICS.find((t) => t.id === selectedTopicId) ?? TOPICS[0]
   const selectedProject =
@@ -410,7 +418,7 @@ export function SinglePageApp() {
                     <SheetTitle>Maya Chen</SheetTitle>
                   </SheetHeader>
                   <div className="flex-1 overflow-y-auto p-6">
-                    <OverviewTab />
+                    <OverviewTab onRetakeAssessment={() => setAssessmentMode(true)} />
                   </div>
                   <Separator />
                   <AccountSection />
@@ -486,7 +494,7 @@ export function SinglePageApp() {
                         <SheetTitle>Maya Chen</SheetTitle>
                       </SheetHeader>
                       <div className="flex-1 overflow-y-auto p-6">
-                        <OverviewTab />
+                        <OverviewTab onRetakeAssessment={() => setAssessmentMode(true)} />
                       </div>
                       <Separator />
                       <AccountSection />
@@ -499,27 +507,40 @@ export function SinglePageApp() {
         </header>
 
         <div className="flex flex-1 overflow-hidden">
-          {/* Left Sidebar - Create artifacts */}
-          <aside className="hidden w-48 shrink-0 border-r lg:flex lg:flex-col">
-            <div className="flex-1 overflow-y-auto p-3">
-              <ArtifactGrid />
+          {assessmentMode ? (
+            /* Assessment Mode: form replaces sidebar + canvas */
+            <div className="flex-1 overflow-hidden">
+              <LearningProfileForm
+                initialData={userProfile}
+                onSave={(profileData) => setUserProfile(profileData)}
+                onCancel={() => setAssessmentMode(false)}
+              />
             </div>
-          </aside>
+          ) : (
+            <>
+              {/* Left Sidebar - Create artifacts */}
+              <aside className="hidden w-48 shrink-0 border-r lg:flex lg:flex-col">
+                <div className="flex-1 overflow-y-auto p-3">
+                  <ArtifactGrid />
+                </div>
+              </aside>
 
-          {/* Main Content */}
-          <main className="relative flex-1 overflow-y-auto">
-            <TabsContent value={0} className="p-4 sm:p-6">
-              <GuideTab blocks={GUIDE_BLOCKS} />
-            </TabsContent>
+              {/* Main Content */}
+              <main className="relative flex-1 overflow-y-auto">
+                <TabsContent value={0} className="p-4 sm:p-6">
+                  <GuideTab blocks={GUIDE_BLOCKS} />
+                </TabsContent>
 
-            <TabsContent value={1} className="p-4 sm:p-6">
-              <FilesTab files={FILES} />
-            </TabsContent>
+                <TabsContent value={1} className="p-4 sm:p-6">
+                  <FilesTab files={FILES} />
+                </TabsContent>
 
-            <TabsContent value={2} className="p-4 sm:p-6">
-              <ProgressTab mastery={MASTERY_DATA} project={selectedProject} />
-            </TabsContent>
-          </main>
+                <TabsContent value={2} className="p-4 sm:p-6">
+                  <ProgressTab mastery={MASTERY_DATA} project={selectedProject} />
+                </TabsContent>
+              </main>
+            </>
+          )}
 
           {/* Agent Right Sidebar - Desktop: always visible, Mobile: toggleable */}
         <aside
@@ -616,11 +637,19 @@ const SYSTEM_ADAPTATIONS = [
   { rule: "Autonomy-supportive coaching tone", reason: "High autonomy drive in motivation profile" },
 ] as const
 
-function OverviewTab() {
+function OverviewTab({ onRetakeAssessment }: { onRetakeAssessment?: () => void }) {
   const listId = useId()
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
+      {/* Retake Assessment */}
+      {onRetakeAssessment && (
+        <Button variant="outline" className="w-full" onClick={onRetakeAssessment}>
+          <ClipboardList className="size-4" data-icon="inline-start" />
+          Retake Assessment
+        </Button>
+      )}
+
       {/* Profile summary */}
       <div>
         <p className="text-sm text-muted-foreground">
