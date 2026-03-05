@@ -106,8 +106,14 @@ type MockTopic = {
   id: string
   name: string
   domain: string
+  parentGroup: string
+  icon: string
   projects: MockProject[]
   fileCount: number
+  guideBlocks: MockGuideBlock[]
+  chatHistory: MockMessage[]
+  masteryData: MockMastery[]
+  files: MockFile[]
 }
 
 type MockMessage = {
@@ -163,118 +169,294 @@ type MockAuditEvent = {
 }
 
 const TOPICS: MockTopic[] = [
+  // ── Mathematics ──
   {
     id: "topic-1",
     name: "Linear Algebra",
     domain: "Mathematics",
+    parentGroup: "Mathematics",
+    icon: "Table2",
     fileCount: 12,
     projects: [
-      {
-        id: "proj-1",
-        name: "Midterm Exam Prep",
-        goalType: "exam",
-        mastery: 0.55,
-        masteryUncertainty: 0.12,
-        minutesPerDay: 45,
-        daysPerWeek: 5,
-        deadline: "2026-03-28",
-      },
-      {
-        id: "proj-2",
-        name: "Deep Dive - Eigenvalues",
-        goalType: "fluency",
-        mastery: 0.38,
-        masteryUncertainty: 0.18,
-        minutesPerDay: 30,
-        daysPerWeek: 3,
-        deadline: "",
-      },
+      { id: "proj-1", name: "Midterm Exam Prep", goalType: "exam", mastery: 0.55, masteryUncertainty: 0.12, minutesPerDay: 45, daysPerWeek: 5, deadline: "2026-03-28" },
+      { id: "proj-2", name: "Deep Dive - Eigenvalues", goalType: "fluency", mastery: 0.38, masteryUncertainty: 0.18, minutesPerDay: 30, daysPerWeek: 3, deadline: "" },
+    ],
+    guideBlocks: [
+      { id: "gb-1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 25, description: "Matrix operations review -- 8 retrieval items", completed: true },
+      { id: "gb-2", dayIndex: 1, blockType: "metacog_routine", plannedMinutes: 10, description: "Confidence calibration exercise", completed: true },
+      { id: "gb-3", dayIndex: 2, blockType: "core_practice", plannedMinutes: 30, description: "Vector spaces and subspaces -- 6 application items", completed: true },
+      { id: "gb-4", dayIndex: 2, blockType: "skill_builder", plannedMinutes: 10, description: "Time management: Pomodoro technique refresher", completed: false },
+      { id: "gb-5", dayIndex: 3, blockType: "core_practice", plannedMinutes: 30, description: "Eigenvalues and eigenvectors -- 4 worked examples + 6 items", completed: false },
+      { id: "gb-6", dayIndex: 3, blockType: "metacog_routine", plannedMinutes: 15, description: "Prediction-reflection loop on eigenvalue problems", completed: false },
+      { id: "gb-7", dayIndex: 4, blockType: "core_practice", plannedMinutes: 25, description: "Diagonalization -- 8 near-transfer items", completed: false },
+      { id: "gb-8", dayIndex: 5, blockType: "core_practice", plannedMinutes: 30, description: "Mixed practice -- eigenvalues, determinants, linear transforms", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-1", role: "user", content: "Can you help me review eigenvectors before the midterm?", timestamp: "2026-03-03T14:30:00Z" },
+      { id: "msg-2", role: "assistant", content: "Of course! Based on your profile, your mastery of eigenvectors is at 0.48 (moderate confidence). Let me create a focused review set.", timestamp: "2026-03-03T14:30:15Z" },
+      { id: "msg-3", role: "user", content: "That makes sense. I do feel like I know it better than I actually do.", timestamp: "2026-03-03T14:31:00Z" },
+      { id: "msg-4", role: "assistant", content: "That's great self-awareness! I've generated a flashcard set of 12 cards covering eigenvalue computation, eigenvector properties, and diagonalization.", timestamp: "2026-03-03T14:31:20Z" },
+    ],
+    masteryData: [
+      { id: "m-1", concept: "Matrix Operations", posteriorMean: 0.72, posteriorSd: 0.08, credibleLow: 0.58, credibleHigh: 0.86 },
+      { id: "m-2", concept: "Vector Spaces", posteriorMean: 0.61, posteriorSd: 0.11, credibleLow: 0.42, credibleHigh: 0.80 },
+      { id: "m-3", concept: "Eigenvalues", posteriorMean: 0.48, posteriorSd: 0.14, credibleLow: 0.24, credibleHigh: 0.72 },
+      { id: "m-4", concept: "Eigenvectors", posteriorMean: 0.45, posteriorSd: 0.15, credibleLow: 0.20, credibleHigh: 0.70 },
+      { id: "m-5", concept: "Diagonalization", posteriorMean: 0.32, posteriorSd: 0.18, credibleLow: 0.08, credibleHigh: 0.56 },
+      { id: "m-6", concept: "Linear Transforms", posteriorMean: 0.58, posteriorSd: 0.10, credibleLow: 0.40, credibleHigh: 0.76 },
+      { id: "m-7", concept: "Determinants", posteriorMean: 0.68, posteriorSd: 0.09, credibleLow: 0.52, credibleHigh: 0.84 },
+    ],
+    files: [
+      { id: "f-1", filename: "Chapter 5 - Eigenvalues.pdf", mimeType: "application/pdf", sizeBytes: 2_400_000, uploadedAt: "2026-02-20", scope: "topic" },
+      { id: "f-2", filename: "Lecture 12 Notes.md", mimeType: "text/markdown", sizeBytes: 18_200, uploadedAt: "2026-02-25", scope: "topic" },
+      { id: "f-3", filename: "Practice Midterm 2025.pdf", mimeType: "application/pdf", sizeBytes: 5_100_000, uploadedAt: "2026-03-01", scope: "project" },
+      { id: "f-4", filename: "Eigenvector Cheat Sheet.md", mimeType: "text/markdown", sizeBytes: 8_400, uploadedAt: "2026-03-02", scope: "project" },
     ],
   },
   {
     id: "topic-2",
-    name: "Machine Learning",
-    domain: "Computer Science",
-    fileCount: 7,
+    name: "Calculus III",
+    domain: "Mathematics",
+    parentGroup: "Mathematics",
+    icon: "TrendingUp",
+    fileCount: 8,
     projects: [
-      {
-        id: "proj-3",
-        name: "Career Switch Fundamentals",
-        goalType: "fluency",
-        mastery: 0.22,
-        masteryUncertainty: 0.25,
-        minutesPerDay: 30,
-        daysPerWeek: 4,
-        deadline: "",
-      },
+      { id: "proj-3", name: "Final Exam Prep", goalType: "exam", mastery: 0.42, masteryUncertainty: 0.15, minutesPerDay: 40, daysPerWeek: 5, deadline: "2026-04-15" },
+    ],
+    guideBlocks: [
+      { id: "gb-c1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 30, description: "Double integrals -- region sketching + 6 problems", completed: true },
+      { id: "gb-c2", dayIndex: 2, blockType: "core_practice", plannedMinutes: 25, description: "Triple integrals -- coordinate systems", completed: false },
+      { id: "gb-c3", dayIndex: 3, blockType: "metacog_routine", plannedMinutes: 15, description: "Stokes' theorem concept mapping", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-c1", role: "user", content: "I keep mixing up when to use cylindrical vs spherical coordinates.", timestamp: "2026-03-02T10:00:00Z" },
+      { id: "msg-c2", role: "assistant", content: "Great question! Here's a quick decision framework: use cylindrical when the region has circular symmetry around one axis, and spherical when it's symmetric around a point.", timestamp: "2026-03-02T10:01:00Z" },
+    ],
+    masteryData: [
+      { id: "mc-1", concept: "Double Integrals", posteriorMean: 0.65, posteriorSd: 0.10, credibleLow: 0.48, credibleHigh: 0.82 },
+      { id: "mc-2", concept: "Triple Integrals", posteriorMean: 0.38, posteriorSd: 0.16, credibleLow: 0.12, credibleHigh: 0.64 },
+      { id: "mc-3", concept: "Stokes' Theorem", posteriorMean: 0.25, posteriorSd: 0.20, credibleLow: 0.05, credibleHigh: 0.55 },
+    ],
+    files: [
+      { id: "fc-1", filename: "Multivariable Calculus Notes.pdf", mimeType: "application/pdf", sizeBytes: 3_100_000, uploadedAt: "2026-02-18", scope: "topic" },
     ],
   },
-]
-
-const CHAT_HISTORY: MockMessage[] = [
   {
-    id: "msg-1",
-    role: "user",
-    content: "Can you help me review eigenvectors before the midterm?",
-    timestamp: "2026-03-03T14:30:00Z",
+    id: "topic-3",
+    name: "Probability & Statistics",
+    domain: "Mathematics",
+    parentGroup: "Mathematics",
+    icon: "BarChart3",
+    fileCount: 5,
+    projects: [
+      { id: "proj-4", name: "Bayesian Thinking", goalType: "fluency", mastery: 0.30, masteryUncertainty: 0.20, minutesPerDay: 25, daysPerWeek: 3, deadline: "" },
+    ],
+    guideBlocks: [
+      { id: "gb-p1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 25, description: "Bayes' theorem -- 5 worked examples", completed: false },
+      { id: "gb-p2", dayIndex: 2, blockType: "core_practice", plannedMinutes: 20, description: "Prior/posterior distributions -- intuition building", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-p1", role: "user", content: "Can you explain conjugate priors simply?", timestamp: "2026-03-01T16:00:00Z" },
+      { id: "msg-p2", role: "assistant", content: "Think of conjugate priors as a convenient shortcut: when your prior and likelihood 'match' mathematically, the posterior stays in the same family. It's like adding more data to a running average.", timestamp: "2026-03-01T16:01:00Z" },
+    ],
+    masteryData: [
+      { id: "mp-1", concept: "Bayes' Theorem", posteriorMean: 0.40, posteriorSd: 0.15, credibleLow: 0.15, credibleHigh: 0.65 },
+      { id: "mp-2", concept: "Distributions", posteriorMean: 0.35, posteriorSd: 0.18, credibleLow: 0.08, credibleHigh: 0.62 },
+    ],
+    files: [
+      { id: "fp-1", filename: "Bayesian Stats Intro.pdf", mimeType: "application/pdf", sizeBytes: 1_800_000, uploadedAt: "2026-02-22", scope: "topic" },
+    ],
+  },
+  // ── Computer Science ──
+  {
+    id: "topic-4",
+    name: "Machine Learning",
+    domain: "Computer Science",
+    parentGroup: "Computer Science",
+    icon: "Brain",
+    fileCount: 7,
+    projects: [
+      { id: "proj-5", name: "Career Switch Fundamentals", goalType: "fluency", mastery: 0.22, masteryUncertainty: 0.25, minutesPerDay: 30, daysPerWeek: 4, deadline: "" },
+      { id: "proj-6", name: "Kaggle Competition", goalType: "project", mastery: 0.15, masteryUncertainty: 0.28, minutesPerDay: 45, daysPerWeek: 3, deadline: "2026-04-30" },
+    ],
+    guideBlocks: [
+      { id: "gb-ml1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 30, description: "Supervised learning fundamentals -- decision trees", completed: true },
+      { id: "gb-ml2", dayIndex: 2, blockType: "core_practice", plannedMinutes: 35, description: "Gradient descent -- intuition + math", completed: false },
+      { id: "gb-ml3", dayIndex: 3, blockType: "skill_builder", plannedMinutes: 20, description: "Scikit-learn API walkthrough", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-ml1", role: "user", content: "What's the difference between bagging and boosting?", timestamp: "2026-03-02T09:00:00Z" },
+      { id: "msg-ml2", role: "assistant", content: "Bagging trains models in parallel on random subsets and averages them (reduces variance). Boosting trains sequentially, each model fixing the previous one's errors (reduces bias). Random Forest = bagging, XGBoost = boosting.", timestamp: "2026-03-02T09:01:00Z" },
+    ],
+    masteryData: [
+      { id: "mml-1", concept: "Supervised Learning", posteriorMean: 0.35, posteriorSd: 0.18, credibleLow: 0.08, credibleHigh: 0.62 },
+      { id: "mml-2", concept: "Neural Networks", posteriorMean: 0.18, posteriorSd: 0.22, credibleLow: 0.02, credibleHigh: 0.48 },
+      { id: "mml-3", concept: "Gradient Descent", posteriorMean: 0.28, posteriorSd: 0.20, credibleLow: 0.05, credibleHigh: 0.55 },
+    ],
+    files: [
+      { id: "fml-1", filename: "ML Roadmap.md", mimeType: "text/markdown", sizeBytes: 12_000, uploadedAt: "2026-02-15", scope: "topic" },
+      { id: "fml-2", filename: "Andrew Ng Course Notes.pdf", mimeType: "application/pdf", sizeBytes: 4_500_000, uploadedAt: "2026-02-20", scope: "topic" },
+    ],
   },
   {
-    id: "msg-2",
-    role: "assistant",
-    content:
-      "Of course! Based on your profile, your mastery of eigenvectors is at 0.48 (moderate confidence). Let me create a focused review set. Your calibration data shows you tend to overestimate your confidence here -- I'll include some prediction prompts to help with that.",
-    timestamp: "2026-03-03T14:30:15Z",
+    id: "topic-5",
+    name: "Data Structures",
+    domain: "Computer Science",
+    parentGroup: "Computer Science",
+    icon: "Braces",
+    fileCount: 9,
+    projects: [
+      { id: "proj-7", name: "Interview Prep", goalType: "exam", mastery: 0.60, masteryUncertainty: 0.10, minutesPerDay: 40, daysPerWeek: 5, deadline: "2026-03-20" },
+    ],
+    guideBlocks: [
+      { id: "gb-ds1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 30, description: "Binary trees -- traversals + 5 LeetCode problems", completed: true },
+      { id: "gb-ds2", dayIndex: 2, blockType: "core_practice", plannedMinutes: 35, description: "Graph algorithms -- BFS/DFS", completed: true },
+      { id: "gb-ds3", dayIndex: 3, blockType: "core_practice", plannedMinutes: 30, description: "Dynamic programming -- tabulation vs memoization", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-ds1", role: "user", content: "When should I use a heap vs a balanced BST?", timestamp: "2026-03-03T11:00:00Z" },
+      { id: "msg-ds2", role: "assistant", content: "Heap if you only need min/max quickly (O(1) peek). BST if you need ordered traversal, rank queries, or range searches. Heaps are simpler and faster for priority queues.", timestamp: "2026-03-03T11:01:00Z" },
+    ],
+    masteryData: [
+      { id: "mds-1", concept: "Arrays & Strings", posteriorMean: 0.78, posteriorSd: 0.06, credibleLow: 0.68, credibleHigh: 0.88 },
+      { id: "mds-2", concept: "Trees", posteriorMean: 0.65, posteriorSd: 0.10, credibleLow: 0.48, credibleHigh: 0.82 },
+      { id: "mds-3", concept: "Graphs", posteriorMean: 0.52, posteriorSd: 0.13, credibleLow: 0.30, credibleHigh: 0.74 },
+      { id: "mds-4", concept: "Dynamic Programming", posteriorMean: 0.40, posteriorSd: 0.16, credibleLow: 0.14, credibleHigh: 0.66 },
+    ],
+    files: [
+      { id: "fds-1", filename: "Blind 75 Checklist.md", mimeType: "text/markdown", sizeBytes: 5_200, uploadedAt: "2026-02-10", scope: "topic" },
+      { id: "fds-2", filename: "Graph Patterns.pdf", mimeType: "application/pdf", sizeBytes: 2_800_000, uploadedAt: "2026-02-28", scope: "project" },
+    ],
   },
   {
-    id: "msg-3",
-    role: "user",
-    content: "That makes sense. I do feel like I know it better than I actually do.",
-    timestamp: "2026-03-03T14:31:00Z",
+    id: "topic-6",
+    name: "Systems Design",
+    domain: "Computer Science",
+    parentGroup: "Computer Science",
+    icon: "Settings",
+    fileCount: 4,
+    projects: [
+      { id: "proj-8", name: "Teach Back Series", goalType: "teach", mastery: 0.45, masteryUncertainty: 0.15, minutesPerDay: 20, daysPerWeek: 2, deadline: "" },
+    ],
+    guideBlocks: [
+      { id: "gb-sd1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 25, description: "URL shortener design -- constraints + API", completed: true },
+      { id: "gb-sd2", dayIndex: 3, blockType: "core_practice", plannedMinutes: 30, description: "Chat system design -- message delivery", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-sd1", role: "user", content: "How do I explain CAP theorem to someone new?", timestamp: "2026-03-01T14:00:00Z" },
+      { id: "msg-sd2", role: "assistant", content: "Use the 'network partition' framing: when a network split happens, you must choose between consistency (all nodes see the same data) or availability (every request gets a response). You can't have both during a partition.", timestamp: "2026-03-01T14:01:00Z" },
+    ],
+    masteryData: [
+      { id: "msd-1", concept: "Load Balancing", posteriorMean: 0.55, posteriorSd: 0.12, credibleLow: 0.35, credibleHigh: 0.75 },
+      { id: "msd-2", concept: "Caching", posteriorMean: 0.50, posteriorSd: 0.14, credibleLow: 0.28, credibleHigh: 0.72 },
+    ],
+    files: [
+      { id: "fsd-1", filename: "System Design Template.md", mimeType: "text/markdown", sizeBytes: 6_800, uploadedAt: "2026-02-25", scope: "topic" },
+    ],
+  },
+  // ── Sciences ──
+  {
+    id: "topic-7",
+    name: "Organic Chemistry",
+    domain: "Chemistry",
+    parentGroup: "Sciences",
+    icon: "FlipHorizontal",
+    fileCount: 6,
+    projects: [
+      { id: "proj-9", name: "Reaction Mechanisms", goalType: "fluency", mastery: 0.33, masteryUncertainty: 0.19, minutesPerDay: 35, daysPerWeek: 4, deadline: "" },
+    ],
+    guideBlocks: [
+      { id: "gb-oc1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 30, description: "SN1 vs SN2 -- decision framework + 8 problems", completed: false },
+      { id: "gb-oc2", dayIndex: 2, blockType: "metacog_routine", plannedMinutes: 15, description: "Reaction mechanism prediction exercise", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-oc1", role: "user", content: "I always confuse E1 and E2 eliminations.", timestamp: "2026-03-02T15:00:00Z" },
+      { id: "msg-oc2", role: "assistant", content: "Key distinction: E2 is one-step (strong base, anti-periplanar geometry required). E1 is two-step (weak base, carbocation intermediate). Think: E2 = everything at once, E1 = leave first, then eliminate.", timestamp: "2026-03-02T15:01:00Z" },
+    ],
+    masteryData: [
+      { id: "moc-1", concept: "Substitution Reactions", posteriorMean: 0.42, posteriorSd: 0.15, credibleLow: 0.18, credibleHigh: 0.66 },
+      { id: "moc-2", concept: "Elimination Reactions", posteriorMean: 0.28, posteriorSd: 0.19, credibleLow: 0.04, credibleHigh: 0.56 },
+    ],
+    files: [
+      { id: "foc-1", filename: "Reaction Mechanisms Cheat Sheet.pdf", mimeType: "application/pdf", sizeBytes: 1_900_000, uploadedAt: "2026-02-20", scope: "topic" },
+    ],
   },
   {
-    id: "msg-4",
-    role: "assistant",
-    content:
-      "That's great self-awareness! I've generated a flashcard set of 12 cards covering eigenvalue computation, eigenvector properties, and diagonalization. Each card includes a confidence prompt before revealing the answer. Want me to also create a practice quiz?",
-    timestamp: "2026-03-03T14:31:20Z",
+    id: "topic-8",
+    name: "Quantum Mechanics",
+    domain: "Physics",
+    parentGroup: "Sciences",
+    icon: "AudioLines",
+    fileCount: 3,
+    projects: [
+      { id: "proj-10", name: "Conceptual Foundations", goalType: "fluency", mastery: 0.18, masteryUncertainty: 0.25, minutesPerDay: 25, daysPerWeek: 3, deadline: "" },
+    ],
+    guideBlocks: [
+      { id: "gb-qm1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 25, description: "Wave-particle duality -- thought experiments", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-qm1", role: "user", content: "What does the Schrodinger equation actually tell us?", timestamp: "2026-02-28T12:00:00Z" },
+      { id: "msg-qm2", role: "assistant", content: "It describes how a quantum system's wave function evolves over time. Think of it as Newton's F=ma but for probability amplitudes -- it tells you the 'trajectory' of possibilities, not certainties.", timestamp: "2026-02-28T12:01:00Z" },
+    ],
+    masteryData: [
+      { id: "mqm-1", concept: "Wave Functions", posteriorMean: 0.22, posteriorSd: 0.20, credibleLow: 0.02, credibleHigh: 0.52 },
+    ],
+    files: [
+      { id: "fqm-1", filename: "Griffiths Ch1 Notes.pdf", mimeType: "application/pdf", sizeBytes: 2_200_000, uploadedAt: "2026-02-15", scope: "topic" },
+    ],
+  },
+  // ── Languages ──
+  {
+    id: "topic-9",
+    name: "Spanish B2",
+    domain: "Languages",
+    parentGroup: "Languages",
+    icon: "MessageSquare",
+    fileCount: 4,
+    projects: [
+      { id: "proj-11", name: "DELE B2 Prep", goalType: "exam", mastery: 0.48, masteryUncertainty: 0.14, minutesPerDay: 30, daysPerWeek: 6, deadline: "2026-05-10" },
+    ],
+    guideBlocks: [
+      { id: "gb-sp1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 20, description: "Subjunctive mood -- trigger phrases + 10 fill-in exercises", completed: true },
+      { id: "gb-sp2", dayIndex: 2, blockType: "core_practice", plannedMinutes: 25, description: "Listening comprehension -- podcast shadowing", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-sp1", role: "user", content: "When do I use subjunctive vs indicative?", timestamp: "2026-03-03T08:00:00Z" },
+      { id: "msg-sp2", role: "assistant", content: "Rule of thumb: subjunctive for wishes, doubts, emotions, and hypotheticals (WEIRDO: Wishes, Emotions, Impersonal expressions, Recommendations, Doubt/Denial, Ojalá). Indicative for facts and certainty.", timestamp: "2026-03-03T08:01:00Z" },
+    ],
+    masteryData: [
+      { id: "msp-1", concept: "Subjunctive Mood", posteriorMean: 0.50, posteriorSd: 0.12, credibleLow: 0.30, credibleHigh: 0.70 },
+      { id: "msp-2", concept: "Listening Comp.", posteriorMean: 0.45, posteriorSd: 0.14, credibleLow: 0.22, credibleHigh: 0.68 },
+    ],
+    files: [
+      { id: "fsp-1", filename: "DELE B2 Vocab List.md", mimeType: "text/markdown", sizeBytes: 15_000, uploadedAt: "2026-02-10", scope: "topic" },
+    ],
   },
   {
-    id: "msg-5",
-    role: "user",
-    content: "Yes, a quiz would be great. Focus on application problems.",
-    timestamp: "2026-03-03T14:32:00Z",
+    id: "topic-10",
+    name: "Mandarin HSK4",
+    domain: "Languages",
+    parentGroup: "Languages",
+    icon: "Pencil",
+    fileCount: 3,
+    projects: [
+      { id: "proj-12", name: "Character Recognition", goalType: "fluency", mastery: 0.35, masteryUncertainty: 0.18, minutesPerDay: 20, daysPerWeek: 5, deadline: "" },
+    ],
+    guideBlocks: [
+      { id: "gb-mn1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 20, description: "Radical review -- 30 characters spaced repetition", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-mn1", role: "user", content: "Any tips for remembering tone pairs?", timestamp: "2026-03-01T07:00:00Z" },
+      { id: "msg-mn2", role: "assistant", content: "Practice tone pairs as units rather than individual tones. Record yourself saying common pairs and compare with native audio. The 3-3 tone sandhi (becomes 2-3) trips up most learners -- drill those first.", timestamp: "2026-03-01T07:01:00Z" },
+    ],
+    masteryData: [
+      { id: "mmn-1", concept: "Characters (600)", posteriorMean: 0.38, posteriorSd: 0.16, credibleLow: 0.12, credibleHigh: 0.64 },
+      { id: "mmn-2", concept: "Tone Accuracy", posteriorMean: 0.30, posteriorSd: 0.18, credibleLow: 0.04, credibleHigh: 0.58 },
+    ],
+    files: [
+      { id: "fmn-1", filename: "HSK4 Word List.pdf", mimeType: "application/pdf", sizeBytes: 800_000, uploadedAt: "2026-02-12", scope: "topic" },
+    ],
   },
-  {
-    id: "msg-6",
-    role: "assistant",
-    content:
-      "Done! I've created a 10-question quiz focused on application and near-transfer problems. Topics covered: finding eigenvalues of 2x2 and 3x3 matrices, determining eigenvectors, and applying diagonalization to solve systems. I've also updated your 7-day guide to include extra practice on these concepts for days 3 and 5.",
-    timestamp: "2026-03-03T14:32:30Z",
-  },
-]
-
-const GUIDE_BLOCKS: MockGuideBlock[] = [
-  { id: "gb-1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 25, description: "Matrix operations review -- 8 retrieval items", completed: true },
-  { id: "gb-2", dayIndex: 1, blockType: "metacog_routine", plannedMinutes: 10, description: "Confidence calibration exercise", completed: true },
-  { id: "gb-3", dayIndex: 2, blockType: "core_practice", plannedMinutes: 30, description: "Vector spaces and subspaces -- 6 application items", completed: true },
-  { id: "gb-4", dayIndex: 2, blockType: "skill_builder", plannedMinutes: 10, description: "Time management: Pomodoro technique refresher", completed: false },
-  { id: "gb-5", dayIndex: 3, blockType: "core_practice", plannedMinutes: 30, description: "Eigenvalues and eigenvectors -- 4 worked examples + 6 items", completed: false },
-  { id: "gb-6", dayIndex: 3, blockType: "metacog_routine", plannedMinutes: 15, description: "Prediction-reflection loop on eigenvalue problems", completed: false },
-  { id: "gb-7", dayIndex: 4, blockType: "core_practice", plannedMinutes: 25, description: "Diagonalization -- 8 near-transfer items", completed: false },
-  { id: "gb-8", dayIndex: 4, blockType: "motivation_support", plannedMinutes: 5, description: "Progress reflection + choice of next focus area", completed: false },
-  { id: "gb-9", dayIndex: 5, blockType: "core_practice", plannedMinutes: 30, description: "Mixed practice -- eigenvalues, determinants, linear transforms", completed: false },
-  { id: "gb-10", dayIndex: 5, blockType: "metacog_routine", plannedMinutes: 10, description: "Pre-exam confidence mapping exercise", completed: false },
-  { id: "gb-11", dayIndex: 6, blockType: "core_practice", plannedMinutes: 20, description: "Weak spots review -- spaced repetition queue", completed: false },
-  { id: "gb-12", dayIndex: 7, blockType: "core_practice", plannedMinutes: 30, description: "Full practice exam simulation", completed: false },
-]
-
-const FILES: MockFile[] = [
-  { id: "f-1", filename: "Chapter 5 - Eigenvalues.pdf", mimeType: "application/pdf", sizeBytes: 2_400_000, uploadedAt: "2026-02-20", scope: "topic" },
-  { id: "f-2", filename: "Lecture 12 Notes.md", mimeType: "text/markdown", sizeBytes: 18_200, uploadedAt: "2026-02-25", scope: "topic" },
-  { id: "f-3", filename: "Practice Midterm 2025.pdf", mimeType: "application/pdf", sizeBytes: 5_100_000, uploadedAt: "2026-03-01", scope: "project" },
-  { id: "f-4", filename: "Eigenvector Cheat Sheet.md", mimeType: "text/markdown", sizeBytes: 8_400, uploadedAt: "2026-03-02", scope: "project" },
-  { id: "f-5", filename: "Homework 7 Solutions.pdf", mimeType: "application/pdf", sizeBytes: 3_700_000, uploadedAt: "2026-02-28", scope: "topic" },
-  { id: "f-6", filename: "Study Group Notes.md", mimeType: "text/markdown", sizeBytes: 12_600, uploadedAt: "2026-03-03", scope: "project" },
 ]
 
 const MOCK_UPLOADS: MockUpload[] = [
@@ -283,15 +465,35 @@ const MOCK_UPLOADS: MockUpload[] = [
   { id: "u-3", filename: "Corrupted Notes.pdf", sizeBytes: 1_200_000, progress: 12, status: "error", error: "Upload failed — file may be corrupted" },
 ]
 
-const MASTERY_DATA: MockMastery[] = [
-  { id: "m-1", concept: "Matrix Operations", posteriorMean: 0.72, posteriorSd: 0.08, credibleLow: 0.58, credibleHigh: 0.86 },
-  { id: "m-2", concept: "Vector Spaces", posteriorMean: 0.61, posteriorSd: 0.11, credibleLow: 0.42, credibleHigh: 0.80 },
-  { id: "m-3", concept: "Eigenvalues", posteriorMean: 0.48, posteriorSd: 0.14, credibleLow: 0.24, credibleHigh: 0.72 },
-  { id: "m-4", concept: "Eigenvectors", posteriorMean: 0.45, posteriorSd: 0.15, credibleLow: 0.20, credibleHigh: 0.70 },
-  { id: "m-5", concept: "Diagonalization", posteriorMean: 0.32, posteriorSd: 0.18, credibleLow: 0.08, credibleHigh: 0.56 },
-  { id: "m-6", concept: "Linear Transforms", posteriorMean: 0.58, posteriorSd: 0.10, credibleLow: 0.40, credibleHigh: 0.76 },
-  { id: "m-7", concept: "Determinants", posteriorMean: 0.68, posteriorSd: 0.09, credibleLow: 0.52, credibleHigh: 0.84 },
-]
+// Group topics by their parentGroup for the navigation grid
+function getTopicsByGroup(): Record<string, MockTopic[]> {
+  const groups: Record<string, MockTopic[]> = {}
+  for (const topic of TOPICS) {
+    if (!groups[topic.parentGroup]) groups[topic.parentGroup] = []
+    groups[topic.parentGroup].push(topic)
+  }
+  return groups
+}
+
+const TOPIC_ICON_MAP: Record<string, typeof Brain> = {
+  Table2,
+  TrendingUp,
+  BarChart3,
+  Brain,
+  Braces,
+  Settings,
+  FlipHorizontal,
+  AudioLines,
+  MessageSquare,
+  Pencil,
+}
+
+const GROUP_ICONS: Record<string, typeof Brain> = {
+  Mathematics: Table2,
+  "Computer Science": Braces,
+  Sciences: FlipHorizontal,
+  Languages: MessageSquare,
+}
 
 const AUDIT_EVENTS: MockAuditEvent[] = [
   {
@@ -341,34 +543,185 @@ const BLOCK_TYPE_LABELS: Record<string, { label: string; color: string }> = {
   motivation_support: { label: "Motivation", color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" },
 }
 
+// ── Topic Navigation Grid ──
+
+function TopicNavigationGrid({
+  onSelectTopic,
+  currentTopicId,
+  onClose,
+}: {
+  onSelectTopic: (topicId: string) => void
+  currentTopicId: string
+  onClose: () => void
+}) {
+  const groups = getTopicsByGroup()
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+      {/* Header */}
+      <div className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
+        <Brain className="size-5 text-primary" />
+        <span className="text-sm font-semibold">DeepLearn</span>
+        <span className="ml-2 text-sm text-muted-foreground">Select a topic</span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="ml-auto flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <X className="size-4" />
+          Close
+        </button>
+      </div>
+
+      {/* Scrollable grid content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-5xl space-y-10 p-6 sm:p-10">
+          {Object.entries(groups).map(([groupName, topics]) => {
+            const GroupIcon = GROUP_ICONS[groupName] ?? FolderOpen
+            return (
+              <section key={groupName}>
+                <div className="mb-4 flex items-center gap-2">
+                  <GroupIcon className="size-4 text-muted-foreground" />
+                  <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                    {groupName}
+                  </h2>
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {topics.map((topic) => {
+                    const Icon = TOPIC_ICON_MAP[topic.icon] ?? FolderOpen
+                    const isActive = topic.id === currentTopicId
+                    const totalMastery = topic.masteryData.length > 0
+                      ? topic.masteryData.reduce((sum, m) => sum + m.posteriorMean, 0) / topic.masteryData.length
+                      : 0
+                    return (
+                      <button
+                        key={topic.id}
+                        type="button"
+                        onClick={() => {
+                          onSelectTopic(topic.id)
+                          onClose()
+                        }}
+                        className={`group relative flex flex-col gap-3 rounded-xl border p-5 text-left transition-all hover:border-primary/40 hover:shadow-md ${
+                          isActive
+                            ? "border-primary/50 bg-primary/5 shadow-sm"
+                            : "border-border bg-card"
+                        }`}
+                      >
+                        {isActive && (
+                          <span className="absolute right-3 top-3 flex size-2 rounded-full bg-primary" />
+                        )}
+                        <div className="flex items-start gap-3">
+                          <div className={`flex size-10 items-center justify-center rounded-lg ${
+                            isActive ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                          }`}>
+                            <Icon className="size-5" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-sm font-semibold">{topic.name}</h3>
+                            <p className="text-xs text-muted-foreground">{topic.domain}</p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          {/* Projects */}
+                          <div className="flex flex-wrap gap-1">
+                            {topic.projects.map((p) => (
+                              <Badge key={p.id} variant="secondary" className="text-xs">
+                                {p.name}
+                              </Badge>
+                            ))}
+                          </div>
+
+                          {/* Stats row */}
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <FileText className="size-3" />
+                              {topic.fileCount} files
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <MessageSquare className="size-3" />
+                              {topic.chatHistory.length} messages
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <TrendingUp className="size-3" />
+                              {formatPercent(totalMastery)}
+                            </span>
+                          </div>
+
+                          {/* Mastery bar */}
+                          <div className="h-1.5 w-full rounded-full bg-muted">
+                            <div
+                              className="h-full rounded-full bg-primary/60 transition-all"
+                              style={{ width: `${Math.round(totalMastery * 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </section>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Component ──
 
 export function SinglePageApp() {
-  const [selectedTopicId] = useState("topic-1")
-  const [selectedProjectId] = useState("proj-1")
+  const [selectedTopicId, setSelectedTopicId] = useState("topic-1")
+  const [selectedProjectId, setSelectedProjectId] = useState("proj-1")
   const [chatInput, setChatInput] = useState("")
   const [agentOpen, setAgentOpen] = useState(false)
   const [voiceMode, setVoiceMode] = useState(true)
+  const [topicNavOpen, setTopicNavOpen] = useState(false)
 
   const selectedTopic = TOPICS.find((t) => t.id === selectedTopicId) ?? TOPICS[0]
   const selectedProject =
     selectedTopic.projects.find((p) => p.id === selectedProjectId) ??
     selectedTopic.projects[0]
 
+  function handleSelectTopic(topicId: string) {
+    setSelectedTopicId(topicId)
+    const topic = TOPICS.find((t) => t.id === topicId) ?? TOPICS[0]
+    setSelectedProjectId(topic.projects[0]?.id ?? "")
+    setChatInput("")
+  }
+
   return (
     <Tabs defaultValue={0} className="flex h-dvh flex-col gap-0 bg-background">
+        {topicNavOpen && (
+          <TopicNavigationGrid
+            currentTopicId={selectedTopicId}
+            onSelectTopic={handleSelectTopic}
+            onClose={() => setTopicNavOpen(false)}
+          />
+        )}
         <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
-          <Brain className="size-5 text-primary" />
-          <span className="text-sm font-semibold">DeepLearn</span>
+          <button
+            type="button"
+            onClick={() => setTopicNavOpen(true)}
+            className="flex items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-muted"
+          >
+            <Brain className="size-5 text-primary" />
+            <span className="text-sm font-semibold">DeepLearn</span>
+          </button>
 
           <Separator orientation="vertical" className="mx-1 h-5" />
 
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <button
+            type="button"
+            onClick={() => setTopicNavOpen(true)}
+            className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted"
+          >
             <FolderOpen className="size-3.5" />
             <span className="hidden sm:inline">{selectedTopic.name}</span>
             <ChevronRight className="size-3.5" />
             <span className="font-medium text-foreground">{selectedProject.name}</span>
-          </div>
+          </button>
 
           <div className="ml-auto flex items-center gap-2">
             {/* Desktop: Nav + Connect + Audit + User */}
@@ -509,15 +862,15 @@ export function SinglePageApp() {
           {/* Main Content */}
           <main className="relative flex-1 overflow-y-auto">
             <TabsContent value={0} className="p-4 sm:p-6">
-              <GuideTab blocks={GUIDE_BLOCKS} />
+              <GuideTab blocks={selectedTopic.guideBlocks} />
             </TabsContent>
 
             <TabsContent value={1} className="p-4 sm:p-6">
-              <FilesTab files={FILES} />
+              <FilesTab files={selectedTopic.files} />
             </TabsContent>
 
             <TabsContent value={2} className="p-4 sm:p-6">
-              <ProgressTab mastery={MASTERY_DATA} project={selectedProject} />
+              <ProgressTab mastery={selectedTopic.masteryData} project={selectedProject} />
             </TabsContent>
           </main>
 
@@ -569,7 +922,7 @@ export function SinglePageApp() {
             <VoiceAgent onSwitchToText={() => setVoiceMode(false)} />
           ) : (
             <AgentTab
-              messages={CHAT_HISTORY}
+              messages={selectedTopic.chatHistory}
               chatInput={chatInput}
               onChatInputChange={setChatInput}
             />
