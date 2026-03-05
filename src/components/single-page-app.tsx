@@ -93,7 +93,12 @@ import {
 } from "@/components/ui/accordion"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
-import { ArtifactCanvas } from "@/components/artifacts/artifact-canvas"
+import dynamic from "next/dynamic"
+
+const ArtifactCanvas = dynamic(
+  () => import("@/components/artifacts/artifact-canvas").then((m) => ({ default: m.ArtifactCanvas })),
+  { ssr: false },
+)
 import { type ArtifactType, artifactTypeFromLabel, getArtifactsByType } from "@/components/artifacts/artifact-store"
 import {
   LearningProfileForm,
@@ -111,9 +116,18 @@ import {
   useTrackTranscription,
 } from "@livekit/components-react"
 import { ConnectionState, Track } from "livekit-client"
-import { AgentAudioVisualizerBar } from "@/components/agents-ui/agent-audio-visualizer-bar"
-import { AgentAudioVisualizerAura } from "@/components/agents-ui/agent-audio-visualizer-aura"
-import { AgentAudioVisualizerWave } from "@/components/agents-ui/agent-audio-visualizer-wave"
+const AgentAudioVisualizerBar = dynamic(
+  () => import("@/components/agents-ui/agent-audio-visualizer-bar").then((m) => ({ default: m.AgentAudioVisualizerBar })),
+  { ssr: false },
+)
+const AgentAudioVisualizerAura = dynamic(
+  () => import("@/components/agents-ui/agent-audio-visualizer-aura").then((m) => ({ default: m.AgentAudioVisualizerAura })),
+  { ssr: false },
+)
+const AgentAudioVisualizerWave = dynamic(
+  () => import("@/components/agents-ui/agent-audio-visualizer-wave").then((m) => ({ default: m.AgentAudioVisualizerWave })),
+  { ssr: false },
+)
 import { useChat } from "@ai-sdk/react"
 import type { UIMessage } from "ai"
 import { conversationStore, type MessageEntry } from "@/lib/conversation-store"
