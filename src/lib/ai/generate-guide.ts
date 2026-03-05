@@ -1,5 +1,5 @@
 import { generateText, Output } from "ai"
-import { openai } from "@ai-sdk/openai"
+import { openai } from "./provider"
 import { LearningGuideSchema } from "./schemas"
 import type { LearningGuide, LearningProfileAnalysis } from "./schemas"
 
