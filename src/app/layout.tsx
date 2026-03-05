@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/components/providers/auth-provider";
+import { CreditProvider } from "@/components/providers/credit-provider";
 
 export const metadata: Metadata = {
   title: "Core Model - Evidence-Based Adaptive Learning",
@@ -13,7 +15,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <AuthProvider>
+          <CreditProvider>
+            {children}
+          </CreditProvider>
+        </AuthProvider>
+      </body>
     </html>
   );
 }

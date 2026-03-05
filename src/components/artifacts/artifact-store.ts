@@ -10,6 +10,7 @@ export type ArtifactType =
   | "report"
   | "infographic"
   | "slidedeck"
+  | "spatial"
 
 export type VideoArtifact = {
   id: string
@@ -118,6 +119,33 @@ export type SlideArtifact = {
   createdAt: string
 }
 
+export type SpatialObject = {
+  id: string
+  label: string
+  shape: "sphere" | "box" | "torus" | "cone" | "cylinder" | "dodecahedron" | "octahedron" | "icosahedron"
+  position: [number, number, number]
+  color: string
+  scale?: number
+  rotate?: boolean
+}
+
+export type SpatialConnection = {
+  from: string
+  to: string
+  color?: string
+}
+
+export type SpatialArtifact = {
+  id: string
+  type: "spatial"
+  title: string
+  description: string
+  objects: SpatialObject[]
+  connections?: SpatialConnection[]
+  autoRotate?: boolean
+  createdAt: string
+}
+
 export type Artifact =
   | VideoArtifact
   | AudioArtifact
@@ -128,6 +156,7 @@ export type Artifact =
   | ReportArtifact
   | InfographicArtifact
   | SlideArtifact
+  | SpatialArtifact
 
 // ── Mock Data ──
 
@@ -385,6 +414,63 @@ export const MOCK_SLIDEDECKS: SlideArtifact[] = [
   },
 ]
 
+export const MOCK_SPATIALS: SpatialArtifact[] = [
+  {
+    id: "sp-1",
+    type: "spatial",
+    title: "Water Molecule (H2O)",
+    description: "3D model of a water molecule showing oxygen and hydrogen atoms with bonds.",
+    autoRotate: true,
+    objects: [
+      { id: "o1", label: "O", shape: "sphere", position: [0, 0, 0], color: "#ef4444", scale: 1.2 },
+      { id: "h1", label: "H", shape: "sphere", position: [-1.5, -1, 0], color: "#3b82f6", scale: 0.8 },
+      { id: "h2", label: "H", shape: "sphere", position: [1.5, -1, 0], color: "#3b82f6", scale: 0.8 },
+    ],
+    connections: [
+      { from: "o1", to: "h1", color: "#94a3b8" },
+      { from: "o1", to: "h2", color: "#94a3b8" },
+    ],
+    createdAt: "2026-03-04",
+  },
+  {
+    id: "sp-2",
+    type: "spatial",
+    title: "Platonic Solids Gallery",
+    description: "Interactive 3D view of all five Platonic solids — the building blocks of geometry.",
+    autoRotate: true,
+    objects: [
+      { id: "p1", label: "Cube", shape: "box", position: [-4, 0, 0], color: "#f59e0b", rotate: true },
+      { id: "p2", label: "Icosahedron", shape: "icosahedron", position: [-2, 0, 0], color: "#10b981", rotate: true },
+      { id: "p3", label: "Octahedron", shape: "octahedron", position: [0, 0, 0], color: "#8b5cf6", rotate: true },
+      { id: "p4", label: "Dodecahedron", shape: "dodecahedron", position: [2, 0, 0], color: "#ec4899", rotate: true },
+      { id: "p5", label: "Cone", shape: "cone", position: [4, 0, 0], color: "#06b6d4", rotate: true },
+    ],
+    createdAt: "2026-03-03",
+  },
+  {
+    id: "sp-3",
+    type: "spatial",
+    title: "3D Vector Space Basis",
+    description: "Visualization of standard basis vectors e1, e2, e3 in R3 with unit cube.",
+    autoRotate: true,
+    objects: [
+      { id: "origin", label: "Origin", shape: "sphere", position: [0, 0, 0], color: "#6b7280", scale: 0.3 },
+      { id: "e1", label: "e1", shape: "cylinder", position: [1, 0, 0], color: "#ef4444", scale: 0.15 },
+      { id: "e2", label: "e2", shape: "cylinder", position: [0, 1, 0], color: "#22c55e", scale: 0.15 },
+      { id: "e3", label: "e3", shape: "cylinder", position: [0, 0, 1], color: "#3b82f6", scale: 0.15 },
+      { id: "tip1", label: "x", shape: "sphere", position: [2, 0, 0], color: "#ef4444", scale: 0.25 },
+      { id: "tip2", label: "y", shape: "sphere", position: [0, 2, 0], color: "#22c55e", scale: 0.25 },
+      { id: "tip3", label: "z", shape: "sphere", position: [0, 0, 2], color: "#3b82f6", scale: 0.25 },
+    ],
+    connections: [
+      { from: "origin", to: "tip1", color: "#ef4444" },
+      { from: "origin", to: "tip2", color: "#22c55e" },
+      { from: "origin", to: "tip3", color: "#3b82f6" },
+    ],
+    createdAt: "2026-03-02",
+  },
+]
+
 // Helper to get all artifacts of a given type
 export function getArtifactsByType(type: ArtifactType): Artifact[] {
   switch (type) {
@@ -397,6 +483,7 @@ export function getArtifactsByType(type: ArtifactType): Artifact[] {
     case "report": return MOCK_REPORTS
     case "infographic": return MOCK_INFOGRAPHICS
     case "slidedeck": return MOCK_SLIDEDECKS
+    case "spatial": return MOCK_SPATIALS
   }
 }
 
@@ -411,6 +498,7 @@ export function artifactTypeFromLabel(label: string): ArtifactType | null {
     "Infographic": "infographic",
     "Slide Deck": "slidedeck",
     "Data Table": "datatable",
+    "3D Spatial": "spatial",
   }
   return map[label] ?? null
 }
@@ -426,6 +514,7 @@ export function artifactTypeLabel(type: ArtifactType): string {
     report: "Reports",
     infographic: "Infographic",
     slidedeck: "Slide Deck",
+    spatial: "3D Spatial",
   }
   return map[type]
 }
