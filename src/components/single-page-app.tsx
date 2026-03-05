@@ -256,6 +256,38 @@ export function SinglePageApp({ topicId, projectId, isAdmin = false }: { topicId
     setScrollToArtifactId(null)
   }, [setArtifactParam])
 
+  // Handle state updates from AI agent tool calls
+  const handleAgentStateUpdate = useCallback((payload: StateUpdatePayload) => {
+    if (!payload.__stateUpdate) return
+    switch (payload.type) {
+      case "navigate_to_view":
+      case "show_guide":
+      case "show_progress":
+      case "show_sources":
+        if (payload.view) {
+          void setActiveTab(payload.view)
+          void setArtifactParam(null)
+        }
+        break
+      case "select_topic":
+        // Topic switching would need URL navigation in a real app
+        // For now we just switch the view
+        if (payload.view) void setActiveTab(payload.view)
+        break
+      case "select_project":
+        break
+      case "open_artifact":
+        if (payload.artifact) {
+          void setArtifactParam(payload.artifact)
+          void setActiveTab("")
+        }
+        break
+      case "complete_guide_block":
+        // Guide block completion is handled via mock data in this prototype
+        break
+    }
+  }, [setActiveTab, setArtifactParam])
+
   const selectedTopic = TOPICS.find((t) => t.id === selectedTopicId) ?? TOPICS[0]
   const selectedProject =
     selectedTopic.projects.find((p) => p.id === selectedProjectId) ??
@@ -497,6 +529,7 @@ export function SinglePageApp({ topicId, projectId, isAdmin = false }: { topicId
           ) : (
             <AgentTab
               onOpenArtifact={handleOpenArtifactType}
+              onStateUpdate={handleAgentStateUpdate}
             />
           )}
         </aside>
@@ -1729,23 +1762,80 @@ const TOOL_LABELS: Record<string, string> = {
   create_slides: "View Slides",
   create_spatial: "View 3D Model",
   create_learning_guide: "View Learning Guide",
+  navigate_to_view: "Navigating...",
+  select_topic: "Switching topic...",
+  select_project: "Switching project...",
+  show_guide: "Opening guide...",
+  show_progress: "Opening progress...",
+  show_sources: "Opening sources...",
+  complete_guide_block: "Marking complete...",
+  open_artifact: "Opening artifact...",
+  get_current_state: "Reading state...",
+}
+
+const STATE_TOOL_NAMES = new Set([
+  "navigate_to_view",
+  "select_topic",
+  "select_project",
+  "show_guide",
+  "show_progress",
+  "show_sources",
+  "complete_guide_block",
+  "open_artifact",
+  "get_current_state",
+])
+
+type StateUpdatePayload = {
+  __stateUpdate: boolean
+  type?: string
+  view?: string
+  topicId?: string
+  topicName?: string
+  projectId?: string
+  projectName?: string
+  highlightBlockId?: string | null
+  blockId?: string
+  artifact?: string
+  [key: string]: unknown
 }
 
 function AgentTab({
   onOpenArtifact,
+  onStateUpdate,
 }: {
   onOpenArtifact: (type: ArtifactType, scrollToId?: string) => void
+  onStateUpdate?: (payload: StateUpdatePayload) => void
 }) {
   const msgId = useId()
   const scrollRef = useRef<HTMLDivElement>(null)
   const { messages, sendMessage, status, error } = useChat()
   const [input, setInput] = useState("")
+  const processedToolCalls = useRef(new Set<string>())
 
   const isLoading = status === "streaming" || status === "submitted"
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
+
+  // Process state update tool results from messages
+  useEffect(() => {
+    if (!onStateUpdate) return
+    for (const msg of messages) {
+      if (msg.role !== "assistant") continue
+      for (const part of msg.parts) {
+        if (part.type.startsWith("tool-")) {
+          const toolName = part.type.replace("tool-", "")
+          if (!STATE_TOOL_NAMES.has(toolName)) continue
+          const toolPart = part as { type: string; state: string; toolCallId: string; result?: StateUpdatePayload }
+          if (toolPart.state === "result" && toolPart.result?.__stateUpdate && !processedToolCalls.current.has(toolPart.toolCallId)) {
+            processedToolCalls.current.add(toolPart.toolCallId)
+            onStateUpdate(toolPart.result)
+          }
+        }
+      }
+    }
+  }, [messages, onStateUpdate])
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -1792,6 +1882,7 @@ function AgentTab({
                   }
                   if (part.type.startsWith("tool-")) {
                     const toolName = part.type.replace("tool-", "")
+                    const isStateTool = STATE_TOOL_NAMES.has(toolName)
                     const artifactType = TOOL_TYPE_TO_ARTIFACT[toolName]
                     const label = TOOL_LABELS[toolName] ?? toolName
                     const toolPart = part as { type: string; state: string; toolCallId: string }
@@ -1800,7 +1891,16 @@ function AgentTab({
                       return (
                         <div key={`${msg.id}-part-${partIdx}`} className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                           <Loader2 className="size-3 animate-spin" />
-                          Creating {label.toLowerCase().replace("view ", "")}...
+                          {isStateTool ? label : `Creating ${label.toLowerCase().replace("view ", "")}...`}
+                        </div>
+                      )
+                    }
+
+                    if (toolPart.state === "result" && isStateTool) {
+                      return (
+                        <div key={`${msg.id}-part-${partIdx}`} className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Check className="size-3 text-green-600" />
+                          Done
                         </div>
                       )
                     }
