@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { siteConfig } from "@/lib/white-label"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   Sheet,
@@ -152,7 +153,7 @@ export function TopicNavigationGrid() {
       <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
         <Link href="/dashboard" className="flex items-center gap-2 px-1 py-1">
           <Brain className="size-5 text-primary" />
-          <span className="text-sm font-semibold">CoreModel</span>
+          <span className="text-sm font-semibold">{siteConfig.name}</span>
         </Link>
         <span className="text-sm text-muted-foreground">Topics</span>
         <div className="ml-auto">

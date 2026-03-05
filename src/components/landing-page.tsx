@@ -49,6 +49,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { FeedbackForm } from "@/components/feedback-form"
+import { siteConfig } from "@/lib/white-label"
 import {
   motion,
   useScroll,
@@ -439,7 +440,7 @@ export function LandingPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <Brain className="h-4 w-4" />
             </div>
-            <span className="text-lg font-bold tracking-tight">Core Model</span>
+            <span className="text-lg font-bold tracking-tight">{siteConfig.name}</span>
           </a>
 
           <nav className="hidden items-center gap-8 md:flex">
@@ -560,9 +561,7 @@ export function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.5 }}
             >
-              Core Model ingests your study materials, builds a scientific
-              learner profile, and recommends what to study next — with explicit
-              uncertainty and a full audit trail.
+              {siteConfig.description}
             </motion.p>
 
             <motion.div
@@ -697,7 +696,7 @@ export function LandingPage() {
                     <div className="space-y-2">
                       {[
                         { icon: BarChart3, label: "Dashboard", active: true },
-                        { icon: Brain, label: "Core Model", active: false },
+                        { icon: Brain, label: siteConfig.name, active: false },
                         { icon: FileText, label: "Materials", active: false },
                         { icon: Map, label: "Knowledge Graph", active: false },
                         { icon: Eye, label: "Audit Trail", active: false },
@@ -944,7 +943,7 @@ export function LandingPage() {
               Total transparency.
             </h2>
             <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-              Core Model's architecture ensures every recommendation is
+              {siteConfig.name}&apos;s architecture ensures every recommendation is
               traceable from raw data to action.
             </p>
           </FadeInOnScroll>
@@ -1338,11 +1337,10 @@ export function LandingPage() {
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <Brain className="h-3.5 w-3.5" />
                 </div>
-                <span className="font-bold">Core Model</span>
+                <span className="font-bold">{siteConfig.name}</span>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Evidence-based adaptive learning for Masters-level
-                self-directed learners.
+                {siteConfig.tagline}.
               </p>
             </div>
             <div>
@@ -1407,8 +1405,7 @@ export function LandingPage() {
             </div>
           </div>
           <div className="mt-10 border-t border-border/50 pt-6 text-center text-xs text-muted-foreground">
-            &copy; 2026 Core Model. Built on validated science, not
-            learning-style myths.
+            &copy; {new Date().getFullYear()} {siteConfig.legalEntity}. Built on validated science, not learning-style myths.
           </div>
         </div>
       </footer>
