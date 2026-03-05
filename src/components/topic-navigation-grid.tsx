@@ -5,6 +5,9 @@ import Link from "next/link"
 import {
   Brain,
   Calendar,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
   FileText,
   LayoutGrid,
   List,
@@ -32,6 +35,7 @@ import {
 import { TOPICS, slugify, type MockTopic } from "@/lib/topics"
 import { cn } from "@/lib/utils"
 import { ProfileSheetContent } from "@/components/profile-sheet-content"
+import { ACADEMIC_RESOURCES } from "@/lib/academic-resources"
 
 type ViewMode = "bento" | "list"
 type SortOption = "name" | "mastery" | "deadline" | "recently-updated" | "files"
@@ -226,6 +230,8 @@ export function TopicNavigationGrid() {
           </div>
         </div>
 
+        <AcademicResourcesSection />
+
         {filteredTopics.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
             <Search className="mb-3 size-8" />
@@ -254,6 +260,101 @@ export function TopicNavigationGrid() {
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+function AcademicResourcesSection() {
+  const [showAll, setShowAll] = useState(false)
+  const visibleResources = showAll ? ACADEMIC_RESOURCES : ACADEMIC_RESOURCES.slice(0, 3)
+  const hiddenCount = ACADEMIC_RESOURCES.length - 3
+
+  return (
+    <div className="mb-10">
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Academic Resources</h2>
+          <p className="text-sm text-muted-foreground">
+            Browse content from leading academic sources
+          </p>
+        </div>
+      </div>
+
+      <div className={cn(
+        "grid gap-3",
+        showAll ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4" : "grid-cols-1 sm:grid-cols-3"
+      )}>
+        {visibleResources.map((resource) => (
+          <a
+            key={resource.id}
+            href={resource.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              "group relative flex flex-col justify-between rounded-xl border transition-all",
+              "hover:shadow-md hover:scale-[1.02]",
+              resource.borderColor,
+              resource.bgColor,
+              showAll ? "p-4" : "p-5 sm:p-6",
+            )}
+          >
+            <div className="flex items-start gap-3">
+              <div className={cn(
+                "flex shrink-0 items-center justify-center rounded-lg",
+                showAll ? "h-10 w-10" : "h-12 w-12",
+                resource.bgColor,
+                "border",
+                resource.borderColor,
+              )}>
+                <resource.icon className={cn(
+                  resource.color,
+                  showAll ? "h-5 w-5" : "h-6 w-6",
+                )} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <h3 className={cn(
+                    "font-semibold truncate",
+                    showAll ? "text-sm" : "text-base",
+                  )}>
+                    {resource.shortName}
+                  </h3>
+                  <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+                <p className={cn(
+                  "text-muted-foreground leading-snug",
+                  showAll ? "text-xs mt-0.5 line-clamp-2" : "text-sm mt-1",
+                )}>
+                  {resource.description}
+                </p>
+              </div>
+            </div>
+          </a>
+        ))}
+      </div>
+
+      {hiddenCount > 0 && (
+        <div className="mt-3 flex justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-sm text-muted-foreground"
+            onClick={() => setShowAll(!showAll)}
+          >
+            {showAll ? (
+              <>
+                Show less
+                <ChevronUp className="ml-1 h-4 w-4" />
+              </>
+            ) : (
+              <>
+                View {hiddenCount} more
+                <ChevronDown className="ml-1 h-4 w-4" />
+              </>
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
