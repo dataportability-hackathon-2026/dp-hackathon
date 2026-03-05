@@ -155,6 +155,25 @@ export default defineAgent({
       room: ctx.room,
     });
 
+    // Listen for text messages sent from the frontend via data channel
+    ctx.room.on("dataReceived", (payload, participant) => {
+      try {
+        const decoder = new TextDecoder();
+        const data = JSON.parse(decoder.decode(payload));
+        if (data.type === "text_input" && typeof data.text === "string") {
+          // Inject typed text as user input so the voice agent can respond
+          session.generateReply({
+            userInput: data.text,
+            instructions:
+              "The user typed this message instead of speaking. Respond naturally via voice. " +
+              "You can acknowledge that they typed it if relevant, but don't make a big deal of it.",
+          });
+        }
+      } catch {
+        // Ignore malformed data
+      }
+    });
+
     session.generateReply({
       userInput:
         "Say hello and introduce yourself as CoreModel, a learning assistant. " +
