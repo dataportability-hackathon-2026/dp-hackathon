@@ -97,6 +97,12 @@ import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { ArtifactCanvas } from "@/components/artifacts/artifact-canvas"
 import { type ArtifactType, artifactTypeFromLabel, getArtifactsByType } from "@/components/artifacts/artifact-store"
+import {
+  LearningProfileForm,
+  MOCK_COMPLETED_PROFILE,
+  type LearningProfileData,
+} from "@/components/learning-profile-form"
+import { ClipboardList } from "lucide-react"
 
 // ── Mock Data ──
 
@@ -691,6 +697,8 @@ export function SinglePageApp() {
   const [activeArtifactType, setActiveArtifactType] = useState<ArtifactType | null>(null)
   const [scrollToArtifactId, setScrollToArtifactId] = useState<string | null>(null)
   const [topicNavOpen, setTopicNavOpen] = useState(false)
+  const [assessmentMode, setAssessmentMode] = useState(false)
+  const [userProfile, setUserProfile] = useState<LearningProfileData>(MOCK_COMPLETED_PROFILE)
 
   const handleOpenArtifactType = useCallback((type: ArtifactType, scrollToId?: string) => {
     setActiveArtifactType(type)
@@ -786,7 +794,7 @@ export function SinglePageApp() {
                     <SheetTitle>Maya Chen</SheetTitle>
                   </SheetHeader>
                   <div className="flex-1 overflow-y-auto p-6">
-                    <OverviewTab />
+                    <OverviewTab onRetakeAssessment={() => setAssessmentMode(true)} />
                   </div>
                   <Separator />
                   <AccountSection />
@@ -862,7 +870,7 @@ export function SinglePageApp() {
                         <SheetTitle>Maya Chen</SheetTitle>
                       </SheetHeader>
                       <div className="flex-1 overflow-y-auto p-6">
-                        <OverviewTab />
+                        <OverviewTab onRetakeAssessment={() => setAssessmentMode(true)} />
                       </div>
                       <Separator />
                       <AccountSection />
@@ -875,37 +883,50 @@ export function SinglePageApp() {
         </header>
 
         <div className="flex flex-1 overflow-hidden">
-          {/* Left Sidebar - Create artifacts */}
-          <aside className="hidden w-48 shrink-0 border-r lg:flex lg:flex-col">
-            <div className="flex-1 overflow-y-auto p-3">
-              <ArtifactGrid onOpenType={handleOpenArtifactType} activeType={activeArtifactType} />
-            </div>
-          </aside>
-
-          {/* Main Content */}
-          <main className="relative flex-1 overflow-hidden">
-            {activeArtifactType ? (
-              <ArtifactCanvas
-                activeType={activeArtifactType}
-                scrollToId={scrollToArtifactId}
-                onClose={handleCloseCanvas}
+          {assessmentMode ? (
+            /* Assessment Mode: form replaces sidebar + canvas */
+            <div className="flex-1 overflow-hidden">
+              <LearningProfileForm
+                initialData={userProfile}
+                onSave={(profileData) => setUserProfile(profileData)}
+                onCancel={() => setAssessmentMode(false)}
               />
-            ) : (
-              <div className="h-full overflow-y-auto">
-                <TabsContent value={0} className="p-4 sm:p-6">
-                  <GuideTab blocks={selectedTopic.guideBlocks} />
-                </TabsContent>
+            </div>
+          ) : (
+            <>
+              {/* Left Sidebar - Create artifacts */}
+              <aside className="hidden w-48 shrink-0 border-r lg:flex lg:flex-col">
+                <div className="flex-1 overflow-y-auto p-3">
+                  <ArtifactGrid onOpenType={handleOpenArtifactType} activeType={activeArtifactType} />
+                </div>
+              </aside>
 
-                <TabsContent value={1} className="p-4 sm:p-6">
-                  <FilesTab files={selectedTopic.files} />
-                </TabsContent>
+              {/* Main Content */}
+              <main className="relative flex-1 overflow-hidden">
+                {activeArtifactType ? (
+                  <ArtifactCanvas
+                    activeType={activeArtifactType}
+                    scrollToId={scrollToArtifactId}
+                    onClose={handleCloseCanvas}
+                  />
+                ) : (
+                  <div className="h-full overflow-y-auto">
+                    <TabsContent value={0} className="p-4 sm:p-6">
+                      <GuideTab blocks={selectedTopic.guideBlocks} />
+                    </TabsContent>
 
-                <TabsContent value={2} className="p-4 sm:p-6">
-                  <ProgressTab mastery={selectedTopic.masteryData} project={selectedProject} />
-                </TabsContent>
-              </div>
-            )}
-          </main>
+                    <TabsContent value={1} className="p-4 sm:p-6">
+                      <FilesTab files={selectedTopic.files} />
+                    </TabsContent>
+
+                    <TabsContent value={2} className="p-4 sm:p-6">
+                      <ProgressTab mastery={selectedTopic.masteryData} project={selectedProject} />
+                    </TabsContent>
+                  </div>
+                )}
+              </main>
+            </>
+          )}
 
           {/* Agent Right Sidebar - Desktop: always visible, Mobile: toggleable */}
         <aside
@@ -1003,11 +1024,19 @@ const SYSTEM_ADAPTATIONS = [
   { rule: "Autonomy-supportive coaching tone", reason: "High autonomy drive in motivation profile" },
 ] as const
 
-function OverviewTab() {
+function OverviewTab({ onRetakeAssessment }: { onRetakeAssessment?: () => void }) {
   const listId = useId()
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
+      {/* Retake Assessment */}
+      {onRetakeAssessment && (
+        <Button variant="outline" className="w-full" onClick={onRetakeAssessment}>
+          <ClipboardList className="size-4" data-icon="inline-start" />
+          Retake Assessment
+        </Button>
+      )}
+
       {/* Profile summary */}
       <div>
         <p className="text-sm text-muted-foreground">
