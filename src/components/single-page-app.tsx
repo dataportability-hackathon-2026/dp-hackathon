@@ -4,7 +4,6 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExtern
 import Link from "next/link"
 import { useQueryState, parseAsBoolean, parseAsString } from "nuqs"
 import { TOPICS, type MockProject, type MockGuideBlock, type MockFile, type MockUpload, type MockMastery, type MockAuditEvent } from "@/lib/topics"
-import { authClient } from "@/lib/auth-client"
 import {
   SiOpenai,
   SiAnthropic,
@@ -25,37 +24,25 @@ import {
   ChevronRight,
   Copy,
   AlertCircle,
-  Bell,
-  Clock,
   ExternalLink,
   FileDown,
   FileText,
   Loader2,
-  Lock,
-  Mail,
-  Palette,
   FlipHorizontal,
   FolderOpen,
-  GraduationCap,
   HelpCircle,
-  LogOut,
   Map,
   Menu,
   MessageSquare,
   Mic,
   MicOff,
-  PaintBucket,
   Pencil,
   Phone,
   Plug,
   RefreshCw,
   Presentation,
   Send,
-  Scale,
-  ScrollText,
-  Settings,
   Shield,
-  Stethoscope,
   Box,
   Clapperboard,
   Table2,
@@ -63,7 +50,6 @@ import {
   TrendingUp,
   Globe,
   Upload,
-  User,
   X,
   Video,
 } from "lucide-react"
@@ -114,10 +100,7 @@ import {
   MOCK_COMPLETED_PROFILE,
   type LearningProfileData,
 } from "@/components/learning-profile-form"
-import { ClipboardList } from "lucide-react"
 import { ProfileSheetContent } from "@/components/profile-sheet-content"
-import { UsageDialog } from "@/components/billing/usage-dialog"
-import { BillingDialog } from "@/components/billing/billing-dialog"
 import {
   LiveKitRoom,
   useVoiceAssistant,
@@ -129,12 +112,8 @@ import {
   useTrackTranscription,
 } from "@livekit/components-react"
 import { ConnectionState, Track } from "livekit-client"
-import { AgentAudioVisualizerAura } from "@/components/agents-ui/agent-audio-visualizer-aura"
-import { AgentAudioVisualizerWave } from "@/components/agents-ui/agent-audio-visualizer-wave"
 import { useChat } from "@ai-sdk/react"
 import type { UIMessage } from "ai"
-
-type VisualizerType = "bars" | "aura" | "wave"
 
 // ── Voice Transcript Store (module-level so AuditDialog can read it outside LiveKitRoom) ──
 
@@ -1338,10 +1317,8 @@ type LiveKitConnection = {
 
 function VoiceAgentUI({
   onDisconnect,
-  visualizer = "wave",
 }: {
   onDisconnect: () => void
-  visualizer?: VisualizerType
 }) {
   const { state: agentState, audioTrack, agentTranscriptions } = useVoiceAssistant()
   const connectionState = useConnectionState()
@@ -1477,29 +1454,12 @@ function VoiceAgentUI({
         <>
           {/* Waveform visualization */}
           <div className="flex min-h-0 w-full flex-1 items-center justify-center">
-            {visualizer === "aura" ? (
-              <AgentAudioVisualizerAura
-                state={agentState}
-                audioTrack={audioTrack}
-                size="md"
-                themeMode="dark"
-              />
-            ) : visualizer === "wave" ? (
-              <AgentAudioVisualizerWave
-                state={agentState}
-                audioTrack={audioTrack}
-                size="lg"
-                color="#FFFFFF"
-                colorShift={0}
-              />
-            ) : (
-              <BarVisualizer
-                state={agentState}
-                track={audioTrack}
-                barCount={24}
-                className="h-16"
-              />
-            )}
+            <BarVisualizer
+              state={agentState}
+              track={audioTrack}
+              barCount={24}
+              className="h-16"
+            />
           </div>
 
           {/* Agent avatar */}

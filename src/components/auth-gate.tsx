@@ -85,7 +85,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     <div className="min-h-dvh flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
             <Brain className="h-6 w-6" />
           </div>
           <CardTitle className="text-2xl">

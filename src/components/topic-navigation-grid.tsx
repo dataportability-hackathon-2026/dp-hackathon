@@ -26,13 +26,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { Separator } from "@/components/ui/separator"
 import { TOPICS, slugify, type MockTopic } from "@/lib/topics"
 import { cn } from "@/lib/utils"
+import { ProfileSheetContent } from "@/components/profile-sheet-content"
 
 type ViewMode = "bento" | "list"
 type SortOption = "name" | "mastery" | "deadline" | "recently-updated" | "files"
@@ -172,30 +170,7 @@ export function TopicNavigationGrid() {
               </Avatar>
             </SheetTrigger>
             <SheetContent side="right" className="w-full sm:max-w-lg">
-              <SheetHeader className="flex-row items-center gap-3">
-                <Avatar>
-                  <AvatarFallback>MC</AvatarFallback>
-                </Avatar>
-                <SheetTitle>Maya Chen</SheetTitle>
-              </SheetHeader>
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm font-medium">Email</p>
-                    <p className="text-sm text-muted-foreground">maya.chen@example.com</p>
-                  </div>
-                  <Separator />
-                  <div>
-                    <p className="text-sm font-medium">Learning Profile</p>
-                    <p className="text-sm text-muted-foreground">Visual learner · High autonomy · Deep processing</p>
-                  </div>
-                  <Separator />
-                  <div>
-                    <p className="text-sm font-medium">Topics</p>
-                    <p className="text-sm text-muted-foreground">{TOPICS.length} active topics</p>
-                  </div>
-                </div>
-              </div>
+              <ProfileSheetContent />
             </SheetContent>
           </Sheet>
         </div>
