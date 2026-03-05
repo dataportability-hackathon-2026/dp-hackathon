@@ -13,6 +13,7 @@ import {
   SiMarkdown,
 } from "react-icons/si"
 import { BsMicrosoftTeams } from "react-icons/bs"
+import { siteConfig } from "@/lib/white-label"
 import {
   ArrowLeft,
   AudioLines,
@@ -299,7 +300,7 @@ export function SinglePageApp({ topicId, projectId, isAdmin = false }: { topicId
             className="flex items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-muted"
           >
             <Brain className="size-5 text-primary" />
-            <span className="text-sm font-semibold">CoreModel</span>
+            <span className="text-sm font-semibold">{siteConfig.name}</span>
             {isAdmin && <Badge variant="destructive" className="text-[10px] px-1.5 py-0">ADMIN</Badge>}
           </Link>
 
@@ -672,8 +673,8 @@ function VoiceTranscriptTab({ entries }: { entries: TranscriptEntry[] }) {
 
 // ── Connect Dialog ──
 
-const MOCK_MCP_URL = "https://mcp.coremodel.ai/v1/sse"
-const MOCK_API_URL = "https://api.coremodel.ai/v1"
+const MOCK_MCP_URL = siteConfig.mcpBaseUrl
+const MOCK_API_URL = siteConfig.apiBaseUrl
 
 type IntegrationKey = "chatgpt" | "claude" | "slack" | "teams" | "discord" | "mcp"
 
@@ -733,7 +734,7 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
       return (
         <div className="flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">
-            Connect CoreModel to ChatGPT as an MCP Connector for real-time access to your learning data.
+            Connect {siteConfig.name} to ChatGPT as an MCP Connector for real-time access to your learning data.
           </p>
           <div className="flex flex-col gap-2">
             <p className="text-xs font-medium uppercase text-muted-foreground">Setup via MCP Connector</p>
@@ -743,7 +744,7 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
               <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Go to <span className="font-medium">Connectors</span> &rarr; <span className="font-medium">Create</span></li>
               <li className="flex gap-2"><span className="font-medium text-muted-foreground">4.</span> Fill in the connector details:</li>
             </ol>
-            <CodeBlock code={`Connector name: CoreModel\nDescription: Access learning data, mastery levels, and study guides\nConnector URL: ${MOCK_MCP_URL.replace("/sse", "/mcp")}`} />
+            <CodeBlock code={`Connector name: ${siteConfig.name}\nDescription: Access learning data, mastery levels, and study guides\nConnector URL: ${MOCK_MCP_URL.replace("/sse", "/mcp")}`} />
             <ol start={5} className="flex flex-col gap-2 text-sm">
               <li className="flex gap-2"><span className="font-medium text-muted-foreground">5.</span> Verify the connection &mdash; you should see the advertised tools</li>
             </ol>
@@ -754,7 +755,7 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
             <ol className="flex flex-col gap-2 text-sm">
               <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Open a new ChatGPT conversation</li>
               <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Click the <span className="font-medium">+</span> button near the message composer &rarr; <span className="font-medium">More</span></li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Select <span className="font-medium">CoreModel</span> from available tools</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Select <span className="font-medium">{siteConfig.name}</span> from available tools</li>
               <li className="flex gap-2"><span className="font-medium text-muted-foreground">4.</span> Ask: &ldquo;What are my current mastery levels?&rdquo;</li>
             </ol>
           </div>
@@ -764,7 +765,7 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
             <ul className="flex flex-col gap-1.5 text-sm text-muted-foreground">
               <li className="flex items-start gap-2"><Check className="mt-0.5 size-3.5 text-green-500 shrink-0" /> ChatGPT Pro, Team, Enterprise, or Edu plan</li>
               <li className="flex items-start gap-2"><Check className="mt-0.5 size-3.5 text-green-500 shrink-0" /> Developer mode enabled</li>
-              <li className="flex items-start gap-2"><Check className="mt-0.5 size-3.5 text-green-500 shrink-0" /> HTTPS endpoint (provided by CoreModel)</li>
+              <li className="flex items-start gap-2"><Check className="mt-0.5 size-3.5 text-green-500 shrink-0" /> HTTPS endpoint (provided by {siteConfig.name})</li>
             </ul>
           </div>
         </div>
@@ -773,14 +774,14 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
       return (
         <div className="flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">
-            Connect CoreModel to Claude Desktop via MCP (Model Context Protocol) for real-time access to your learning data.
+            Connect {siteConfig.name} to Claude Desktop via MCP (Model Context Protocol) for real-time access to your learning data.
           </p>
           <div className="flex flex-col gap-2">
             <p className="text-xs font-medium uppercase text-muted-foreground">Option 1: Local MCP Server</p>
             <ol className="flex flex-col gap-2 text-sm">
               <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Open <span className="font-medium">Claude Desktop</span> menu &rarr; <span className="font-medium">Settings</span></li>
               <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Navigate to <span className="font-medium">Developer</span> tab &rarr; click <span className="font-medium">Edit Config</span></li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Add the CoreModel server to your <code className="rounded bg-muted px-1 text-xs">claude_desktop_config.json</code>:</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Add the {siteConfig.name} server to your <code className="rounded bg-muted px-1 text-xs">claude_desktop_config.json</code>:</li>
             </ol>
             <CodeBlock code={JSON.stringify({
               mcpServers: {
@@ -796,13 +797,13 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
             <ol start={4} className="flex flex-col gap-2 text-sm">
               <li className="flex gap-2"><span className="font-medium text-muted-foreground">4.</span> Completely quit and restart Claude Desktop</li>
               <li className="flex gap-2"><span className="font-medium text-muted-foreground">5.</span> Look for the MCP server indicator in the bottom-right of the input box</li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">6.</span> Click it to verify <Badge variant="secondary" className="text-xs">CoreModel</Badge> tools are available</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">6.</span> Click it to verify <Badge variant="secondary" className="text-xs">{siteConfig.name}</Badge> tools are available</li>
             </ol>
           </div>
           <Separator />
           <div className="flex flex-col gap-2">
             <p className="text-xs font-medium uppercase text-muted-foreground">Option 2: Remote MCP Server</p>
-            <p className="text-sm text-muted-foreground">Connect to the hosted CoreModel MCP server instead of running locally:</p>
+            <p className="text-sm text-muted-foreground">Connect to the hosted {siteConfig.name} MCP server instead of running locally:</p>
             <CodeBlock code={JSON.stringify({
               mcpServers: {
                 coremodel: {
@@ -837,7 +838,7 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
           <div className="flex flex-col gap-2">
             <p className="text-xs font-medium uppercase text-muted-foreground">Setup via Slack App</p>
             <ol className="flex flex-col gap-2 text-sm">
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Click the button below to install the CoreModel Slack app:</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Click the button below to install the {siteConfig.name} Slack app:</li>
             </ol>
             <button
               type="button"
@@ -848,8 +849,8 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
               <ExternalLink className="size-3" />
             </button>
             <ol start={2} className="flex flex-col gap-2 text-sm">
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Authorize CoreModel to post to your chosen channel</li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Configure notifications in CoreModel settings</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Authorize {siteConfig.name} to post to your chosen channel</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Configure notifications in {siteConfig.name} settings</li>
             </ol>
           </div>
           <Separator />
@@ -874,12 +875,12 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
       return (
         <div className="flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">
-            Sync CoreModel with Microsoft Teams for study reminders and progress updates.
+            Sync {siteConfig.name} with Microsoft Teams for study reminders and progress updates.
           </p>
           <div className="flex flex-col gap-2">
             <p className="text-xs font-medium uppercase text-muted-foreground">Install Teams App</p>
             <ol className="flex flex-col gap-2 text-sm">
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Open <span className="font-medium">Microsoft Teams</span> &rarr; Apps &rarr; Search &ldquo;CoreModel&rdquo;</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Open <span className="font-medium">Microsoft Teams</span> &rarr; Apps &rarr; Search &ldquo;{siteConfig.name}&rdquo;</li>
               <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Click <span className="font-medium">Add</span> and authorize the connection</li>
               <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Choose which channel receives updates</li>
             </ol>
@@ -896,7 +897,7 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
             <div className="rounded-lg border p-3 text-xs">
               <div className="flex items-center gap-2 mb-2">
                 <Brain className="size-4 text-primary" />
-                <span className="font-semibold">CoreModel Daily Summary</span>
+                <span className="font-semibold">{siteConfig.name} Daily Summary</span>
               </div>
               <div className="flex flex-col gap-1 text-muted-foreground">
                 <p>Mastery: Linear Algebra — <span className="text-foreground font-medium">55%</span></p>
@@ -916,7 +917,7 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
           <div className="flex flex-col gap-2">
             <p className="text-xs font-medium uppercase text-muted-foreground">Option 1: Discord Bot</p>
             <ol className="flex flex-col gap-2 text-sm">
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Click the button below to add the CoreModel bot:</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Click the button below to add the {siteConfig.name} bot:</li>
             </ol>
             <button
               type="button"
@@ -960,7 +961,7 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
       return (
         <div className="flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">
-            Connect any MCP-compatible client to the CoreModel server for programmatic access to your learning data.
+            Connect any MCP-compatible client to the {siteConfig.name} server for programmatic access to your learning data.
           </p>
           <div className="flex flex-col gap-2">
             <p className="text-xs font-medium uppercase text-muted-foreground">Server Endpoint</p>
@@ -1111,7 +1112,7 @@ function generatePdfHtml(): string {
   const chatHtml = state.chatHistory
     .map(
       (msg) =>
-        `<div style="margin-bottom:12px;"><strong>${msg.role === "user" ? "You" : "CoreModel"}</strong> <em>(${new Date(msg.timestamp).toLocaleString()})</em><blockquote style="margin:4px 0 0 0;padding-left:12px;border-left:3px solid #ddd;color:#555;">${msg.content}</blockquote></div>`
+        `<div style="margin-bottom:12px;"><strong>${msg.role === "user" ? "You" : siteConfig.name}</strong> <em>(${new Date(msg.timestamp).toLocaleString()})</em><blockquote style="margin:4px 0 0 0;padding-left:12px;border-left:3px solid #ddd;color:#555;">${msg.content}</blockquote></div>`
     )
     .join("")
 
@@ -1130,7 +1131,7 @@ function generatePdfHtml(): string {
     .join("")
 
   return `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>CoreModel Export — ${state.topic.name}</title>
+<html><head><meta charset="utf-8"><title>${siteConfig.name} Export — ${state.topic.name}</title>
 <style>
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:800px;margin:0 auto;padding:40px 20px;color:#1a1a1a;font-size:14px;line-height:1.6;}
   h1{font-size:24px;border-bottom:2px solid #6366f1;padding-bottom:8px;}
@@ -1144,7 +1145,7 @@ function generatePdfHtml(): string {
   .meta{color:#666;font-size:13px;}
   @media print{body{padding:0;}}
 </style></head><body>
-<h1>CoreModel Export — ${state.topic.name}</h1>
+<h1>${siteConfig.name} Export — ${state.topic.name}</h1>
 <p class="meta">Exported: ${new Date(state.exportedAt).toLocaleString()} | Domain: ${state.topic.domain} | Sources: ${state.topic.fileCount}</p>
 
 <h2>Project: ${state.project.name}</h2>
