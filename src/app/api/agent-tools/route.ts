@@ -89,6 +89,9 @@ export async function POST(req: Request) {
   }
 
   const selectedTool = tools[toolName as ToolName];
+  if (!selectedTool?.execute) {
+    return NextResponse.json({ error: `Tool "${toolName}" has no execute method` }, { status: 400 });
+  }
   const result = await selectedTool.execute(input as never, {
     toolCallId: `agent-${toolName}-${Date.now()}`,
     messages: [],

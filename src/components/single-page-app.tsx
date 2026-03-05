@@ -1865,10 +1865,7 @@ function AgentTab({
 }) {
   const msgId = useId()
   const scrollRef = useRef<HTMLDivElement>(null)
-  const priorContext = conversationStore.toMessageHistory()
-  const { messages, sendMessage, status, error } = useChat({
-    body: { priorContext },
-  })
+  const { messages, sendMessage, status, error } = useChat()
   const [input, setInput] = useState("")
   const processedToolCalls = useRef(new Set<string>())
 
@@ -1909,7 +1906,8 @@ function AgentTab({
       modality: "text",
       isFinal: true,
     })
-    sendMessage({ text: input })
+    const priorContext = conversationStore.toMessageHistory()
+    sendMessage({ text: input }, { body: { priorContext } })
     setInput("")
   }
 
