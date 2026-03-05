@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useId, useState } from "react"
+import { useCallback, useEffect, useId, useRef, useState } from "react"
 import {
   SiOpenai,
   SiAnthropic,
@@ -20,10 +20,8 @@ import {
   Check,
   ChevronRight,
   Copy,
-  CreditCard,
   AlertCircle,
   Bell,
-  Check,
   Clock,
   ExternalLink,
   FileDown,
@@ -33,8 +31,10 @@ import {
   Lock,
   Mail,
   Palette,
+  DollarSign,
   FlipHorizontal,
   FolderOpen,
+  GraduationCap,
   HelpCircle,
   LogOut,
   Map,
@@ -42,21 +42,25 @@ import {
   MessageSquare,
   Mic,
   MicOff,
+  PaintBucket,
   Pencil,
   Phone,
   Plug,
   RefreshCw,
   Presentation,
   Send,
+  Scale,
+  ScrollText,
   Settings,
   Shield,
+  Stethoscope,
+  Box,
   Table2,
   TrendingUp,
   Upload,
   User,
   X,
   Video,
-  Zap,
 } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -106,6 +110,17 @@ import {
   type LearningProfileData,
 } from "@/components/learning-profile-form"
 import { ClipboardList } from "lucide-react"
+import { UsageDialog } from "@/components/billing/usage-dialog"
+import { BillingDialog } from "@/components/billing/billing-dialog"
+import {
+  LiveKitRoom,
+  useVoiceAssistant,
+  BarVisualizer,
+  useConnectionState,
+  RoomAudioRenderer,
+  useRoomContext,
+} from "@livekit/components-react"
+import { ConnectionState } from "livekit-client"
 
 // ── Mock Data ──
 
@@ -477,6 +492,300 @@ const TOPICS: MockTopic[] = [
       { id: "fmn-1", filename: "HSK4 Word List.pdf", mimeType: "application/pdf", sizeBytes: 800_000, uploadedAt: "2026-02-12", scope: "topic" },
     ],
   },
+  // ── Law & Medicine ──
+  {
+    id: "topic-11",
+    name: "Legal Medicine",
+    domain: "Forensic Science",
+    parentGroup: "Law & Medicine",
+    icon: "Stethoscope",
+    fileCount: 8,
+    projects: [
+      { id: "proj-13", name: "Forensic Pathology Exam", goalType: "exam", mastery: 0.42, masteryUncertainty: 0.16, minutesPerDay: 40, daysPerWeek: 5, deadline: "2026-04-20" },
+      { id: "proj-14", name: "Expert Witness Preparation", goalType: "fluency", mastery: 0.28, masteryUncertainty: 0.22, minutesPerDay: 30, daysPerWeek: 3, deadline: "" },
+    ],
+    guideBlocks: [
+      { id: "gb-lm1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 35, description: "Cause vs manner of death -- 6 case studies", completed: true },
+      { id: "gb-lm2", dayIndex: 2, blockType: "core_practice", plannedMinutes: 30, description: "Toxicology principles -- pharmacokinetics in forensic context", completed: false },
+      { id: "gb-lm3", dayIndex: 3, blockType: "metacog_routine", plannedMinutes: 15, description: "Chain of custody documentation exercise", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-lm1", role: "user", content: "What's the difference between cause and manner of death?", timestamp: "2026-03-02T10:00:00Z" },
+      { id: "msg-lm2", role: "assistant", content: "Cause of death is the medical reason (e.g., myocardial infarction, gunshot wound). Manner of death is the circumstantial classification: natural, accident, suicide, homicide, or undetermined. A forensic pathologist determines both, but manner requires integrating scene investigation with autopsy findings.", timestamp: "2026-03-02T10:01:00Z" },
+    ],
+    masteryData: [
+      { id: "mlm-1", concept: "Forensic Pathology", posteriorMean: 0.45, posteriorSd: 0.14, credibleLow: 0.22, credibleHigh: 0.68 },
+      { id: "mlm-2", concept: "Toxicology", posteriorMean: 0.35, posteriorSd: 0.18, credibleLow: 0.08, credibleHigh: 0.62 },
+      { id: "mlm-3", concept: "Wound Analysis", posteriorMean: 0.40, posteriorSd: 0.16, credibleLow: 0.14, credibleHigh: 0.66 },
+      { id: "mlm-4", concept: "Death Certification", posteriorMean: 0.52, posteriorSd: 0.12, credibleLow: 0.32, credibleHigh: 0.72 },
+    ],
+    files: [
+      { id: "flm-1", filename: "Forensic Pathology Handbook.pdf", mimeType: "application/pdf", sizeBytes: 5_200_000, uploadedAt: "2026-02-10", scope: "topic" },
+      { id: "flm-2", filename: "Toxicology Case Studies.md", mimeType: "text/markdown", sizeBytes: 24_000, uploadedAt: "2026-02-18", scope: "topic" },
+    ],
+  },
+  {
+    id: "topic-12",
+    name: "Constitutional Law",
+    domain: "Law",
+    parentGroup: "Law & Medicine",
+    icon: "Scale",
+    fileCount: 10,
+    projects: [
+      { id: "proj-15", name: "1L Con Law Final", goalType: "exam", mastery: 0.50, masteryUncertainty: 0.14, minutesPerDay: 50, daysPerWeek: 6, deadline: "2026-05-05" },
+      { id: "proj-16", name: "Moot Court Brief", goalType: "project", mastery: 0.38, masteryUncertainty: 0.18, minutesPerDay: 35, daysPerWeek: 4, deadline: "2026-04-01" },
+    ],
+    guideBlocks: [
+      { id: "gb-cl1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 40, description: "Commerce Clause doctrine -- 4 landmark cases", completed: true },
+      { id: "gb-cl2", dayIndex: 2, blockType: "core_practice", plannedMinutes: 35, description: "Due Process -- substantive vs procedural", completed: true },
+      { id: "gb-cl3", dayIndex: 3, blockType: "core_practice", plannedMinutes: 40, description: "Equal Protection analysis -- tiers of scrutiny", completed: false },
+      { id: "gb-cl4", dayIndex: 4, blockType: "metacog_routine", plannedMinutes: 20, description: "Issue-spotting practice exam under timed conditions", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-cl1", role: "user", content: "How do I remember the tiers of scrutiny?", timestamp: "2026-03-03T09:00:00Z" },
+      { id: "msg-cl2", role: "assistant", content: "Think RIS: Rational basis (most laws, easy to pass), Intermediate scrutiny (gender -- 'substantially related to important government interest'), and Strict scrutiny (race, religion -- 'narrowly tailored to compelling interest'). The burden shifts as you go up: government must justify more.", timestamp: "2026-03-03T09:01:00Z" },
+    ],
+    masteryData: [
+      { id: "mcl-1", concept: "Judicial Review", posteriorMean: 0.62, posteriorSd: 0.10, credibleLow: 0.45, credibleHigh: 0.79 },
+      { id: "mcl-2", concept: "Commerce Clause", posteriorMean: 0.55, posteriorSd: 0.12, credibleLow: 0.35, credibleHigh: 0.75 },
+      { id: "mcl-3", concept: "Due Process", posteriorMean: 0.48, posteriorSd: 0.14, credibleLow: 0.24, credibleHigh: 0.72 },
+      { id: "mcl-4", concept: "Equal Protection", posteriorMean: 0.42, posteriorSd: 0.16, credibleLow: 0.16, credibleHigh: 0.68 },
+      { id: "mcl-5", concept: "First Amendment", posteriorMean: 0.58, posteriorSd: 0.11, credibleLow: 0.40, credibleHigh: 0.76 },
+    ],
+    files: [
+      { id: "fcl-1", filename: "Con Law Outline.md", mimeType: "text/markdown", sizeBytes: 42_000, uploadedAt: "2026-02-05", scope: "topic" },
+      { id: "fcl-2", filename: "Commerce Clause Cases.pdf", mimeType: "application/pdf", sizeBytes: 3_800_000, uploadedAt: "2026-02-15", scope: "project" },
+    ],
+  },
+  {
+    id: "topic-13",
+    name: "Bioethics",
+    domain: "Ethics",
+    parentGroup: "Law & Medicine",
+    icon: "Shield",
+    fileCount: 5,
+    projects: [
+      { id: "proj-17", name: "Ethics Seminar Paper", goalType: "project", mastery: 0.35, masteryUncertainty: 0.20, minutesPerDay: 30, daysPerWeek: 3, deadline: "2026-04-15" },
+    ],
+    guideBlocks: [
+      { id: "gb-be1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 30, description: "Autonomy vs beneficence -- 3 clinical dilemmas", completed: true },
+      { id: "gb-be2", dayIndex: 2, blockType: "core_practice", plannedMinutes: 25, description: "Informed consent -- landmark cases and edge cases", completed: false },
+      { id: "gb-be3", dayIndex: 3, blockType: "metacog_routine", plannedMinutes: 15, description: "Ethical reasoning framework self-assessment", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-be1", role: "user", content: "How do the four principles of bioethics interact when they conflict?", timestamp: "2026-03-01T11:00:00Z" },
+      { id: "msg-be2", role: "assistant", content: "Beauchamp & Childress's four principles (autonomy, beneficence, non-maleficence, justice) are prima facie -- none automatically trumps the others. When they conflict, you weigh context: a competent patient's refusal of treatment (autonomy) generally overrides beneficence, but public health emergencies may shift the balance toward justice.", timestamp: "2026-03-01T11:01:00Z" },
+    ],
+    masteryData: [
+      { id: "mbe-1", concept: "Four Principles", posteriorMean: 0.48, posteriorSd: 0.14, credibleLow: 0.24, credibleHigh: 0.72 },
+      { id: "mbe-2", concept: "Informed Consent", posteriorMean: 0.38, posteriorSd: 0.17, credibleLow: 0.10, credibleHigh: 0.66 },
+      { id: "mbe-3", concept: "Research Ethics", posteriorMean: 0.30, posteriorSd: 0.20, credibleLow: 0.04, credibleHigh: 0.58 },
+    ],
+    files: [
+      { id: "fbe-1", filename: "Beauchamp & Childress Summary.pdf", mimeType: "application/pdf", sizeBytes: 2_600_000, uploadedAt: "2026-02-12", scope: "topic" },
+    ],
+  },
+  // ── Economics ──
+  {
+    id: "topic-14",
+    name: "Microeconomics",
+    domain: "Economics",
+    parentGroup: "Economics",
+    icon: "DollarSign",
+    fileCount: 7,
+    projects: [
+      { id: "proj-18", name: "Econ 101 Midterm", goalType: "exam", mastery: 0.55, masteryUncertainty: 0.12, minutesPerDay: 35, daysPerWeek: 5, deadline: "2026-03-25" },
+    ],
+    guideBlocks: [
+      { id: "gb-me1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 30, description: "Supply and demand -- elasticity problems", completed: true },
+      { id: "gb-me2", dayIndex: 2, blockType: "core_practice", plannedMinutes: 30, description: "Market structures -- perfect competition vs monopoly", completed: false },
+      { id: "gb-me3", dayIndex: 3, blockType: "metacog_routine", plannedMinutes: 15, description: "Graph interpretation self-test", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-me1", role: "user", content: "When is a market Pareto efficient?", timestamp: "2026-03-02T14:00:00Z" },
+      { id: "msg-me2", role: "assistant", content: "A market outcome is Pareto efficient when no one can be made better off without making someone else worse off. In perfect competition, this occurs at equilibrium (First Welfare Theorem). Market failures -- externalities, public goods, information asymmetry -- break this.", timestamp: "2026-03-02T14:01:00Z" },
+    ],
+    masteryData: [
+      { id: "mme-1", concept: "Supply & Demand", posteriorMean: 0.68, posteriorSd: 0.09, credibleLow: 0.52, credibleHigh: 0.84 },
+      { id: "mme-2", concept: "Elasticity", posteriorMean: 0.55, posteriorSd: 0.12, credibleLow: 0.35, credibleHigh: 0.75 },
+      { id: "mme-3", concept: "Market Structures", posteriorMean: 0.42, posteriorSd: 0.15, credibleLow: 0.18, credibleHigh: 0.66 },
+      { id: "mme-4", concept: "Game Theory", posteriorMean: 0.30, posteriorSd: 0.19, credibleLow: 0.04, credibleHigh: 0.58 },
+    ],
+    files: [
+      { id: "fme-1", filename: "Mankiw Ch4-6 Notes.pdf", mimeType: "application/pdf", sizeBytes: 3_400_000, uploadedAt: "2026-02-08", scope: "topic" },
+      { id: "fme-2", filename: "Elasticity Problem Set.md", mimeType: "text/markdown", sizeBytes: 9_600, uploadedAt: "2026-02-20", scope: "project" },
+    ],
+  },
+  {
+    id: "topic-15",
+    name: "Macroeconomics",
+    domain: "Economics",
+    parentGroup: "Economics",
+    icon: "TrendingUp",
+    fileCount: 6,
+    projects: [
+      { id: "proj-19", name: "IS-LM Model Mastery", goalType: "fluency", mastery: 0.32, masteryUncertainty: 0.20, minutesPerDay: 30, daysPerWeek: 4, deadline: "" },
+    ],
+    guideBlocks: [
+      { id: "gb-ma1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 30, description: "GDP accounting -- expenditure vs income approach", completed: true },
+      { id: "gb-ma2", dayIndex: 2, blockType: "core_practice", plannedMinutes: 35, description: "IS-LM model -- deriving equilibrium", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-ma1", role: "user", content: "Why does expansionary fiscal policy shift the IS curve right?", timestamp: "2026-03-01T15:00:00Z" },
+      { id: "msg-ma2", role: "assistant", content: "Government spending (G) is a component of aggregate demand. When G increases, for any given interest rate, total output demanded is higher -- so the IS curve (goods market equilibrium) shifts right. The new equilibrium has higher output but also higher interest rates (crowding out).", timestamp: "2026-03-01T15:01:00Z" },
+    ],
+    masteryData: [
+      { id: "mma-1", concept: "GDP & National Accounts", posteriorMean: 0.50, posteriorSd: 0.13, credibleLow: 0.28, credibleHigh: 0.72 },
+      { id: "mma-2", concept: "IS-LM Model", posteriorMean: 0.28, posteriorSd: 0.20, credibleLow: 0.04, credibleHigh: 0.56 },
+      { id: "mma-3", concept: "Monetary Policy", posteriorMean: 0.35, posteriorSd: 0.17, credibleLow: 0.08, credibleHigh: 0.62 },
+    ],
+    files: [
+      { id: "fma-1", filename: "Blanchard Macro Notes.pdf", mimeType: "application/pdf", sizeBytes: 4_100_000, uploadedAt: "2026-02-14", scope: "topic" },
+    ],
+  },
+  // ── Humanities ──
+  {
+    id: "topic-16",
+    name: "Political Philosophy",
+    domain: "Philosophy",
+    parentGroup: "Humanities",
+    icon: "ScrollText",
+    fileCount: 6,
+    projects: [
+      { id: "proj-20", name: "Justice & Equality Paper", goalType: "project", mastery: 0.40, masteryUncertainty: 0.18, minutesPerDay: 35, daysPerWeek: 4, deadline: "2026-04-10" },
+    ],
+    guideBlocks: [
+      { id: "gb-pp1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 30, description: "Social contract theory -- Hobbes, Locke, Rousseau comparison", completed: true },
+      { id: "gb-pp2", dayIndex: 2, blockType: "core_practice", plannedMinutes: 35, description: "Rawls' Theory of Justice -- veil of ignorance", completed: false },
+      { id: "gb-pp3", dayIndex: 3, blockType: "metacog_routine", plannedMinutes: 20, description: "Argument mapping exercise -- liberty vs equality", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-pp1", role: "user", content: "What's the difference between Rawls and Nozick on justice?", timestamp: "2026-03-02T16:00:00Z" },
+      { id: "msg-pp2", role: "assistant", content: "Rawls (justice as fairness): rational agents behind a 'veil of ignorance' would choose equal basic liberties and only accept inequalities that benefit the worst-off (difference principle). Nozick (entitlement theory): justice is about how you got what you have, not the pattern of distribution. Legitimate acquisition + voluntary transfer = just outcome, regardless of inequality.", timestamp: "2026-03-02T16:01:00Z" },
+    ],
+    masteryData: [
+      { id: "mpp-1", concept: "Social Contract", posteriorMean: 0.52, posteriorSd: 0.12, credibleLow: 0.32, credibleHigh: 0.72 },
+      { id: "mpp-2", concept: "Rawlsian Justice", posteriorMean: 0.38, posteriorSd: 0.16, credibleLow: 0.12, credibleHigh: 0.64 },
+      { id: "mpp-3", concept: "Libertarianism", posteriorMean: 0.35, posteriorSd: 0.18, credibleLow: 0.08, credibleHigh: 0.62 },
+    ],
+    files: [
+      { id: "fpp-1", filename: "Theory of Justice Summary.pdf", mimeType: "application/pdf", sizeBytes: 2_900_000, uploadedAt: "2026-02-10", scope: "topic" },
+      { id: "fpp-2", filename: "Nozick vs Rawls Comparison.md", mimeType: "text/markdown", sizeBytes: 14_000, uploadedAt: "2026-02-22", scope: "topic" },
+    ],
+  },
+  {
+    id: "topic-17",
+    name: "Comparative Literature",
+    domain: "Literature",
+    parentGroup: "Humanities",
+    icon: "GraduationCap",
+    fileCount: 5,
+    projects: [
+      { id: "proj-21", name: "Modernism Seminar Paper", goalType: "project", mastery: 0.45, masteryUncertainty: 0.16, minutesPerDay: 30, daysPerWeek: 4, deadline: "2026-04-18" },
+    ],
+    guideBlocks: [
+      { id: "gb-lt1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 30, description: "Close reading -- Joyce's Ulysses Ch. 1-3", completed: true },
+      { id: "gb-lt2", dayIndex: 2, blockType: "core_practice", plannedMinutes: 25, description: "Comparative analysis -- Kafka vs Camus on absurdism", completed: false },
+      { id: "gb-lt3", dayIndex: 3, blockType: "metacog_routine", plannedMinutes: 15, description: "Thesis development workshop", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-lt1", role: "user", content: "How do I compare themes across different literary traditions?", timestamp: "2026-03-01T13:00:00Z" },
+      { id: "msg-lt2", role: "assistant", content: "Start with a shared theme (e.g., alienation), then analyze how each tradition's cultural context shapes its expression. Kafka's bureaucratic absurdity reflects Habsburg anxiety; Camus's Meursault reflects French existentialism. Compare technique (narrative voice, symbolism) alongside theme for depth.", timestamp: "2026-03-01T13:01:00Z" },
+    ],
+    masteryData: [
+      { id: "mlt-1", concept: "Close Reading", posteriorMean: 0.55, posteriorSd: 0.12, credibleLow: 0.35, credibleHigh: 0.75 },
+      { id: "mlt-2", concept: "Modernist Literature", posteriorMean: 0.42, posteriorSd: 0.15, credibleLow: 0.18, credibleHigh: 0.66 },
+      { id: "mlt-3", concept: "Critical Theory", posteriorMean: 0.30, posteriorSd: 0.19, credibleLow: 0.04, credibleHigh: 0.58 },
+    ],
+    files: [
+      { id: "flt-1", filename: "Modernism Reading List.md", mimeType: "text/markdown", sizeBytes: 8_200, uploadedAt: "2026-02-08", scope: "topic" },
+    ],
+  },
+  {
+    id: "topic-18",
+    name: "Art History",
+    domain: "Art",
+    parentGroup: "Humanities",
+    icon: "PaintBucket",
+    fileCount: 4,
+    projects: [
+      { id: "proj-22", name: "Renaissance to Modern Survey", goalType: "exam", mastery: 0.38, masteryUncertainty: 0.18, minutesPerDay: 25, daysPerWeek: 3, deadline: "2026-04-25" },
+    ],
+    guideBlocks: [
+      { id: "gb-ah1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 25, description: "Renaissance masters -- Botticelli, da Vinci, Michelangelo", completed: true },
+      { id: "gb-ah2", dayIndex: 2, blockType: "core_practice", plannedMinutes: 25, description: "Impressionism -- Monet, Renoir, Degas visual analysis", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-ah1", role: "user", content: "What distinguishes Baroque from Renaissance art?", timestamp: "2026-03-02T11:00:00Z" },
+      { id: "msg-ah2", role: "assistant", content: "Renaissance emphasizes balance, harmony, and idealized forms (think Raphael's symmetry). Baroque explodes that with drama: strong diagonals, chiaroscuro (Caravaggio's extreme light/dark), emotional intensity, and movement. Renaissance = calm perfection; Baroque = theatrical emotion.", timestamp: "2026-03-02T11:01:00Z" },
+    ],
+    masteryData: [
+      { id: "mah-1", concept: "Renaissance", posteriorMean: 0.50, posteriorSd: 0.13, credibleLow: 0.28, credibleHigh: 0.72 },
+      { id: "mah-2", concept: "Baroque & Rococo", posteriorMean: 0.35, posteriorSd: 0.17, credibleLow: 0.08, credibleHigh: 0.62 },
+      { id: "mah-3", concept: "Modern Art", posteriorMean: 0.28, posteriorSd: 0.20, credibleLow: 0.04, credibleHigh: 0.56 },
+    ],
+    files: [
+      { id: "fah-1", filename: "Art Movements Timeline.pdf", mimeType: "application/pdf", sizeBytes: 6_800_000, uploadedAt: "2026-02-05", scope: "topic" },
+    ],
+  },
+  // ── Social Sciences ──
+  {
+    id: "topic-19",
+    name: "Cognitive Psychology",
+    domain: "Psychology",
+    parentGroup: "Social Sciences",
+    icon: "Brain",
+    fileCount: 6,
+    projects: [
+      { id: "proj-23", name: "Memory & Learning Final", goalType: "exam", mastery: 0.48, masteryUncertainty: 0.14, minutesPerDay: 35, daysPerWeek: 5, deadline: "2026-04-12" },
+    ],
+    guideBlocks: [
+      { id: "gb-cp1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 30, description: "Working memory models -- Baddeley & Hitch", completed: true },
+      { id: "gb-cp2", dayIndex: 2, blockType: "core_practice", plannedMinutes: 30, description: "Dual process theory -- System 1 vs System 2", completed: false },
+      { id: "gb-cp3", dayIndex: 3, blockType: "metacog_routine", plannedMinutes: 15, description: "Cognitive bias self-identification exercise", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-cp1", role: "user", content: "What's the testing effect and why does it work?", timestamp: "2026-03-03T10:00:00Z" },
+      { id: "msg-cp2", role: "assistant", content: "The testing effect (retrieval practice): actively recalling information strengthens memory more than re-reading. It works because retrieval creates new retrieval routes, exposes gaps in knowledge, and engages effortful processing (desirable difficulty). This is why flashcards beat highlighting.", timestamp: "2026-03-03T10:01:00Z" },
+    ],
+    masteryData: [
+      { id: "mcp-1", concept: "Memory Models", posteriorMean: 0.55, posteriorSd: 0.12, credibleLow: 0.35, credibleHigh: 0.75 },
+      { id: "mcp-2", concept: "Attention", posteriorMean: 0.48, posteriorSd: 0.14, credibleLow: 0.24, credibleHigh: 0.72 },
+      { id: "mcp-3", concept: "Decision Making", posteriorMean: 0.40, posteriorSd: 0.16, credibleLow: 0.14, credibleHigh: 0.66 },
+      { id: "mcp-4", concept: "Cognitive Biases", posteriorMean: 0.52, posteriorSd: 0.13, credibleLow: 0.30, credibleHigh: 0.74 },
+    ],
+    files: [
+      { id: "fcp-1", filename: "Kahneman - Thinking Fast Slow Notes.pdf", mimeType: "application/pdf", sizeBytes: 3_200_000, uploadedAt: "2026-02-12", scope: "topic" },
+      { id: "fcp-2", filename: "Memory Models Comparison.md", mimeType: "text/markdown", sizeBytes: 11_000, uploadedAt: "2026-02-25", scope: "topic" },
+    ],
+  },
+  {
+    id: "topic-20",
+    name: "International Relations",
+    domain: "Political Science",
+    parentGroup: "Social Sciences",
+    icon: "Globe",
+    fileCount: 5,
+    projects: [
+      { id: "proj-24", name: "IR Theory Comprehensive", goalType: "exam", mastery: 0.40, masteryUncertainty: 0.17, minutesPerDay: 30, daysPerWeek: 4, deadline: "2026-04-20" },
+    ],
+    guideBlocks: [
+      { id: "gb-ir1", dayIndex: 1, blockType: "core_practice", plannedMinutes: 30, description: "Realism vs liberalism -- core assumptions comparison", completed: true },
+      { id: "gb-ir2", dayIndex: 2, blockType: "core_practice", plannedMinutes: 30, description: "Constructivism -- norms, identity, and international institutions", completed: false },
+    ],
+    chatHistory: [
+      { id: "msg-ir1", role: "user", content: "How does constructivism differ from realism in IR?", timestamp: "2026-03-02T13:00:00Z" },
+      { id: "msg-ir2", role: "assistant", content: "Realism: states are rational, self-interested actors in anarchy; power and security drive behavior (structure -> action). Constructivism: anarchy is 'what states make of it' (Wendt). Identities and norms shape interests -- states don't have fixed preferences, they're socially constructed through interaction.", timestamp: "2026-03-02T13:01:00Z" },
+    ],
+    masteryData: [
+      { id: "mir-1", concept: "Realism", posteriorMean: 0.52, posteriorSd: 0.12, credibleLow: 0.32, credibleHigh: 0.72 },
+      { id: "mir-2", concept: "Liberalism", posteriorMean: 0.45, posteriorSd: 0.14, credibleLow: 0.22, credibleHigh: 0.68 },
+      { id: "mir-3", concept: "Constructivism", posteriorMean: 0.32, posteriorSd: 0.18, credibleLow: 0.06, credibleHigh: 0.60 },
+    ],
+    files: [
+      { id: "fir-1", filename: "IR Theory Comparison Chart.md", mimeType: "text/markdown", sizeBytes: 16_000, uploadedAt: "2026-02-15", scope: "topic" },
+    ],
+  },
 ]
 
 const MOCK_UPLOADS: MockUpload[] = [
@@ -506,6 +815,14 @@ const TOPIC_ICON_MAP: Record<string, typeof Brain> = {
   AudioLines,
   MessageSquare,
   Pencil,
+  Stethoscope,
+  Scale,
+  Shield,
+  DollarSign,
+  ScrollText,
+  GraduationCap,
+  PaintBucket,
+  Globe,
 }
 
 const GROUP_ICONS: Record<string, typeof Brain> = {
@@ -513,6 +830,10 @@ const GROUP_ICONS: Record<string, typeof Brain> = {
   "Computer Science": Braces,
   Sciences: FlipHorizontal,
   Languages: MessageSquare,
+  "Law & Medicine": Scale,
+  Economics: DollarSign,
+  Humanities: ScrollText,
+  "Social Sciences": Brain,
 }
 
 const AUDIT_EVENTS: MockAuditEvent[] = [
@@ -701,6 +1022,8 @@ export function SinglePageApp() {
   const [scrollToArtifactId, setScrollToArtifactId] = useState<string | null>(null)
   const [topicNavOpen, setTopicNavOpen] = useState(false)
   const [assessmentMode, setAssessmentMode] = useState(false)
+  const [profileSheetOpen, setProfileSheetOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [userProfile, setUserProfile] = useState<LearningProfileData>(MOCK_COMPLETED_PROFILE)
 
   const handleOpenArtifactType = useCallback((type: ArtifactType, scrollToId?: string) => {
@@ -776,7 +1099,7 @@ export function SinglePageApp() {
               </TabsList>
               <ConnectDialog />
               <AuditDialog />
-              <Sheet>
+              <Sheet open={profileSheetOpen} onOpenChange={setProfileSheetOpen}>
                 <SheetTrigger
                   render={
                     <button
@@ -797,7 +1120,7 @@ export function SinglePageApp() {
                     <SheetTitle>Maya Chen</SheetTitle>
                   </SheetHeader>
                   <div className="flex-1 overflow-y-auto p-6">
-                    <OverviewTab onRetakeAssessment={() => setAssessmentMode(true)} />
+                    <OverviewTab onRetakeAssessment={() => { setAssessmentMode(true); setProfileSheetOpen(false) }} />
                   </div>
                   <Separator />
                   <AccountSection />
@@ -816,7 +1139,7 @@ export function SinglePageApp() {
             </Button>
 
             {/* Mobile: Hamburger menu */}
-            <Sheet>
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger
                 render={
                   <Button variant="ghost" size="icon-sm" className="lg:hidden" />
@@ -854,7 +1177,7 @@ export function SinglePageApp() {
 
                   <Separator />
 
-                  <Sheet>
+                  <Sheet open={profileSheetOpen} onOpenChange={setProfileSheetOpen}>
                     <SheetTrigger
                       render={
                         <button
@@ -873,7 +1196,7 @@ export function SinglePageApp() {
                         <SheetTitle>Maya Chen</SheetTitle>
                       </SheetHeader>
                       <div className="flex-1 overflow-y-auto p-6">
-                        <OverviewTab onRetakeAssessment={() => setAssessmentMode(true)} />
+                        <OverviewTab onRetakeAssessment={() => { setAssessmentMode(true); setProfileSheetOpen(false); setMobileMenuOpen(false) }} />
                       </div>
                       <Separator />
                       <AccountSection />
@@ -1233,8 +1556,8 @@ const CONNECT_INTEGRATIONS: {
   description: string
   connected: boolean
 }[] = [
-  { key: "chatgpt", label: "ChatGPT", icon: SiOpenai, description: "Connect your OpenAI account", connected: false },
-  { key: "claude", label: "Claude", icon: SiAnthropic, description: "Connect your Anthropic account", connected: true },
+  { key: "chatgpt", label: "ChatGPT", icon: SiOpenai, description: "Connect via MCP Connector", connected: false },
+  { key: "claude", label: "Claude", icon: SiAnthropic, description: "Connect via Claude Desktop MCP", connected: true },
   { key: "slack", label: "Slack", icon: SiSlack, description: "Post updates to Slack channels", connected: false },
   { key: "teams", label: "Teams", icon: BsMicrosoftTeams, description: "Sync with Microsoft Teams", connected: false },
   { key: "discord", label: "Discord", icon: SiDiscord, description: "Share progress to Discord", connected: false },
@@ -1282,29 +1605,39 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
       return (
         <div className="flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">
-            Connect DeepLearn as a custom GPT action or use the API plugin to sync your learning data with ChatGPT.
+            Connect DeepLearn to ChatGPT as an MCP Connector for real-time access to your learning data.
           </p>
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Option 1: Custom GPT Action</p>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Setup via MCP Connector</p>
             <ol className="flex flex-col gap-2 text-sm">
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Open <span className="font-medium">ChatGPT</span> &rarr; Explore GPTs &rarr; Create</li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Under <span className="font-medium">Configure</span>, scroll to <span className="font-medium">Actions</span> &rarr; Create new action</li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Import the OpenAPI schema from:</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Open <span className="font-medium">ChatGPT</span> &rarr; Settings &rarr; <span className="font-medium">Apps &amp; Connectors</span></li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Scroll to <span className="font-medium">Advanced settings</span> and enable <span className="font-medium">Developer mode</span></li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Go to <span className="font-medium">Connectors</span> &rarr; <span className="font-medium">Create</span></li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">4.</span> Fill in the connector details:</li>
             </ol>
-            <CodeBlock code={`${MOCK_API_URL}/openapi.json`} />
-            <ol start={4} className="flex flex-col gap-2 text-sm">
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">4.</span> Set authentication to <span className="font-medium">API Key</span> with your DeepLearn token:</li>
-            </ol>
-            <CodeBlock code="dl_sk_live_xxxxxxxxxxxxxxxxxxxx" />
+            <CodeBlock code={`Connector name: DeepLearn\nDescription: Access learning data, mastery levels, and study guides\nConnector URL: ${MOCK_MCP_URL.replace("/sse", "/mcp")}`} />
             <ol start={5} className="flex flex-col gap-2 text-sm">
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">5.</span> Save and test by asking: &ldquo;What are my current mastery levels?&rdquo;</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">5.</span> Verify the connection &mdash; you should see the advertised tools</li>
             </ol>
           </div>
           <Separator />
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Option 2: ChatGPT Plugin (API)</p>
-            <p className="text-sm text-muted-foreground">Use the ChatGPT Plugins store to connect directly:</p>
-            <CodeBlock code={`Plugin URL: ${MOCK_API_URL}/chatgpt-plugin\nPlugin Name: DeepLearn\nAuth Type: Bearer Token`} />
+            <p className="text-xs font-medium uppercase text-muted-foreground">Using Your Connector</p>
+            <ol className="flex flex-col gap-2 text-sm">
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Open a new ChatGPT conversation</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Click the <span className="font-medium">+</span> button near the message composer &rarr; <span className="font-medium">More</span></li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Select <span className="font-medium">DeepLearn</span> from available tools</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">4.</span> Ask: &ldquo;What are my current mastery levels?&rdquo;</li>
+            </ol>
+          </div>
+          <Separator />
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Requirements</p>
+            <ul className="flex flex-col gap-1.5 text-sm text-muted-foreground">
+              <li className="flex items-start gap-2"><Check className="mt-0.5 size-3.5 text-green-500 shrink-0" /> ChatGPT Pro, Team, Enterprise, or Edu plan</li>
+              <li className="flex items-start gap-2"><Check className="mt-0.5 size-3.5 text-green-500 shrink-0" /> Developer mode enabled</li>
+              <li className="flex items-start gap-2"><Check className="mt-0.5 size-3.5 text-green-500 shrink-0" /> HTTPS endpoint (provided by DeepLearn)</li>
+            </ul>
           </div>
         </div>
       )
@@ -1315,10 +1648,11 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
             Connect DeepLearn to Claude Desktop via MCP (Model Context Protocol) for real-time access to your learning data.
           </p>
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Claude Desktop Configuration</p>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Option 1: Local MCP Server</p>
             <ol className="flex flex-col gap-2 text-sm">
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Open Claude Desktop &rarr; Settings &rarr; Developer &rarr; Edit Config</li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Add this to your <code className="rounded bg-muted px-1 text-xs">claude_desktop_config.json</code>:</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Open <span className="font-medium">Claude Desktop</span> menu &rarr; <span className="font-medium">Settings</span></li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Navigate to <span className="font-medium">Developer</span> tab &rarr; click <span className="font-medium">Edit Config</span></li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Add the DeepLearn server to your <code className="rounded bg-muted px-1 text-xs">claude_desktop_config.json</code>:</li>
             </ol>
             <CodeBlock code={JSON.stringify({
               mcpServers: {
@@ -1331,19 +1665,20 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
                 }
               }
             }, null, 2)} />
-            <ol start={3} className="flex flex-col gap-2 text-sm">
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Restart Claude Desktop</li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">4.</span> You should see <Badge variant="secondary" className="text-xs">DeepLearn</Badge> in the MCP tools list</li>
+            <ol start={4} className="flex flex-col gap-2 text-sm">
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">4.</span> Completely quit and restart Claude Desktop</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">5.</span> Look for the MCP server indicator in the bottom-right of the input box</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">6.</span> Click it to verify <Badge variant="secondary" className="text-xs">DeepLearn</Badge> tools are available</li>
             </ol>
           </div>
           <Separator />
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Alternative: Remote MCP Server</p>
-            <p className="text-sm text-muted-foreground">If you prefer a hosted server instead of running locally:</p>
+            <p className="text-xs font-medium uppercase text-muted-foreground">Option 2: Remote MCP Server</p>
+            <p className="text-sm text-muted-foreground">Connect to the hosted DeepLearn MCP server instead of running locally:</p>
             <CodeBlock code={JSON.stringify({
               mcpServers: {
                 deeplearn: {
-                  url: MOCK_MCP_URL,
+                  url: MOCK_MCP_URL.replace("/sse", "/mcp"),
                   headers: {
                     Authorization: "Bearer dl_sk_live_xxxxxxxxxxxxxxxxxxxx"
                   }
@@ -1924,257 +2259,6 @@ function ConnectDialog() {
   )
 }
 
-// ── Usage Dialog ──
-
-const USAGE_HISTORY = [
-  { date: "Mar 5", generations: 42, inputTokens: 18_400, outputTokens: 12_300, credits: 3.2 },
-  { date: "Mar 4", generations: 67, inputTokens: 31_200, outputTokens: 22_800, credits: 5.8 },
-  { date: "Mar 3", generations: 38, inputTokens: 14_600, outputTokens: 9_100, credits: 2.4 },
-  { date: "Mar 2", generations: 55, inputTokens: 24_000, outputTokens: 16_500, credits: 4.1 },
-  { date: "Mar 1", generations: 71, inputTokens: 33_800, outputTokens: 25_200, credits: 6.3 },
-  { date: "Feb 28", generations: 29, inputTokens: 11_200, outputTokens: 7_400, credits: 1.9 },
-  { date: "Feb 27", generations: 48, inputTokens: 20_600, outputTokens: 14_100, credits: 3.7 },
-] as const
-
-function UsageDialog() {
-  const rowId = useId()
-  const creditsUsed = 27.4
-  const creditsTotal = 50
-
-  return (
-    <Dialog>
-      <DialogTrigger
-        render={
-          <button
-            type="button"
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
-          />
-        }
-      >
-        <BarChart3 className="size-4 text-muted-foreground" />
-        Usage
-      </DialogTrigger>
-      <DialogContent className="flex max-h-[80dvh] flex-col sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Usage</DialogTitle>
-          <DialogDescription>
-            Generation and token usage for this billing period
-          </DialogDescription>
-        </DialogHeader>
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto -mx-6 px-6">
-          {/* Credits overview */}
-          <Card>
-            <CardContent className="pt-6 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Zap className="size-4 text-primary" />
-                  <span className="text-sm font-medium">Credits Used</span>
-                </div>
-                <span className="text-sm font-semibold tabular-nums">
-                  {creditsUsed} / {creditsTotal}
-                </span>
-              </div>
-              <Progress value={(creditsUsed / creditsTotal) * 100}>
-                <ProgressLabel className="sr-only">Credits used</ProgressLabel>
-              </Progress>
-              <p className="text-xs text-muted-foreground">
-                {creditsTotal - creditsUsed} credits remaining &middot; Resets Apr 5, 2026
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Summary stats */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-lg border p-3 text-center">
-              <p className="text-lg font-bold tabular-nums">350</p>
-              <p className="text-xs text-muted-foreground">Generations</p>
-            </div>
-            <div className="rounded-lg border p-3 text-center">
-              <p className="text-lg font-bold tabular-nums">153K</p>
-              <p className="text-xs text-muted-foreground">Input Tokens</p>
-            </div>
-            <div className="rounded-lg border p-3 text-center">
-              <p className="text-lg font-bold tabular-nums">107K</p>
-              <p className="text-xs text-muted-foreground">Output Tokens</p>
-            </div>
-          </div>
-
-          {/* Daily breakdown */}
-          <div>
-            <p className="mb-2 text-xs font-medium text-muted-foreground uppercase">
-              Daily Breakdown
-            </p>
-            <div className="rounded-lg border">
-              <div className="grid grid-cols-5 gap-2 border-b px-3 py-2 text-xs font-medium text-muted-foreground">
-                <span>Date</span>
-                <span className="text-right">Gens</span>
-                <span className="text-right">In Tokens</span>
-                <span className="text-right">Out Tokens</span>
-                <span className="text-right">Credits</span>
-              </div>
-              {USAGE_HISTORY.map((row) => (
-                <div
-                  key={`${rowId}-${row.date}`}
-                  className="grid grid-cols-5 gap-2 border-b px-3 py-2 text-sm last:border-0"
-                >
-                  <span className="text-muted-foreground">{row.date}</span>
-                  <span className="text-right tabular-nums">{row.generations}</span>
-                  <span className="text-right tabular-nums">{(row.inputTokens / 1000).toFixed(1)}K</span>
-                  <span className="text-right tabular-nums">{(row.outputTokens / 1000).toFixed(1)}K</span>
-                  <span className="text-right tabular-nums">{row.credits}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-// ── Billing Dialog ──
-
-function BillingDialog() {
-  const currentPlan = "Pro"
-  const creditsRemaining = 22.6
-  const nextBillingDate = "Apr 5, 2026"
-  const monthlyPrice = "$29"
-
-  return (
-    <Dialog>
-      <DialogTrigger
-        render={
-          <button
-            type="button"
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
-          />
-        }
-      >
-        <CreditCard className="size-4 text-muted-foreground" />
-        Billing
-      </DialogTrigger>
-      <DialogContent className="flex max-h-[80dvh] flex-col sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Billing</DialogTitle>
-          <DialogDescription>
-            Manage your subscription, credits, and payment method
-          </DialogDescription>
-        </DialogHeader>
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto -mx-6 px-6">
-          {/* Current plan */}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Current Plan</CardTitle>
-                <Badge>{currentPlan}</Badge>
-              </div>
-              <CardDescription>
-                {monthlyPrice}/month &middot; Next billing {nextBillingDate}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Credits remaining</span>
-                <span className="font-medium tabular-nums">{creditsRemaining} credits</span>
-              </div>
-              <Progress value={(creditsRemaining / 50) * 100}>
-                <ProgressLabel className="sr-only">Credits remaining</ProgressLabel>
-              </Progress>
-            </CardContent>
-          </Card>
-
-          {/* Buy more credits */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Need More Credits?</CardTitle>
-              <CardDescription>
-                Purchase additional credit packs or upgrade your plan
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { amount: 25, price: "$10" },
-                  { amount: 75, price: "$25" },
-                  { amount: 200, price: "$59" },
-                ].map((pack) => (
-                  <button
-                    type="button"
-                    key={`credit-pack-${pack.amount}`}
-                    className="flex flex-col items-center gap-1 rounded-xl border border-border p-3 transition-colors hover:border-primary hover:bg-primary/5"
-                  >
-                    <span className="text-lg font-bold">{pack.amount}</span>
-                    <span className="text-xs text-muted-foreground">credits</span>
-                    <span className="text-xs font-medium text-primary">{pack.price}</span>
-                  </button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Payment method */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Payment Method</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-3 rounded-lg border p-3">
-                <CreditCard className="size-5 text-muted-foreground" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Visa ending in 4242</p>
-                  <p className="text-xs text-muted-foreground">Expires 08/2027</p>
-                </div>
-                <Badge variant="outline" className="text-xs">Default</Badge>
-              </div>
-              <Button variant="outline" size="sm" className="w-full">
-                <ExternalLink className="size-3.5" data-icon="inline-start" />
-                Manage in Stripe
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* When credits run out */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">When Credits Run Out</CardTitle>
-              <CardDescription>
-                Choose what happens when you exhaust your credits
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {[
-                { label: "Pause generations", desc: "Stop all AI generations until credits are renewed", active: false },
-                { label: "Auto-purchase 25 credits", desc: "Automatically buy a 25-credit pack ($10)", active: true },
-                { label: "Notify me only", desc: "Send an email alert but allow overage", active: false },
-              ].map((opt) => (
-                <label
-                  key={`runout-${opt.label}`}
-                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
-                    opt.active ? "border-primary/30 bg-primary/5" : "hover:bg-muted"
-                  }`}
-                >
-                  <Checkbox checked={opt.active} className="mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium">{opt.label}</p>
-                    <p className="text-xs text-muted-foreground">{opt.desc}</p>
-                  </div>
-                </label>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-
-        <DialogFooter className="pt-4">
-          <Button variant="outline" size="sm">
-            <FileDown className="size-3.5" data-icon="inline-start" />
-            Download Invoice
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 // ── Settings Dialog (Account) ──
 
 function SettingsDialog() {
@@ -2355,12 +2439,154 @@ function AccountSection() {
 
 // ── Voice Agent ──
 
-function VoiceAgent({ onSwitchToText }: { onSwitchToText: () => void }) {
-  const [isSpeaking, setIsSpeaking] = useState(false)
+type LiveKitConnection = {
+  token: string
+  wsUrl: string
+  roomName: string
+}
+
+function VoiceAgentUI({
+  onDisconnect,
+}: {
+  onDisconnect: () => void
+}) {
+  const { state: agentState, audioTrack } = useVoiceAssistant()
+  const connectionState = useConnectionState()
+  const room = useRoomContext()
   const [isMuted, setIsMuted] = useState(false)
-  const [elapsed] = useState(47)
-  const [micAccess, setMicAccess] = useState<"pending" | "granted" | "denied">("pending")
+  const [elapsed, setElapsed] = useState(0)
+
+  useEffect(() => {
+    const interval = setInterval(() => setElapsed((e) => e + 1), 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const toggleMute = useCallback(() => {
+    if (room?.localParticipant) {
+      const next = !isMuted
+      room.localParticipant.setMicrophoneEnabled(!next)
+      setIsMuted(next)
+    }
+  }, [room, isMuted])
+
+  const formatTime = (s: number) =>
+    `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`
+
+  const statusText = (() => {
+    if (connectionState !== ConnectionState.Connected) return "Connecting..."
+    switch (agentState) {
+      case "speaking":
+        return "Agent is speaking..."
+      case "thinking":
+        return "Thinking..."
+      case "listening":
+        return "Listening..."
+      default:
+        return "Connecting to agent..."
+    }
+  })()
+
+  const isSpeaking = agentState === "speaking"
+
+  return (
+    <div className="flex flex-1 flex-col items-center justify-between overflow-hidden">
+      {/* Status */}
+      <div className="flex flex-col items-center gap-1 pt-6">
+        <span className="text-xs text-muted-foreground">{statusText}</span>
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {formatTime(elapsed)}
+        </span>
+      </div>
+
+      {/* Waveform visualization */}
+      <div className="flex flex-1 items-center justify-center">
+        {audioTrack ? (
+          <BarVisualizer
+            state={agentState}
+            track={audioTrack}
+            barCount={24}
+            className="h-16"
+          />
+        ) : (
+          <div className="flex items-center gap-[3px]">
+            {Array.from({ length: 24 }).map((_, i) => {
+              const barId = `voice-bar-${i}`
+              const center = 12
+              const dist = Math.abs(i - center)
+              const baseHeight = Math.max(4, 32 - dist * 2.5)
+              return (
+                <div
+                  key={barId}
+                  className="w-[3px] rounded-full bg-primary/60 transition-all duration-300"
+                  style={{ height: `${Math.max(3, baseHeight * 0.3)}px` }}
+                />
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Agent avatar */}
+      <div className="flex flex-col items-center gap-2 pb-4">
+        <Avatar
+          size="lg"
+          className={
+            isSpeaking
+              ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+              : ""
+          }
+        >
+          <AvatarFallback>AI</AvatarFallback>
+        </Avatar>
+        <span className="text-xs font-medium">Learning Agent</span>
+      </div>
+
+      {/* Controls */}
+      <div className="flex shrink-0 items-center justify-center gap-3 border-t p-4">
+        <Button
+          variant={isMuted ? "destructive" : "outline"}
+          size="icon"
+          onClick={toggleMute}
+        >
+          {isMuted ? (
+            <MicOff className="size-4" />
+          ) : (
+            <Mic className="size-4" />
+          )}
+        </Button>
+        <Button
+          variant={
+            connectionState === ConnectionState.Connected
+              ? "default"
+              : "outline"
+          }
+          size="icon-lg"
+          className={isSpeaking ? "animate-pulse" : ""}
+          disabled
+        >
+          <Mic className="size-5" />
+        </Button>
+        <Button
+          variant="destructive"
+          size="icon"
+          onClick={onDisconnect}
+        >
+          <Phone className="size-4" />
+        </Button>
+      </div>
+      <RoomAudioRenderer />
+    </div>
+  )
+}
+
+function VoiceAgent({ onSwitchToText }: { onSwitchToText: () => void }) {
+  const [micAccess, setMicAccess] = useState<
+    "pending" | "granted" | "denied"
+  >("pending")
   const [requesting, setRequesting] = useState(false)
+  const [connection, setConnection] = useState<LiveKitConnection | null>(null)
+  const [tokenError, setTokenError] = useState<string | null>(null)
+  const fetchingRef = useRef(false)
 
   const requestMic = () => {
     setRequesting(true)
@@ -2378,8 +2604,28 @@ function VoiceAgent({ onSwitchToText }: { onSwitchToText: () => void }) {
     requestMic()
   }, [])
 
-  const formatTime = (s: number) =>
-    `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`
+  // Fetch token once mic is granted
+  useEffect(() => {
+    if (micAccess !== "granted" || connection || fetchingRef.current) return
+    fetchingRef.current = true
+    fetch("/api/livekit-token", { method: "POST" })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Failed to get token: ${res.status}`)
+        return res.json()
+      })
+      .then((data: LiveKitConnection) => {
+        setConnection(data)
+      })
+      .catch((err: unknown) => {
+        setTokenError(err instanceof Error ? err.message : "Connection failed")
+        fetchingRef.current = false
+      })
+  }, [micAccess, connection])
+
+  const handleDisconnect = useCallback(() => {
+    setConnection(null)
+    onSwitchToText()
+  }, [onSwitchToText])
 
   if (micAccess !== "granted") {
     return (
@@ -2389,7 +2635,9 @@ function VoiceAgent({ onSwitchToText }: { onSwitchToText: () => void }) {
         </div>
         <div className="flex flex-col gap-1.5">
           <p className="text-sm font-medium">
-            {micAccess === "pending" ? "Requesting microphone access..." : "Microphone access required"}
+            {micAccess === "pending"
+              ? "Requesting microphone access..."
+              : "Microphone access required"}
           </p>
           <p className="text-xs text-muted-foreground">
             {micAccess === "pending"
@@ -2404,7 +2652,10 @@ function VoiceAgent({ onSwitchToText }: { onSwitchToText: () => void }) {
             onClick={requestMic}
             disabled={requesting}
           >
-            <RefreshCw className={`size-3.5 ${requesting ? "animate-spin" : ""}`} data-icon="inline-start" />
+            <RefreshCw
+              className={`size-3.5 ${requesting ? "animate-spin" : ""}`}
+              data-icon="inline-start"
+            />
             {requesting ? "Requesting..." : "Retry"}
           </Button>
           <Button size="sm" variant="outline" onClick={onSwitchToText}>
@@ -2415,82 +2666,58 @@ function VoiceAgent({ onSwitchToText }: { onSwitchToText: () => void }) {
     )
   }
 
-  return (
-    <div className="flex flex-1 flex-col items-center justify-between overflow-hidden">
-      {/* Status */}
-      <div className="flex flex-col items-center gap-1 pt-6">
-        <span className="text-xs text-muted-foreground">
-          {isSpeaking ? "Agent is speaking..." : "Listening..."}
-        </span>
-        <span className="text-xs tabular-nums text-muted-foreground">
-          {formatTime(elapsed)}
-        </span>
-      </div>
-
-      {/* Waveform visualization */}
-      <div className="flex flex-1 items-center justify-center">
-        <div className="flex items-center gap-[3px]">
-          {Array.from({ length: 24 }).map((_, i) => {
-            const barId = `voice-bar-${i}`
-            const center = 12
-            const dist = Math.abs(i - center)
-            const baseHeight = Math.max(4, 32 - dist * 2.5)
-            return (
-              <div
-                key={barId}
-                className={`w-[3px] rounded-full transition-all duration-300 ${
-                  isSpeaking ? "bg-primary" : "bg-primary/60"
-                }`}
-                style={{
-                  height: isSpeaking
-                    ? `${baseHeight + Math.sin(Date.now() / 200 + i) * 8}px`
-                    : `${Math.max(3, baseHeight * 0.3)}px`,
-                  animationName: isSpeaking ? "voice-pulse" : "none",
-                  animationDuration: `${0.4 + (i % 5) * 0.1}s`,
-                  animationIterationCount: "infinite",
-                  animationDirection: "alternate",
-                  animationTimingFunction: "ease-in-out",
-                }}
-              />
-            )
-          })}
+  if (tokenError) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
+        <div className="flex size-16 items-center justify-center rounded-full bg-destructive/10">
+          <Phone className="size-7 text-destructive" />
+        </div>
+        <p className="text-sm font-medium">Connection failed</p>
+        <p className="text-xs text-muted-foreground">{tokenError}</p>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setTokenError(null)
+              setConnection(null)
+            }}
+          >
+            <RefreshCw className="size-3.5" data-icon="inline-start" />
+            Retry
+          </Button>
+          <Button size="sm" variant="outline" onClick={onSwitchToText}>
+            Switch to text
+          </Button>
         </div>
       </div>
+    )
+  }
 
-      {/* Agent avatar */}
-      <div className="flex flex-col items-center gap-2 pb-4">
-        <Avatar size="lg" className={isSpeaking ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}>
-          <AvatarFallback>AI</AvatarFallback>
-        </Avatar>
-        <span className="text-xs font-medium">Learning Agent</span>
+  if (!connection) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">
+          Connecting to voice agent...
+        </p>
       </div>
+    )
+  }
 
-      {/* Controls */}
-      <div className="flex shrink-0 items-center justify-center gap-3 border-t p-4">
-        <Button
-          variant={isMuted ? "destructive" : "outline"}
-          size="icon"
-          onClick={() => setIsMuted(!isMuted)}
-        >
-          {isMuted ? <MicOff className="size-4" /> : <Mic className="size-4" />}
-        </Button>
-        <Button
-          variant={isSpeaking ? "default" : "outline"}
-          size="icon-lg"
-          className={isSpeaking ? "animate-pulse" : ""}
-          onClick={() => setIsSpeaking(!isSpeaking)}
-        >
-          <Mic className="size-5" />
-        </Button>
-        <Button
-          variant="destructive"
-          size="icon"
-          onClick={() => setIsSpeaking(false)}
-        >
-          <Phone className="size-4" />
-        </Button>
-      </div>
-    </div>
+  return (
+    <LiveKitRoom
+      token={connection.token}
+      serverUrl={connection.wsUrl}
+      connect={true}
+      audio={true}
+      className="flex flex-1 flex-col overflow-hidden"
+      onDisconnected={handleDisconnect}
+    >
+      <VoiceAgentUI
+        onDisconnect={handleDisconnect}
+      />
+    </LiveKitRoom>
   )
 }
 
@@ -2642,10 +2869,8 @@ function AdjustmentsDialog() {
 
   return (
     <Dialog>
-      <DialogTrigger>
-        <Button size="lg" variant="outline">
-          Make Adjustments
-        </Button>
+      <DialogTrigger render={<Button size="lg" variant="outline" />}>
+        Make Adjustments
       </DialogTrigger>
       <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-lg">
         <DialogHeader>
@@ -3137,6 +3362,7 @@ const ARTIFACT_TYPES = [
   { label: "Infographic", icon: BarChart3, count: 0, unread: 0 },
   { label: "Slide Deck", icon: Presentation, count: 1, unread: 0 },
   { label: "Data Table", icon: Table2, count: 0, unread: 0 },
+  { label: "3D Spatial", icon: Box, count: 3, unread: 1 },
 ] as const
 
 function ArtifactGrid({

@@ -43,10 +43,12 @@ import {
   type QuizArtifact,
   type ReportArtifact,
   type SlideArtifact,
+  type SpatialArtifact,
   type VideoArtifact,
   artifactTypeLabel,
   getArtifactsByType,
 } from "./artifact-store"
+import { SpatialCard } from "./spatial-card"
 
 // ── Main Canvas ──
 
@@ -135,6 +137,8 @@ function ArtifactRenderer({ artifact }: { artifact: Artifact }) {
       return <InfographicCard artifact={artifact} />
     case "slidedeck":
       return <SlideCard artifact={artifact} />
+    case "spatial":
+      return <SpatialCard artifact={artifact} />
   }
 }
 
