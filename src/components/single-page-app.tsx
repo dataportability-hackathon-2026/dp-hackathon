@@ -19,9 +19,17 @@ import {
   ChevronRight,
   CreditCard,
   AlertCircle,
+  Bell,
+  Check,
+  Clock,
+  ExternalLink,
   FileDown,
   FileText,
+  Globe,
   Loader2,
+  Lock,
+  Mail,
+  Palette,
   FlipHorizontal,
   FolderOpen,
   HelpCircle,
@@ -45,6 +53,7 @@ import {
   User,
   X,
   Video,
+  Zap,
 } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -894,32 +903,423 @@ function ConnectDialog() {
   )
 }
 
-// ── Account Section (Profile Sheet) ──
+// ── Usage Dialog ──
 
-const ACCOUNT_LINKS = [
-  { label: "Usage", icon: BarChart3 },
-  { label: "Billing", icon: CreditCard },
-  { label: "Account", icon: User },
+const USAGE_HISTORY = [
+  { date: "Mar 5", generations: 42, inputTokens: 18_400, outputTokens: 12_300, credits: 3.2 },
+  { date: "Mar 4", generations: 67, inputTokens: 31_200, outputTokens: 22_800, credits: 5.8 },
+  { date: "Mar 3", generations: 38, inputTokens: 14_600, outputTokens: 9_100, credits: 2.4 },
+  { date: "Mar 2", generations: 55, inputTokens: 24_000, outputTokens: 16_500, credits: 4.1 },
+  { date: "Mar 1", generations: 71, inputTokens: 33_800, outputTokens: 25_200, credits: 6.3 },
+  { date: "Feb 28", generations: 29, inputTokens: 11_200, outputTokens: 7_400, credits: 1.9 },
+  { date: "Feb 27", generations: 48, inputTokens: 20_600, outputTokens: 14_100, credits: 3.7 },
 ] as const
 
-function AccountSection() {
-  const linkId = useId()
+function UsageDialog() {
+  const rowId = useId()
+  const creditsUsed = 27.4
+  const creditsTotal = 50
 
   return (
-    <div className="flex flex-col gap-1 p-6">
-      {ACCOUNT_LINKS.map((item) => {
-        const Icon = item.icon
-        return (
+    <Dialog>
+      <DialogTrigger
+        render={
           <button
             type="button"
-            key={`${linkId}-${item.label}`}
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
-          >
-            <Icon className="size-4 text-muted-foreground" />
-            {item.label}
-          </button>
-        )
-      })}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
+          />
+        }
+      >
+        <BarChart3 className="size-4 text-muted-foreground" />
+        Usage
+      </DialogTrigger>
+      <DialogContent className="flex max-h-[80dvh] flex-col sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Usage</DialogTitle>
+          <DialogDescription>
+            Generation and token usage for this billing period
+          </DialogDescription>
+        </DialogHeader>
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto -mx-6 px-6">
+          {/* Credits overview */}
+          <Card>
+            <CardContent className="pt-6 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Zap className="size-4 text-primary" />
+                  <span className="text-sm font-medium">Credits Used</span>
+                </div>
+                <span className="text-sm font-semibold tabular-nums">
+                  {creditsUsed} / {creditsTotal}
+                </span>
+              </div>
+              <Progress value={(creditsUsed / creditsTotal) * 100}>
+                <ProgressLabel className="sr-only">Credits used</ProgressLabel>
+              </Progress>
+              <p className="text-xs text-muted-foreground">
+                {creditsTotal - creditsUsed} credits remaining &middot; Resets Apr 5, 2026
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Summary stats */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-lg border p-3 text-center">
+              <p className="text-lg font-bold tabular-nums">350</p>
+              <p className="text-xs text-muted-foreground">Generations</p>
+            </div>
+            <div className="rounded-lg border p-3 text-center">
+              <p className="text-lg font-bold tabular-nums">153K</p>
+              <p className="text-xs text-muted-foreground">Input Tokens</p>
+            </div>
+            <div className="rounded-lg border p-3 text-center">
+              <p className="text-lg font-bold tabular-nums">107K</p>
+              <p className="text-xs text-muted-foreground">Output Tokens</p>
+            </div>
+          </div>
+
+          {/* Daily breakdown */}
+          <div>
+            <p className="mb-2 text-xs font-medium text-muted-foreground uppercase">
+              Daily Breakdown
+            </p>
+            <div className="rounded-lg border">
+              <div className="grid grid-cols-5 gap-2 border-b px-3 py-2 text-xs font-medium text-muted-foreground">
+                <span>Date</span>
+                <span className="text-right">Gens</span>
+                <span className="text-right">In Tokens</span>
+                <span className="text-right">Out Tokens</span>
+                <span className="text-right">Credits</span>
+              </div>
+              {USAGE_HISTORY.map((row) => (
+                <div
+                  key={`${rowId}-${row.date}`}
+                  className="grid grid-cols-5 gap-2 border-b px-3 py-2 text-sm last:border-0"
+                >
+                  <span className="text-muted-foreground">{row.date}</span>
+                  <span className="text-right tabular-nums">{row.generations}</span>
+                  <span className="text-right tabular-nums">{(row.inputTokens / 1000).toFixed(1)}K</span>
+                  <span className="text-right tabular-nums">{(row.outputTokens / 1000).toFixed(1)}K</span>
+                  <span className="text-right tabular-nums">{row.credits}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Billing Dialog ──
+
+function BillingDialog() {
+  const currentPlan = "Pro"
+  const creditsRemaining = 22.6
+  const nextBillingDate = "Apr 5, 2026"
+  const monthlyPrice = "$29"
+
+  return (
+    <Dialog>
+      <DialogTrigger
+        render={
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
+          />
+        }
+      >
+        <CreditCard className="size-4 text-muted-foreground" />
+        Billing
+      </DialogTrigger>
+      <DialogContent className="flex max-h-[80dvh] flex-col sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Billing</DialogTitle>
+          <DialogDescription>
+            Manage your subscription, credits, and payment method
+          </DialogDescription>
+        </DialogHeader>
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto -mx-6 px-6">
+          {/* Current plan */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Current Plan</CardTitle>
+                <Badge>{currentPlan}</Badge>
+              </div>
+              <CardDescription>
+                {monthlyPrice}/month &middot; Next billing {nextBillingDate}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Credits remaining</span>
+                <span className="font-medium tabular-nums">{creditsRemaining} credits</span>
+              </div>
+              <Progress value={(creditsRemaining / 50) * 100}>
+                <ProgressLabel className="sr-only">Credits remaining</ProgressLabel>
+              </Progress>
+            </CardContent>
+          </Card>
+
+          {/* Buy more credits */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Need More Credits?</CardTitle>
+              <CardDescription>
+                Purchase additional credit packs or upgrade your plan
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { amount: 25, price: "$10" },
+                  { amount: 75, price: "$25" },
+                  { amount: 200, price: "$59" },
+                ].map((pack) => (
+                  <button
+                    type="button"
+                    key={`credit-pack-${pack.amount}`}
+                    className="flex flex-col items-center gap-1 rounded-xl border border-border p-3 transition-colors hover:border-primary hover:bg-primary/5"
+                  >
+                    <span className="text-lg font-bold">{pack.amount}</span>
+                    <span className="text-xs text-muted-foreground">credits</span>
+                    <span className="text-xs font-medium text-primary">{pack.price}</span>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Payment method */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Payment Method</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-3 rounded-lg border p-3">
+                <CreditCard className="size-5 text-muted-foreground" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Visa ending in 4242</p>
+                  <p className="text-xs text-muted-foreground">Expires 08/2027</p>
+                </div>
+                <Badge variant="outline" className="text-xs">Default</Badge>
+              </div>
+              <Button variant="outline" size="sm" className="w-full">
+                <ExternalLink className="size-3.5" data-icon="inline-start" />
+                Manage in Stripe
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* When credits run out */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">When Credits Run Out</CardTitle>
+              <CardDescription>
+                Choose what happens when you exhaust your credits
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {[
+                { label: "Pause generations", desc: "Stop all AI generations until credits are renewed", active: false },
+                { label: "Auto-purchase 25 credits", desc: "Automatically buy a 25-credit pack ($10)", active: true },
+                { label: "Notify me only", desc: "Send an email alert but allow overage", active: false },
+              ].map((opt) => (
+                <label
+                  key={`runout-${opt.label}`}
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+                    opt.active ? "border-primary/30 bg-primary/5" : "hover:bg-muted"
+                  }`}
+                >
+                  <Checkbox checked={opt.active} className="mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium">{opt.label}</p>
+                    <p className="text-xs text-muted-foreground">{opt.desc}</p>
+                  </div>
+                </label>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        <DialogFooter className="pt-4">
+          <Button variant="outline" size="sm">
+            <FileDown className="size-3.5" data-icon="inline-start" />
+            Download Invoice
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Settings Dialog (Account) ──
+
+function SettingsDialog() {
+  const [displayName, setDisplayName] = useState("Maya Chen")
+  const [email, setEmail] = useState("maya.chen@university.edu")
+  const [timezone, setTimezone] = useState("America/New_York")
+  const [saved, setSaved] = useState(false)
+
+  const handleSave = () => {
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  return (
+    <Dialog>
+      <DialogTrigger
+        render={
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
+          />
+        }
+      >
+        <Settings className="size-4 text-muted-foreground" />
+        Settings
+      </DialogTrigger>
+      <DialogContent className="flex max-h-[80dvh] flex-col sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Settings</DialogTitle>
+          <DialogDescription>
+            Manage your account preferences
+          </DialogDescription>
+        </DialogHeader>
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto -mx-6 px-6">
+          {/* Profile */}
+          <div className="space-y-3">
+            <p className="text-xs font-medium text-muted-foreground uppercase">Profile</p>
+            <div className="space-y-2">
+              <Label htmlFor="settings-name">Display Name</Label>
+              <Input
+                id="settings-name"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="settings-email">Email</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="settings-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="flex-1"
+                />
+                <Badge variant="outline" className="shrink-0 text-xs">
+                  <Check className="mr-1 size-3" />
+                  Verified
+                </Badge>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Preferences */}
+          <div className="space-y-3">
+            <p className="text-xs font-medium text-muted-foreground uppercase">Preferences</p>
+            <div className="space-y-2">
+              <Label htmlFor="settings-timezone">Timezone</Label>
+              <Input
+                id="settings-timezone"
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                placeholder="e.g. America/New_York"
+              />
+            </div>
+            <div className="space-y-3">
+              <label className="flex items-center justify-between cursor-pointer">
+                <div className="flex items-center gap-2">
+                  <Bell className="size-4 text-muted-foreground" />
+                  <span className="text-sm">Email notifications</span>
+                </div>
+                <Checkbox defaultChecked />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer">
+                <div className="flex items-center gap-2">
+                  <Mail className="size-4 text-muted-foreground" />
+                  <span className="text-sm">Weekly progress digest</span>
+                </div>
+                <Checkbox defaultChecked />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer">
+                <div className="flex items-center gap-2">
+                  <Clock className="size-4 text-muted-foreground" />
+                  <span className="text-sm">Daily study reminders</span>
+                </div>
+                <Checkbox />
+              </label>
+              <label className="flex items-center justify-between cursor-pointer">
+                <div className="flex items-center gap-2">
+                  <Palette className="size-4 text-muted-foreground" />
+                  <span className="text-sm">Dark mode</span>
+                </div>
+                <Checkbox />
+              </label>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Security */}
+          <div className="space-y-3">
+            <p className="text-xs font-medium text-muted-foreground uppercase">Security</p>
+            <Button variant="outline" size="sm" className="w-full">
+              <Lock className="size-3.5" data-icon="inline-start" />
+              Change Password
+            </Button>
+            <Button variant="outline" size="sm" className="w-full">
+              <Shield className="size-3.5" data-icon="inline-start" />
+              Two-Factor Authentication
+            </Button>
+          </div>
+
+          <Separator />
+
+          {/* Danger zone */}
+          <div className="space-y-3">
+            <p className="text-xs font-medium text-destructive uppercase">Danger Zone</p>
+            <div className="rounded-lg border border-destructive/30 p-3">
+              <p className="text-sm font-medium">Delete Account</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Permanently delete your account and all associated data. This action cannot be undone.
+              </p>
+              <Button variant="destructive" size="sm" className="mt-3">
+                Delete Account
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="pt-4">
+          <Button onClick={handleSave} disabled={saved}>
+            {saved ? (
+              <>
+                <Check className="size-3.5" data-icon="inline-start" />
+                Saved
+              </>
+            ) : (
+              "Save Changes"
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Account Section (Profile Sheet) ──
+
+function AccountSection() {
+  return (
+    <div className="flex flex-col gap-1 p-6">
+      <UsageDialog />
+      <BillingDialog />
+      <SettingsDialog />
       <Separator className="my-1" />
       <button
         type="button"
