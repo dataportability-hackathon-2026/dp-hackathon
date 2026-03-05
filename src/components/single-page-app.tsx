@@ -11,14 +11,18 @@ import {
 } from "react-icons/si"
 import { BsMicrosoftTeams } from "react-icons/bs"
 import {
+  ArrowLeft,
   AudioLines,
   BarChart3,
   Braces,
   Brain,
   Calendar,
+  Check,
   ChevronRight,
+  Copy,
   CreditCard,
   AlertCircle,
+  ExternalLink,
   FileDown,
   FileText,
   Loader2,
@@ -802,14 +806,25 @@ function AuditDialog() {
 
 // ── Connect Dialog ──
 
-const CONNECT_INTEGRATIONS = [
-  { label: "ChatGPT", icon: SiOpenai, description: "Connect your OpenAI account", connected: false },
-  { label: "Claude", icon: SiAnthropic, description: "Connect your Anthropic account", connected: true },
-  { label: "Slack", icon: SiSlack, description: "Post updates to Slack channels", connected: false },
-  { label: "Teams", icon: BsMicrosoftTeams, description: "Sync with Microsoft Teams", connected: false },
-  { label: "Discord", icon: SiDiscord, description: "Share progress to Discord", connected: false },
-  { label: "MCP", icon: SiModelcontextprotocol, description: "Model Context Protocol server", connected: true },
-] as const
+const MOCK_MCP_URL = "https://mcp.deeplearn.ai/v1/sse"
+const MOCK_API_URL = "https://api.deeplearn.ai/v1"
+
+type IntegrationKey = "chatgpt" | "claude" | "slack" | "teams" | "discord" | "mcp"
+
+const CONNECT_INTEGRATIONS: {
+  key: IntegrationKey
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  description: string
+  connected: boolean
+}[] = [
+  { key: "chatgpt", label: "ChatGPT", icon: SiOpenai, description: "Connect your OpenAI account", connected: false },
+  { key: "claude", label: "Claude", icon: SiAnthropic, description: "Connect your Anthropic account", connected: true },
+  { key: "slack", label: "Slack", icon: SiSlack, description: "Post updates to Slack channels", connected: false },
+  { key: "teams", label: "Teams", icon: BsMicrosoftTeams, description: "Sync with Microsoft Teams", connected: false },
+  { key: "discord", label: "Discord", icon: SiDiscord, description: "Share progress to Discord", connected: false },
+  { key: "mcp", label: "MCP", icon: SiModelcontextprotocol, description: "Model Context Protocol server", connected: true },
+]
 
 const EXPORT_FORMATS = [
   { label: "PDF", icon: FileDown, description: "Export as .pdf report" },
@@ -817,11 +832,574 @@ const EXPORT_FORMATS = [
   { label: "JSON", icon: Braces, description: "Export as .json data" },
 ] as const
 
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <button
+      type="button"
+      className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors hover:bg-muted"
+      onClick={() => {
+        navigator.clipboard.writeText(text)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      }}
+    >
+      {copied ? <Check className="size-3 text-green-500" /> : <Copy className="size-3" />}
+      {copied ? "Copied" : "Copy"}
+    </button>
+  )
+}
+
+function CodeBlock({ code }: { code: string }) {
+  return (
+    <div className="relative rounded-lg border bg-muted/50 p-3">
+      <div className="absolute top-2 right-2">
+        <CopyButton text={code} />
+      </div>
+      <pre className="overflow-x-auto text-xs leading-relaxed whitespace-pre-wrap pr-16"><code>{code}</code></pre>
+    </div>
+  )
+}
+
+function IntegrationContent({ integration }: { integration: IntegrationKey }) {
+  switch (integration) {
+    case "chatgpt":
+      return (
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-muted-foreground">
+            Connect DeepLearn as a custom GPT action or use the API plugin to sync your learning data with ChatGPT.
+          </p>
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Option 1: Custom GPT Action</p>
+            <ol className="flex flex-col gap-2 text-sm">
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Open <span className="font-medium">ChatGPT</span> &rarr; Explore GPTs &rarr; Create</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Under <span className="font-medium">Configure</span>, scroll to <span className="font-medium">Actions</span> &rarr; Create new action</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Import the OpenAPI schema from:</li>
+            </ol>
+            <CodeBlock code={`${MOCK_API_URL}/openapi.json`} />
+            <ol start={4} className="flex flex-col gap-2 text-sm">
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">4.</span> Set authentication to <span className="font-medium">API Key</span> with your DeepLearn token:</li>
+            </ol>
+            <CodeBlock code="dl_sk_live_xxxxxxxxxxxxxxxxxxxx" />
+            <ol start={5} className="flex flex-col gap-2 text-sm">
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">5.</span> Save and test by asking: &ldquo;What are my current mastery levels?&rdquo;</li>
+            </ol>
+          </div>
+          <Separator />
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Option 2: ChatGPT Plugin (API)</p>
+            <p className="text-sm text-muted-foreground">Use the ChatGPT Plugins store to connect directly:</p>
+            <CodeBlock code={`Plugin URL: ${MOCK_API_URL}/chatgpt-plugin\nPlugin Name: DeepLearn\nAuth Type: Bearer Token`} />
+          </div>
+        </div>
+      )
+    case "claude":
+      return (
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-muted-foreground">
+            Connect DeepLearn to Claude Desktop via MCP (Model Context Protocol) for real-time access to your learning data.
+          </p>
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Claude Desktop Configuration</p>
+            <ol className="flex flex-col gap-2 text-sm">
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Open Claude Desktop &rarr; Settings &rarr; Developer &rarr; Edit Config</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Add this to your <code className="rounded bg-muted px-1 text-xs">claude_desktop_config.json</code>:</li>
+            </ol>
+            <CodeBlock code={JSON.stringify({
+              mcpServers: {
+                deeplearn: {
+                  command: "npx",
+                  args: ["-y", "@deeplearn/mcp-server"],
+                  env: {
+                    DEEPLEARN_API_KEY: "dl_sk_live_xxxxxxxxxxxxxxxxxxxx"
+                  }
+                }
+              }
+            }, null, 2)} />
+            <ol start={3} className="flex flex-col gap-2 text-sm">
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Restart Claude Desktop</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">4.</span> You should see <Badge variant="secondary" className="text-xs">DeepLearn</Badge> in the MCP tools list</li>
+            </ol>
+          </div>
+          <Separator />
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Alternative: Remote MCP Server</p>
+            <p className="text-sm text-muted-foreground">If you prefer a hosted server instead of running locally:</p>
+            <CodeBlock code={JSON.stringify({
+              mcpServers: {
+                deeplearn: {
+                  url: MOCK_MCP_URL,
+                  headers: {
+                    Authorization: "Bearer dl_sk_live_xxxxxxxxxxxxxxxxxxxx"
+                  }
+                }
+              }
+            }, null, 2)} />
+          </div>
+          <Separator />
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Available Tools</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {["get_mastery", "get_guide", "get_topics", "get_progress", "create_quiz", "log_session"].map((tool) => (
+                <div key={tool} className="flex items-center gap-1.5 rounded border px-2 py-1 text-xs font-mono">
+                  <Braces className="size-3 text-muted-foreground" />
+                  {tool}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )
+    case "slack":
+      return (
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-muted-foreground">
+            Get daily study reminders and progress summaries posted to a Slack channel.
+          </p>
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Setup via Slack App</p>
+            <ol className="flex flex-col gap-2 text-sm">
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Click the button below to install the DeepLearn Slack app:</li>
+            </ol>
+            <button
+              type="button"
+              className="inline-flex w-fit items-center gap-2 rounded-lg border bg-[#4A154B] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            >
+              <SiSlack className="size-4" />
+              Add to Slack
+              <ExternalLink className="size-3" />
+            </button>
+            <ol start={2} className="flex flex-col gap-2 text-sm">
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Authorize DeepLearn to post to your chosen channel</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Configure notifications in DeepLearn settings</li>
+            </ol>
+          </div>
+          <Separator />
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Alternative: Incoming Webhook</p>
+            <p className="text-sm text-muted-foreground">Use a Slack incoming webhook for custom integrations:</p>
+            <CodeBlock code={`Webhook URL: ${MOCK_API_URL}/webhooks/slack\n\n# Or configure your own webhook:\ncurl -X POST ${MOCK_API_URL}/integrations/slack \\\n  -H "Authorization: Bearer dl_sk_live_xxxx" \\\n  -d '{"webhook_url": "https://hooks.slack.com/services/T.../B.../xxx"}'`} />
+          </div>
+          <Separator />
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">What gets posted</p>
+            <ul className="flex flex-col gap-1.5 text-sm text-muted-foreground">
+              <li className="flex items-start gap-2"><Check className="mt-0.5 size-3.5 text-green-500 shrink-0" /> Daily study reminders at your preferred time</li>
+              <li className="flex items-start gap-2"><Check className="mt-0.5 size-3.5 text-green-500 shrink-0" /> Weekly progress summaries</li>
+              <li className="flex items-start gap-2"><Check className="mt-0.5 size-3.5 text-green-500 shrink-0" /> Mastery milestone celebrations</li>
+              <li className="flex items-start gap-2"><Check className="mt-0.5 size-3.5 text-green-500 shrink-0" /> Guide adjustments and recommendations</li>
+            </ul>
+          </div>
+        </div>
+      )
+    case "teams":
+      return (
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-muted-foreground">
+            Sync DeepLearn with Microsoft Teams for study reminders and progress updates.
+          </p>
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Install Teams App</p>
+            <ol className="flex flex-col gap-2 text-sm">
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Open <span className="font-medium">Microsoft Teams</span> &rarr; Apps &rarr; Search &ldquo;DeepLearn&rdquo;</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Click <span className="font-medium">Add</span> and authorize the connection</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Choose which channel receives updates</li>
+            </ol>
+          </div>
+          <Separator />
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Alternative: Webhook Connector</p>
+            <p className="text-sm text-muted-foreground">Use a Teams incoming webhook for custom setups:</p>
+            <CodeBlock code={`# 1. In Teams, right-click channel → Connectors → Incoming Webhook\n# 2. Copy the webhook URL, then configure:\n\ncurl -X POST ${MOCK_API_URL}/integrations/teams \\\n  -H "Authorization: Bearer dl_sk_live_xxxx" \\\n  -d '{\n    "webhook_url": "https://outlook.office.com/webhook/...",\n    "notifications": ["daily_reminder", "weekly_summary"]\n  }'`} />
+          </div>
+          <Separator />
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Adaptive Card Preview</p>
+            <div className="rounded-lg border p-3 text-xs">
+              <div className="flex items-center gap-2 mb-2">
+                <Brain className="size-4 text-primary" />
+                <span className="font-semibold">DeepLearn Daily Summary</span>
+              </div>
+              <div className="flex flex-col gap-1 text-muted-foreground">
+                <p>Mastery: Linear Algebra — <span className="text-foreground font-medium">55%</span></p>
+                <p>Today&apos;s guide: 45 min planned</p>
+                <p>Streak: 5 days</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    case "discord":
+      return (
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-muted-foreground">
+            Share your learning progress to a Discord server with a bot or webhook.
+          </p>
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Option 1: Discord Bot</p>
+            <ol className="flex flex-col gap-2 text-sm">
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Click the button below to add the DeepLearn bot:</li>
+            </ol>
+            <button
+              type="button"
+              className="inline-flex w-fit items-center gap-2 rounded-lg border bg-[#5865F2] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            >
+              <SiDiscord className="size-4" />
+              Add to Discord
+              <ExternalLink className="size-3" />
+            </button>
+            <ol start={2} className="flex flex-col gap-2 text-sm">
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Select your server and authorize permissions</li>
+              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Use <code className="rounded bg-muted px-1 text-xs">/deeplearn setup #channel</code> to configure</li>
+            </ol>
+          </div>
+          <Separator />
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Option 2: Webhook</p>
+            <p className="text-sm text-muted-foreground">For simpler setups, use a Discord webhook:</p>
+            <CodeBlock code={`# 1. In Discord: Server Settings → Integrations → Webhooks → New\n# 2. Copy the webhook URL, then configure:\n\ncurl -X POST ${MOCK_API_URL}/integrations/discord \\\n  -H "Authorization: Bearer dl_sk_live_xxxx" \\\n  -d '{\n    "webhook_url": "https://discord.com/api/webhooks/...",\n    "events": ["progress", "milestones", "reminders"]\n  }'`} />
+          </div>
+          <Separator />
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Bot Commands</p>
+            <div className="grid grid-cols-1 gap-1.5">
+              {[
+                { cmd: "/deeplearn status", desc: "View current mastery levels" },
+                { cmd: "/deeplearn guide", desc: "Get today's study plan" },
+                { cmd: "/deeplearn quiz", desc: "Start a quick quiz" },
+                { cmd: "/deeplearn streak", desc: "Check your study streak" },
+              ].map((item) => (
+                <div key={item.cmd} className="flex items-center gap-2 rounded border px-2 py-1.5 text-xs">
+                  <code className="font-mono font-medium">{item.cmd}</code>
+                  <span className="text-muted-foreground">— {item.desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )
+    case "mcp":
+      return (
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-muted-foreground">
+            Connect any MCP-compatible client to the DeepLearn server for programmatic access to your learning data.
+          </p>
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Server Endpoint</p>
+            <CodeBlock code={MOCK_MCP_URL} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Authentication</p>
+            <CodeBlock code={`Authorization: Bearer dl_sk_live_xxxxxxxxxxxxxxxxxxxx`} />
+          </div>
+          <Separator />
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Generic MCP Client Config</p>
+            <CodeBlock code={JSON.stringify({
+              mcpServers: {
+                deeplearn: {
+                  url: MOCK_MCP_URL,
+                  headers: {
+                    Authorization: "Bearer dl_sk_live_xxxxxxxxxxxxxxxxxxxx"
+                  }
+                }
+              }
+            }, null, 2)} />
+          </div>
+          <Separator />
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">NPX Local Server</p>
+            <p className="text-sm text-muted-foreground">Run the MCP server locally for development or offline use:</p>
+            <CodeBlock code={`npx @deeplearn/mcp-server --api-key dl_sk_live_xxxx`} />
+          </div>
+          <Separator />
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-medium uppercase text-muted-foreground">Available Resources & Tools</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {[
+                "deeplearn://topics",
+                "deeplearn://mastery",
+                "deeplearn://guide",
+                "deeplearn://progress",
+                "create_quiz",
+                "log_session",
+                "get_recommendations",
+                "update_schedule",
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-1.5 rounded border px-2 py-1 text-xs font-mono">
+                  {item.startsWith("deeplearn://") ? (
+                    <FolderOpen className="size-3 text-muted-foreground shrink-0" />
+                  ) : (
+                    <Braces className="size-3 text-muted-foreground shrink-0" />
+                  )}
+                  <span className="truncate">{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )
+  }
+}
+
+function buildAppStateForExport() {
+  const topic = TOPICS[0]
+  const project = topic.projects[0]
+  return {
+    exportedAt: new Date().toISOString(),
+    topic: {
+      name: topic.name,
+      domain: topic.domain,
+      fileCount: topic.fileCount,
+    },
+    project: {
+      name: project.name,
+      goalType: project.goalType,
+      mastery: project.mastery,
+      masteryUncertainty: project.masteryUncertainty,
+      minutesPerDay: project.minutesPerDay,
+      daysPerWeek: project.daysPerWeek,
+      deadline: project.deadline,
+    },
+    masteryData: MASTERY_DATA.map((m) => ({
+      concept: m.concept,
+      posteriorMean: m.posteriorMean,
+      posteriorSd: m.posteriorSd,
+      credibleInterval: [m.credibleLow, m.credibleHigh],
+    })),
+    guideBlocks: GUIDE_BLOCKS.map((b) => ({
+      day: b.dayIndex,
+      type: b.blockType,
+      minutes: b.plannedMinutes,
+      description: b.description,
+      completed: b.completed,
+    })),
+    chatHistory: CHAT_HISTORY.map((m) => ({
+      role: m.role,
+      content: m.content,
+      timestamp: m.timestamp,
+    })),
+    files: FILES.map((f) => ({
+      filename: f.filename,
+      mimeType: f.mimeType,
+      sizeBytes: f.sizeBytes,
+      uploadedAt: f.uploadedAt,
+      scope: f.scope,
+    })),
+    auditEvents: AUDIT_EVENTS.map((e) => ({
+      occurredAt: e.occurredAt,
+      observe: e.observe,
+      analyze: e.analyze,
+      act: e.act,
+      summary: e.summary,
+    })),
+  }
+}
+
+function buildMarkdownExport(): string {
+  const state = buildAppStateForExport()
+  const lines: string[] = []
+
+  lines.push(`# DeepLearn Export — ${state.topic.name}`)
+  lines.push(``)
+  lines.push(`**Exported:** ${new Date(state.exportedAt).toLocaleString()}`)
+  lines.push(`**Domain:** ${state.topic.domain}`)
+  lines.push(`**Files:** ${state.topic.fileCount}`)
+  lines.push(``)
+
+  lines.push(`## Project: ${state.project.name}`)
+  lines.push(``)
+  lines.push(`| Field | Value |`)
+  lines.push(`|-------|-------|`)
+  lines.push(`| Goal Type | ${state.project.goalType} |`)
+  lines.push(`| Mastery | ${Math.round(state.project.mastery * 100)}% (\u00b1${Math.round(state.project.masteryUncertainty * 100)}%) |`)
+  lines.push(`| Schedule | ${state.project.minutesPerDay} min/day, ${state.project.daysPerWeek} days/week |`)
+  lines.push(`| Deadline | ${state.project.deadline || "None"} |`)
+  lines.push(``)
+
+  lines.push(`## Mastery Levels`)
+  lines.push(``)
+  lines.push(`| Concept | Mean | \u00b1 SD | 90% CI |`)
+  lines.push(`|---------|------|------|--------|`)
+  for (const m of state.masteryData) {
+    lines.push(`| ${m.concept} | ${Math.round(m.posteriorMean * 100)}% | ${Math.round(m.posteriorSd * 100)}% | ${Math.round(m.credibleInterval[0] * 100)}%–${Math.round(m.credibleInterval[1] * 100)}% |`)
+  }
+  lines.push(``)
+
+  lines.push(`## 7-Day Study Guide`)
+  lines.push(``)
+  let currentDay = 0
+  for (const b of state.guideBlocks) {
+    if (b.day !== currentDay) {
+      currentDay = b.day
+      lines.push(`### Day ${b.day}`)
+      lines.push(``)
+    }
+    const check = b.completed ? "[x]" : "[ ]"
+    lines.push(`- ${check} **${b.type}** (${b.minutes} min) — ${b.description}`)
+  }
+  lines.push(``)
+
+  lines.push(`## Chat History`)
+  lines.push(``)
+  for (const msg of state.chatHistory) {
+    const role = msg.role === "user" ? "You" : "DeepLearn"
+    lines.push(`**${role}** *(${new Date(msg.timestamp).toLocaleString()})*`)
+    lines.push(``)
+    lines.push(`> ${msg.content}`)
+    lines.push(``)
+  }
+
+  lines.push(`## Files`)
+  lines.push(``)
+  lines.push(`| Filename | Type | Size | Uploaded | Scope |`)
+  lines.push(`|----------|------|------|----------|-------|`)
+  for (const f of state.files) {
+    const size = f.sizeBytes >= 1_000_000 ? `${(f.sizeBytes / 1_000_000).toFixed(1)} MB` : `${(f.sizeBytes / 1_000).toFixed(1)} KB`
+    lines.push(`| ${f.filename} | ${f.mimeType} | ${size} | ${f.uploadedAt} | ${f.scope} |`)
+  }
+  lines.push(``)
+
+  lines.push(`## Audit Log`)
+  lines.push(``)
+  for (const e of state.auditEvents) {
+    lines.push(`### ${new Date(e.occurredAt).toLocaleString()}`)
+    lines.push(``)
+    lines.push(`- **Observe:** ${e.observe}`)
+    lines.push(`- **Analyze:** ${e.analyze}`)
+    lines.push(`- **Act:** ${e.act}`)
+    lines.push(`- **Summary:** ${e.summary}`)
+    lines.push(``)
+  }
+
+  return lines.join("\n")
+}
+
+function downloadFile(content: string, filename: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+function generatePdfHtml(): string {
+  const state = buildAppStateForExport()
+  const masteryRows = state.masteryData
+    .map(
+      (m) =>
+        `<tr><td>${m.concept}</td><td>${Math.round(m.posteriorMean * 100)}%</td><td>\u00b1${Math.round(m.posteriorSd * 100)}%</td><td>${Math.round(m.credibleInterval[0] * 100)}%–${Math.round(m.credibleInterval[1] * 100)}%</td></tr>`
+    )
+    .join("")
+
+  let guideHtml = ""
+  let currentDay = 0
+  for (const b of state.guideBlocks) {
+    if (b.day !== currentDay) {
+      if (currentDay !== 0) guideHtml += "</ul>"
+      currentDay = b.day
+      guideHtml += `<h3>Day ${b.day}</h3><ul>`
+    }
+    guideHtml += `<li>${b.completed ? "\u2705" : "\u2B1C"} <strong>${b.type}</strong> (${b.minutes} min) &mdash; ${b.description}</li>`
+  }
+  guideHtml += "</ul>"
+
+  const chatHtml = state.chatHistory
+    .map(
+      (msg) =>
+        `<div style="margin-bottom:12px;"><strong>${msg.role === "user" ? "You" : "DeepLearn"}</strong> <em>(${new Date(msg.timestamp).toLocaleString()})</em><blockquote style="margin:4px 0 0 0;padding-left:12px;border-left:3px solid #ddd;color:#555;">${msg.content}</blockquote></div>`
+    )
+    .join("")
+
+  const filesRows = state.files
+    .map((f) => {
+      const size = f.sizeBytes >= 1_000_000 ? `${(f.sizeBytes / 1_000_000).toFixed(1)} MB` : `${(f.sizeBytes / 1_000).toFixed(1)} KB`
+      return `<tr><td>${f.filename}</td><td>${size}</td><td>${f.uploadedAt}</td><td>${f.scope}</td></tr>`
+    })
+    .join("")
+
+  const auditHtml = state.auditEvents
+    .map(
+      (e) =>
+        `<div style="margin-bottom:16px;border-left:3px solid #6366f1;padding-left:12px;"><strong>${new Date(e.occurredAt).toLocaleString()}</strong><br/><em>Observe:</em> ${e.observe}<br/><em>Analyze:</em> ${e.analyze}<br/><em>Act:</em> ${e.act}<br/><em>Summary:</em> ${e.summary}</div>`
+    )
+    .join("")
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>DeepLearn Export — ${state.topic.name}</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:800px;margin:0 auto;padding:40px 20px;color:#1a1a1a;font-size:14px;line-height:1.6;}
+  h1{font-size:24px;border-bottom:2px solid #6366f1;padding-bottom:8px;}
+  h2{font-size:18px;margin-top:32px;color:#6366f1;}
+  h3{font-size:15px;margin-top:16px;}
+  table{width:100%;border-collapse:collapse;margin:12px 0;}
+  th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:13px;}
+  th{background:#f5f5f5;font-weight:600;}
+  ul{padding-left:20px;}
+  li{margin-bottom:4px;}
+  .meta{color:#666;font-size:13px;}
+  @media print{body{padding:0;}}
+</style></head><body>
+<h1>DeepLearn Export — ${state.topic.name}</h1>
+<p class="meta">Exported: ${new Date(state.exportedAt).toLocaleString()} | Domain: ${state.topic.domain} | Files: ${state.topic.fileCount}</p>
+
+<h2>Project: ${state.project.name}</h2>
+<table><tr><th>Goal Type</th><th>Mastery</th><th>Schedule</th><th>Deadline</th></tr>
+<tr><td>${state.project.goalType}</td><td>${Math.round(state.project.mastery * 100)}% (\u00b1${Math.round(state.project.masteryUncertainty * 100)}%)</td><td>${state.project.minutesPerDay} min/day, ${state.project.daysPerWeek} days/week</td><td>${state.project.deadline || "None"}</td></tr></table>
+
+<h2>Mastery Levels</h2>
+<table><tr><th>Concept</th><th>Mean</th><th>SD</th><th>90% CI</th></tr>${masteryRows}</table>
+
+<h2>7-Day Study Guide</h2>
+${guideHtml}
+
+<h2>Chat History</h2>
+${chatHtml}
+
+<h2>Files</h2>
+<table><tr><th>Filename</th><th>Size</th><th>Uploaded</th><th>Scope</th></tr>${filesRows}</table>
+
+<h2>Audit Log</h2>
+${auditHtml}
+
+</body></html>`
+}
+
+function exportPdf() {
+  const html = generatePdfHtml()
+  const printWindow = window.open("", "_blank")
+  if (!printWindow) return
+  printWindow.document.write(html)
+  printWindow.document.close()
+  printWindow.onload = () => {
+    printWindow.print()
+  }
+}
+
+function exportMarkdown() {
+  const md = buildMarkdownExport()
+  downloadFile(md, "deeplearn-export.md", "text/markdown")
+}
+
+function exportJson() {
+  const data = buildAppStateForExport()
+  downloadFile(JSON.stringify(data, null, 2), "deeplearn-export.json", "application/json")
+}
+
 function ConnectDialog() {
   const optId = useId()
+  const [selectedIntegration, setSelectedIntegration] = useState<IntegrationKey | null>(null)
+
+  const selectedInfo = selectedIntegration
+    ? CONNECT_INTEGRATIONS.find((i) => i.key === selectedIntegration)
+    : null
 
   return (
-    <Dialog>
+    <Dialog onOpenChange={(open) => { if (!open) setSelectedIntegration(null) }}>
       <DialogTrigger
         render={
           <Button variant="ghost" />
@@ -830,65 +1408,102 @@ function ConnectDialog() {
         <Plug className="size-4" data-icon="inline-start" />
         Connect
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className={selectedIntegration ? "sm:max-w-xl" : ""}>
         <DialogHeader>
-          <DialogTitle>Connect</DialogTitle>
-          <DialogDescription>
-            Link external services and export your data
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="grid grid-cols-3 gap-2">
-          {CONNECT_INTEGRATIONS.map((opt) => {
-            const Icon = opt.icon
-            return (
-              <button
-                type="button"
-                key={`${optId}-${opt.label}`}
-                className={`group relative flex flex-col items-center gap-2 rounded-xl border p-3 text-center transition-colors ${
-                  opt.connected
-                    ? "border-primary/30 bg-primary/5"
-                    : "border-border hover:bg-muted"
-                }`}
-              >
-                <Icon className={`size-6 ${opt.connected ? "text-primary" : "text-muted-foreground"}`} />
-                <span className="text-xs font-medium">{opt.label}</span>
-                {opt.connected && (
-                  <span className="absolute top-2 right-2 size-2 rounded-full bg-green-500" />
-                )}
-              </button>
-            )
-          })}
-        </div>
-
-        <Separator />
-
-        <div>
-          <p className="mb-2 text-xs font-medium text-muted-foreground uppercase">
-            Export
-          </p>
-          <div className="flex gap-2">
-            {EXPORT_FORMATS.map((fmt) => {
-              const Icon = fmt.icon
-              return (
+          {selectedIntegration && selectedInfo ? (
+            <>
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  key={`${optId}-export-${fmt.label}`}
-                  className="flex flex-1 flex-col items-center gap-2 rounded-xl border border-border p-3 transition-colors hover:bg-muted"
+                  onClick={() => setSelectedIntegration(null)}
+                  className="rounded-md p-1 transition-colors hover:bg-muted"
                 >
-                  <Icon className="size-6 text-muted-foreground" />
-                  <span className="text-xs font-medium">{fmt.label}</span>
+                  <ArrowLeft className="size-4" />
                 </button>
-              )
-            })}
-          </div>
-          <label className="mt-3 flex items-center gap-2 cursor-pointer">
-            <Checkbox />
-            <span className="text-xs text-muted-foreground">
-              Include advanced metadata
-            </span>
-          </label>
-        </div>
+                <DialogTitle className="flex items-center gap-2">
+                  <selectedInfo.icon className="size-5" />
+                  Connect {selectedInfo.label}
+                </DialogTitle>
+              </div>
+              <DialogDescription>
+                {selectedInfo.description}
+              </DialogDescription>
+            </>
+          ) : (
+            <>
+              <DialogTitle>Connect</DialogTitle>
+              <DialogDescription>
+                Link external services and export your data
+              </DialogDescription>
+            </>
+          )}
+        </DialogHeader>
+
+        {selectedIntegration ? (
+          <ScrollArea className="max-h-[60vh]">
+            <IntegrationContent integration={selectedIntegration} />
+          </ScrollArea>
+        ) : (
+          <>
+            <div className="grid grid-cols-3 gap-2">
+              {CONNECT_INTEGRATIONS.map((opt) => {
+                const Icon = opt.icon
+                return (
+                  <button
+                    type="button"
+                    key={`${optId}-${opt.label}`}
+                    onClick={() => setSelectedIntegration(opt.key)}
+                    className={`group relative flex flex-col items-center gap-2 rounded-xl border p-3 text-center transition-colors ${
+                      opt.connected
+                        ? "border-primary/30 bg-primary/5"
+                        : "border-border hover:bg-muted"
+                    }`}
+                  >
+                    <Icon className={`size-6 ${opt.connected ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className="text-xs font-medium">{opt.label}</span>
+                    {opt.connected && (
+                      <span className="absolute top-2 right-2 size-2 rounded-full bg-green-500" />
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+
+            <Separator />
+
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground uppercase">
+                Export
+              </p>
+              <div className="flex gap-2">
+                {EXPORT_FORMATS.map((fmt) => {
+                  const Icon = fmt.icon
+                  return (
+                    <button
+                      type="button"
+                      key={`${optId}-export-${fmt.label}`}
+                      className="flex flex-1 flex-col items-center gap-2 rounded-xl border border-border p-3 transition-colors hover:bg-muted"
+                      onClick={() => {
+                        if (fmt.label === "PDF") exportPdf()
+                        else if (fmt.label === "Markdown") exportMarkdown()
+                        else if (fmt.label === "JSON") exportJson()
+                      }}
+                    >
+                      <Icon className="size-6 text-muted-foreground" />
+                      <span className="text-xs font-medium">{fmt.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              <label className="mt-3 flex items-center gap-2 cursor-pointer">
+                <Checkbox />
+                <span className="text-xs text-muted-foreground">
+                  Include advanced metadata
+                </span>
+              </label>
+            </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )
