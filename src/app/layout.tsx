@@ -5,10 +5,12 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { CreditProvider } from "@/components/providers/credit-provider";
+import { SiteConfigProvider } from "@/components/providers/site-config-provider";
+import { siteConfig } from "@/lib/white-label";
 
 export const metadata: Metadata = {
-  title: "Core Model - Evidence-Based Adaptive Learning",
-  description: "Ingest your study materials, build a scientific learner profile, and get adaptive recommendations with explicit uncertainty and full audit trails.",
+  title: `${siteConfig.name} - ${siteConfig.tagline}`,
+  description: siteConfig.description,
 };
 
 export default function RootLayout({
@@ -21,11 +23,13 @@ export default function RootLayout({
       <body>
         <NuqsAdapter>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            <AuthProvider>
-              <CreditProvider>
-                {children}
-              </CreditProvider>
-            </AuthProvider>
+            <SiteConfigProvider>
+              <AuthProvider>
+                <CreditProvider>
+                  {children}
+                </CreditProvider>
+              </AuthProvider>
+            </SiteConfigProvider>
           </ThemeProvider>
         </NuqsAdapter>
       </body>

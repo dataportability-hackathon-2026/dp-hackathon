@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Brain, Eye, EyeOff, GraduationCap, Palette, Stethoscope, Shield } from "lucide-react"
+import { Brain, Eye, EyeOff, GraduationCap, Palette, Stethoscope, Shield, Sparkles } from "lucide-react"
+import { siteConfig } from "@/lib/white-label"
 
 const isDev = process.env.NODE_ENV === "development"
 
@@ -89,12 +90,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             <Brain className="h-6 w-6" />
           </div>
           <CardTitle className="text-2xl">
-            {isSignUp ? "Create your account" : "Welcome back"}
+            {isSignUp ? siteConfig.auth.signUpHeading : siteConfig.auth.signInHeading}
           </CardTitle>
           <CardDescription>
             {isSignUp
-              ? "Start your adaptive learning journey"
-              : "Sign in to continue learning"}
+              ? siteConfig.auth.signUpCta
+              : `Sign in to ${siteConfig.name}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -116,7 +117,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               <Input
                 id="email"
                 type="email"
-                placeholder="you@university.edu"
+                placeholder={siteConfig.auth.emailPlaceholder}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
