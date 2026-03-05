@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "@livekit/components-styles";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { CreditProvider } from "@/components/providers/credit-provider";
 
@@ -14,13 +17,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
-        <AuthProvider>
-          <CreditProvider>
-            {children}
-          </CreditProvider>
-        </AuthProvider>
+        <NuqsAdapter>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <AuthProvider>
+              <CreditProvider>
+                {children}
+              </CreditProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </NuqsAdapter>
       </body>
     </html>
   );

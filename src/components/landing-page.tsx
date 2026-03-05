@@ -358,10 +358,10 @@ export function LandingPage() {
           </nav>
 
           <div className="hidden items-center gap-3 md:flex">
-            <a href="/app">
+            <a href="/dashboard">
               <Button variant="ghost" size="sm">Sign In</Button>
             </a>
-            <a href="/app">
+            <a href="/dashboard">
               <Button size="sm">
                 Get Started
                 <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -385,10 +385,10 @@ export function LandingPage() {
               <a href="#pricing" className="block rounded-lg px-3 py-2 text-sm hover:bg-muted">Pricing</a>
               <a href="#faq" className="block rounded-lg px-3 py-2 text-sm hover:bg-muted">FAQ</a>
               <div className="pt-2 space-y-2">
-                <a href="/app" className="block">
+                <a href="/dashboard" className="block">
                   <Button variant="outline" className="w-full">Sign In</Button>
                 </a>
-                <a href="/app" className="block">
+                <a href="/dashboard" className="block">
                   <Button className="w-full">Get Started</Button>
                 </a>
               </div>
@@ -425,7 +425,7 @@ export function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-              <a href="/app">
+              <a href="/dashboard">
                 <Button size="lg" className="text-base px-8 py-6 rounded-xl shadow-lg shadow-primary/20">
                   Get Started Free
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -869,7 +869,7 @@ export function LandingPage() {
                   <span className="text-4xl font-black">{plan.price}</span>
                   <span className="text-muted-foreground text-sm">{plan.period}</span>
                 </div>
-                <a href="/app">
+                <a href="/dashboard">
                   <Button
                     className="w-full mb-6"
                     variant={plan.highlighted ? "default" : "outline"}
@@ -942,7 +942,7 @@ export function LandingPage() {
                 personalized 7-day guide in minutes. Free to start, no credit card required.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a href="/app">
+                <a href="/dashboard">
                   <Button size="lg" variant="secondary" className="text-base px-8 py-6 rounded-xl shadow-lg">
                     Sign Up Now
                     <ArrowRight className="ml-2 h-4 w-4" />
