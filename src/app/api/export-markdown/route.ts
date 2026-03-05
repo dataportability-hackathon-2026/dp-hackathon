@@ -1,5 +1,5 @@
 import { generateText } from "ai"
-import { openai } from "@ai-sdk/openai"
+import { openai } from "@/lib/ai/provider"
 import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
