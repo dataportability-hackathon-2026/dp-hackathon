@@ -47,6 +47,7 @@ import { BsMicrosoftTeams } from "react-icons/bs"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { siteConfig } from "@/lib/white-label"
 
 // ── Personas & Case Studies Data ──
 
@@ -347,7 +348,7 @@ export function LandingPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <Brain className="h-4 w-4" />
             </div>
-            <span className="text-lg font-bold tracking-tight">Core Model</span>
+            <span className="text-lg font-bold tracking-tight">{siteConfig.name}</span>
           </a>
 
           <nav className="hidden items-center gap-8 md:flex">
@@ -420,8 +421,7 @@ export function LandingPage() {
             </h1>
 
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-              Core Model ingests your study materials, builds a scientific learner profile,
-              and recommends what to study next -- with explicit uncertainty and a full audit trail.
+              {siteConfig.description}
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
@@ -464,7 +464,7 @@ export function LandingPage() {
                         <BarChart3 className="h-4 w-4 text-primary" /> Dashboard
                       </div>
                       <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground">
-                        <Brain className="h-4 w-4" /> Core Model
+                        <Brain className="h-4 w-4" /> {siteConfig.name}
                       </div>
                       <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground">
                         <FileText className="h-4 w-4" /> Materials
@@ -633,7 +633,7 @@ export function LandingPage() {
               Total transparency.
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Core Model's architecture ensures every recommendation is traceable from raw data to action.
+              {siteConfig.name}&apos;s architecture ensures every recommendation is traceable from raw data to action.
             </p>
           </div>
 
@@ -968,10 +968,10 @@ export function LandingPage() {
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <Brain className="h-3.5 w-3.5" />
                 </div>
-                <span className="font-bold">Core Model</span>
+                <span className="font-bold">{siteConfig.name}</span>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Evidence-based adaptive learning for Masters-level self-directed learners.
+                {siteConfig.tagline}.
               </p>
             </div>
             <div>
@@ -1002,7 +1002,7 @@ export function LandingPage() {
             </div>
           </div>
           <div className="mt-10 border-t border-border/50 pt-6 text-center text-xs text-muted-foreground">
-            &copy; 2026 Core Model. Built on validated science, not learning-style myths.
+            &copy; {new Date().getFullYear()} {siteConfig.legalEntity}. Built on validated science, not learning-style myths.
           </div>
         </div>
       </footer>
