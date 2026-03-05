@@ -360,7 +360,7 @@ export function AgentAudioVisualizerWave({
       blur={blur}
       className={cn(
         AgentAudioVisualizerWaveVariants({ size }),
-        'mask-[linear-gradient(90deg,transparent_0%,black_20%,black_80%,transparent_100%)]',
+        '[mask-image:linear-gradient(90deg,transparent_0%,white_20%,white_80%,transparent_100%)]',
         className,
       )}
       {...props}

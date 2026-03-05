@@ -104,7 +104,6 @@ import { ProfileSheetContent } from "@/components/profile-sheet-content"
 import {
   LiveKitRoom,
   useVoiceAssistant,
-  BarVisualizer,
   useConnectionState,
   RoomAudioRenderer,
   useRoomContext,
@@ -112,8 +111,13 @@ import {
   useTrackTranscription,
 } from "@livekit/components-react"
 import { ConnectionState, Track } from "livekit-client"
+import { AgentAudioVisualizerBar } from "@/components/agents-ui/agent-audio-visualizer-bar"
+import { AgentAudioVisualizerAura } from "@/components/agents-ui/agent-audio-visualizer-aura"
+import { AgentAudioVisualizerWave } from "@/components/agents-ui/agent-audio-visualizer-wave"
 import { useChat } from "@ai-sdk/react"
 import type { UIMessage } from "ai"
+
+type VisualizerType = "bars" | "aura" | "wave"
 
 // ── Voice Transcript Store (module-level so AuditDialog can read it outside LiveKitRoom) ──
 
@@ -1326,6 +1330,7 @@ function VoiceAgentUI({
   const [isMuted, setIsMuted] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [showTranscript, setShowTranscript] = useState(false)
+  const [visualizer, setVisualizer] = useState<VisualizerType>("bars")
   const transcriptEndRef = useRef<HTMLDivElement>(null)
 
   // Get local participant mic track for user transcriptions
@@ -1452,18 +1457,53 @@ function VoiceAgentUI({
         </div>
       ) : (
         <>
-          {/* Waveform visualization */}
+          {/* Audio visualization */}
           <div className="flex min-h-0 w-full flex-1 items-center justify-center">
-            <BarVisualizer
-              state={agentState}
-              track={audioTrack}
-              barCount={24}
-              className="h-16"
-            />
+            {visualizer === "aura" ? (
+              <AgentAudioVisualizerAura
+                state={agentState}
+                audioTrack={audioTrack}
+                size="lg"
+                themeMode="dark"
+                color="#FFFFFF"
+                colorShift={0}
+              />
+            ) : visualizer === "wave" ? (
+              <AgentAudioVisualizerWave
+                state={agentState}
+                audioTrack={audioTrack}
+                size="lg"
+                color="#FFFFFF"
+                colorShift={0}
+              />
+            ) : (
+              <AgentAudioVisualizerBar
+                state={agentState}
+                audioTrack={audioTrack}
+                barCount={5}
+                size="lg"
+              />
+            )}
           </div>
 
-          {/* Agent avatar */}
+          {/* Visualizer picker + avatar */}
           <div className="flex flex-col items-center gap-2 pb-4">
+            <div className="flex items-center gap-1 rounded-full border bg-muted/50 p-0.5">
+              {(["bars", "wave", "aura"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setVisualizer(v)}
+                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium capitalize transition-colors ${
+                    visualizer === v
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
             <Avatar
               size="lg"
               className={
@@ -1525,7 +1565,7 @@ function VoiceAgentUI({
   )
 }
 
-function VoiceAgent({ onSwitchToText, visualizer = "wave" }: { onSwitchToText: () => void; visualizer?: VisualizerType }) {
+function VoiceAgent({ onSwitchToText }: { onSwitchToText: () => void }) {
   const [micAccess, setMicAccess] = useState<
     "pending" | "granted" | "denied"
   >("pending")
@@ -1662,7 +1702,6 @@ function VoiceAgent({ onSwitchToText, visualizer = "wave" }: { onSwitchToText: (
     >
       <VoiceAgentUI
         onDisconnect={handleDisconnect}
-        visualizer={visualizer}
       />
     </LiveKitRoom>
   )
