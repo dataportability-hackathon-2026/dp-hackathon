@@ -1,5 +1,5 @@
 import type { ComponentType, SVGProps } from "react"
-import { SiWikipedia, SiArxiv } from "react-icons/si"
+import { SiArxiv } from "react-icons/si"
 import { BookOpen, Database, GraduationCap, Library, FlaskConical } from "lucide-react"
 
 type IconProps = SVGProps<SVGSVGElement> & { className?: string; size?: number }
@@ -60,18 +60,6 @@ export type AcademicResource = {
 }
 
 export const ACADEMIC_RESOURCES: AcademicResource[] = [
-  {
-    id: "wikimedia",
-    name: "Wikimedia",
-    shortName: "Wikipedia",
-    description: "Concept definitions and summaries across all subjects and 300+ languages",
-    icon: SiWikipedia,
-    color: "text-zinc-800 dark:text-zinc-100",
-    bgColor: "bg-zinc-100 dark:bg-zinc-800",
-    borderColor: "border-zinc-200 dark:border-zinc-700",
-    url: "https://www.wikipedia.org",
-    category: "content",
-  },
   {
     id: "semantic-scholar",
     name: "Semantic Scholar",
