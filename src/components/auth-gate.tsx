@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Brain, Eye, EyeOff, GraduationCap, Palette, Stethoscope, Shield, Sparkles } from "lucide-react"
+import { Brain, Eye, EyeOff, GraduationCap, Loader2, Palette, Shield, Stethoscope } from "lucide-react"
 import { siteConfig } from "@/lib/white-label"
+import { authClient } from "@/lib/auth-client"
 
 const isDev = process.env.NODE_ENV === "development"
 
@@ -14,6 +15,7 @@ type DemoPersona = {
   label: string
   name: string
   email: string
+  password: string
   icon: React.ComponentType<{ className?: string }>
   color: string
 }
@@ -23,6 +25,7 @@ const DEMO_PERSONAS: DemoPersona[] = [
     label: "Dr. Priya",
     name: "Dr. Priya Ramanathan",
     email: "priya@university.edu",
+    password: "password123",
     icon: Stethoscope,
     color: "border-border hover:bg-muted",
   },
@@ -30,6 +33,7 @@ const DEMO_PERSONAS: DemoPersona[] = [
     label: "Marcus",
     name: "Marcus Chen",
     email: "marcus@risd.edu",
+    password: "password123",
     icon: Palette,
     color: "border-border hover:bg-muted",
   },
@@ -37,6 +41,7 @@ const DEMO_PERSONAS: DemoPersona[] = [
     label: "Maya",
     name: "Maya Chen",
     email: "maya@stanford.edu",
+    password: "password123",
     icon: GraduationCap,
     color: "border-border hover:bg-muted",
   },
@@ -46,40 +51,73 @@ const ADMIN_PERSONA: DemoPersona = {
   label: "Admin",
   name: "Admin User",
   email: "admin@coremodel.ai",
+  password: "password123",
   icon: Shield,
   color: "border-border hover:bg-muted",
 }
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const { data: session, isPending } = authClient.useSession()
   const [isSignUp, setIsSignUp] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
-  if (isAuthenticated) {
+  if (isPending) {
+    return (
+      <div className="min-h-dvh flex items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (session) {
     return <>{children}</>
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setTimeout(() => {
-      setIsAuthenticated(true)
-      setLoading(false)
-    }, 800)
-  }
-
-  function loginAsPersona(persona: DemoPersona) {
+  async function loginAsPersona(persona: DemoPersona) {
     setEmail(persona.email)
     setName(persona.name)
     setLoading(true)
-    setTimeout(() => {
-      setIsAuthenticated(true)
+    setError("")
+    const { error: signInError } = await authClient.signIn.email({
+      email: persona.email,
+      password: persona.password,
+    })
+    if (signInError) {
+      setError(signInError.message ?? "Sign in failed")
       setLoading(false)
-    }, 400)
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError("")
+
+    if (isSignUp) {
+      const { error: signUpError } = await authClient.signUp.email({
+        email,
+        password,
+        name,
+      })
+      if (signUpError) {
+        setError(signUpError.message ?? "Sign up failed")
+        setLoading(false)
+      }
+    } else {
+      const { error: signInError } = await authClient.signIn.email({
+        email,
+        password,
+      })
+      if (signInError) {
+        setError(signInError.message ?? "Sign in failed")
+        setLoading(false)
+      }
+    }
   }
 
   return (
@@ -143,8 +181,13 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                 </button>
               </div>
             </div>
+            {error && (
+              <p className="text-sm text-destructive">{error}</p>
+            )}
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Please wait..." : isSignUp ? "Create account" : "Sign in"}
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : isSignUp ? "Create account" : "Sign in"}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm text-muted-foreground">
@@ -152,7 +195,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               <>
                 Already have an account?{" "}
                 <button
-                  onClick={() => setIsSignUp(false)}
+                  onClick={() => { setIsSignUp(false); setError("") }}
                   className="text-primary underline-offset-4 hover:underline"
                 >
                   Sign in
@@ -162,7 +205,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               <>
                 Don&apos;t have an account?{" "}
                 <button
-                  onClick={() => setIsSignUp(true)}
+                  onClick={() => { setIsSignUp(true); setError("") }}
                   className="text-primary underline-offset-4 hover:underline"
                 >
                   Sign up
