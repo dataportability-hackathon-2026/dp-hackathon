@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useState, useId } from "react"
-import Link from "next/link"
+import { useState, useId } from "react";
+import Link from "next/link";
 import {
   Brain,
   ChevronDown,
@@ -30,8 +30,8 @@ import {
   FlaskConical,
   CheckSquare,
   ClipboardList,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -39,11 +39,17 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu"
-import { siteConfig } from "@/lib/white-label"
-import { useCasePages, industryPages, personaPages, blogPosts, resources } from "@/lib/content"
-import { cn } from "@/lib/utils"
-import type { LucideIcon } from "lucide-react"
+} from "@/components/ui/navigation-menu";
+import { siteConfig } from "@/lib/white-label";
+import {
+  useCasePages,
+  industryPages,
+  personaPages,
+  blogPosts,
+  resources,
+} from "@/lib/content";
+import { cn } from "@/lib/utils";
+import type { LucideIcon } from "lucide-react";
 
 const INDUSTRY_ICONS: Record<string, LucideIcon> = {
   healthcare: Stethoscope,
@@ -52,7 +58,7 @@ const INDUSTRY_ICONS: Record<string, LucideIcon> = {
   "higher-education": GraduationCap,
   finance: TrendingUp,
   "creative-arts": Palette,
-}
+};
 
 const USE_CASE_ICONS: Record<string, LucideIcon> = {
   "exam-preparation": ClipboardCheck,
@@ -61,7 +67,7 @@ const USE_CASE_ICONS: Record<string, LucideIcon> = {
   "language-learning": Languages,
   "technical-interview-prep": Monitor,
   "curriculum-design": PenTool,
-}
+};
 
 const PERSONA_ICONS: Record<string, LucideIcon> = {
   "graduate-students": GraduationCap,
@@ -70,7 +76,7 @@ const PERSONA_ICONS: Record<string, LucideIcon> = {
   "pre-med-students": Heart,
   "law-students": Gavel,
   "career-changers": RefreshCw,
-}
+};
 
 const RESOURCE_TYPE_ICONS: Record<string, LucideIcon> = {
   guide: BookOpen,
@@ -78,11 +84,11 @@ const RESOURCE_TYPE_ICONS: Record<string, LucideIcon> = {
   checklist: CheckSquare,
   template: ClipboardList,
   research: FlaskConical,
-}
+};
 
 type MegaMenuProps = {
-  landingAnchors?: boolean
-}
+  landingAnchors?: boolean;
+};
 
 function MegaMenuLink({
   href,
@@ -90,22 +96,27 @@ function MegaMenuLink({
   title,
   description,
 }: {
-  href: string
-  icon: LucideIcon
-  title: string
-  description: string
+  href: string;
+  icon: LucideIcon;
+  title: string;
+  description: string;
 }) {
   return (
-    <NavigationMenuLink render={<Link href={href} />} className="flex items-start gap-3 rounded-xl p-3 hover:bg-muted transition-colors">
+    <NavigationMenuLink
+      render={<Link href={href} />}
+      className="flex items-start gap-3 rounded-xl p-3 hover:bg-muted transition-colors"
+    >
       <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0">
         <p className="text-sm font-medium leading-tight">{title}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2 leading-relaxed">{description}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+          {description}
+        </p>
       </div>
     </NavigationMenuLink>
-  )
+  );
 }
 
 function DesktopNav({ landingAnchors }: MegaMenuProps) {
@@ -121,12 +132,15 @@ function DesktopNav({ landingAnchors }: MegaMenuProps) {
             <div className="grid w-[680px] grid-cols-2 gap-0">
               <div>
                 <div className="px-3 pb-1 pt-1">
-                  <Link href="/use-cases" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
+                  <Link
+                    href="/use-cases"
+                    className="text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     Use Cases
                   </Link>
                 </div>
                 {useCasePages.map((page) => {
-                  const Icon = USE_CASE_ICONS[page.slug] ?? ClipboardCheck
+                  const Icon = USE_CASE_ICONS[page.slug] ?? ClipboardCheck;
                   return (
                     <MegaMenuLink
                       key={page.slug}
@@ -135,17 +149,20 @@ function DesktopNav({ landingAnchors }: MegaMenuProps) {
                       title={page.title}
                       description={page.metaDescription}
                     />
-                  )
+                  );
                 })}
               </div>
               <div className="border-l border-border/50">
                 <div className="px-3 pb-1 pt-1">
-                  <Link href="/industries" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
+                  <Link
+                    href="/industries"
+                    className="text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     Industries
                   </Link>
                 </div>
                 {industryPages.map((page) => {
-                  const Icon = INDUSTRY_ICONS[page.slug] ?? Microscope
+                  const Icon = INDUSTRY_ICONS[page.slug] ?? Microscope;
                   return (
                     <MegaMenuLink
                       key={page.slug}
@@ -154,7 +171,7 @@ function DesktopNav({ landingAnchors }: MegaMenuProps) {
                       title={page.title}
                       description={page.metaDescription}
                     />
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -169,12 +186,15 @@ function DesktopNav({ landingAnchors }: MegaMenuProps) {
           <NavigationMenuContent>
             <div className="grid w-[440px] grid-cols-1 gap-0">
               <div className="px-3 pb-1 pt-1">
-                <Link href="/personas" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
+                <Link
+                  href="/personas"
+                  className="text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Personas
                 </Link>
               </div>
               {personaPages.map((page) => {
-                const Icon = PERSONA_ICONS[page.slug] ?? UserCheck
+                const Icon = PERSONA_ICONS[page.slug] ?? UserCheck;
                 return (
                   <MegaMenuLink
                     key={page.slug}
@@ -183,7 +203,7 @@ function DesktopNav({ landingAnchors }: MegaMenuProps) {
                     title={page.title}
                     description={page.metaDescription}
                   />
-                )
+                );
               })}
             </div>
           </NavigationMenuContent>
@@ -198,10 +218,16 @@ function DesktopNav({ landingAnchors }: MegaMenuProps) {
             <div className="grid w-[600px] grid-cols-[1fr_240px] gap-0">
               <div>
                 <div className="flex items-center justify-between px-3 pb-1 pt-1">
-                  <Link href="/blog" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
+                  <Link
+                    href="/blog"
+                    className="text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     Blog
                   </Link>
-                  <Link href="/blog" className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1">
+                  <Link
+                    href="/blog"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+                  >
                     View all <ArrowRight className="h-3 w-3" />
                   </Link>
                 </div>
@@ -211,7 +237,9 @@ function DesktopNav({ landingAnchors }: MegaMenuProps) {
                     render={<Link href={`/blog/${post.slug}`} />}
                     className="flex flex-col gap-0.5 rounded-xl p-3 hover:bg-muted transition-colors"
                   >
-                    <p className="text-sm font-medium leading-tight">{post.title}</p>
+                    <p className="text-sm font-medium leading-tight">
+                      {post.title}
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       {post.readingTime} min read
                     </p>
@@ -220,12 +248,15 @@ function DesktopNav({ landingAnchors }: MegaMenuProps) {
               </div>
               <div className="border-l border-border/50">
                 <div className="flex items-center justify-between px-3 pb-1 pt-1">
-                  <Link href="/resources" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors">
+                  <Link
+                    href="/resources"
+                    className="text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     Resources
                   </Link>
                 </div>
                 {resources.slice(0, 5).map((resource) => {
-                  const Icon = RESOURCE_TYPE_ICONS[resource.type] ?? FileText
+                  const Icon = RESOURCE_TYPE_ICONS[resource.type] ?? FileText;
                   return (
                     <NavigationMenuLink
                       key={resource.slug}
@@ -233,12 +264,17 @@ function DesktopNav({ landingAnchors }: MegaMenuProps) {
                       className="flex items-center gap-2 rounded-xl p-3 hover:bg-muted transition-colors"
                     >
                       <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      <p className="text-sm font-medium leading-tight line-clamp-1">{resource.title}</p>
+                      <p className="text-sm font-medium leading-tight line-clamp-1">
+                        {resource.title}
+                      </p>
                     </NavigationMenuLink>
-                  )
+                  );
                 })}
                 <div className="px-3 pb-1">
-                  <Link href="/resources" className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1">
+                  <Link
+                    href="/resources"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1"
+                  >
                     View all <ArrowRight className="h-3 w-3" />
                   </Link>
                 </div>
@@ -254,7 +290,7 @@ function DesktopNav({ landingAnchors }: MegaMenuProps) {
               <NavigationMenuLink
                 render={<a href="#features" />}
                 className={cn(
-                  "inline-flex h-9 items-center justify-center rounded-2xl bg-transparent px-4.5 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+                  "inline-flex h-9 items-center justify-center rounded-2xl bg-transparent px-4.5 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:bg-muted hover:text-foreground",
                 )}
               >
                 Features
@@ -264,7 +300,7 @@ function DesktopNav({ landingAnchors }: MegaMenuProps) {
               <NavigationMenuLink
                 render={<a href="#pricing" />}
                 className={cn(
-                  "inline-flex h-9 items-center justify-center rounded-2xl bg-transparent px-4.5 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+                  "inline-flex h-9 items-center justify-center rounded-2xl bg-transparent px-4.5 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:bg-muted hover:text-foreground",
                 )}
               >
                 Pricing
@@ -274,17 +310,20 @@ function DesktopNav({ landingAnchors }: MegaMenuProps) {
         )}
       </NavigationMenuList>
     </NavigationMenu>
-  )
+  );
 }
 
-type MobileSection = "solutions" | "personas" | "learn" | null
+type MobileSection = "solutions" | "personas" | "learn" | null;
 
-function MobileNav({ landingAnchors, onClose }: MegaMenuProps & { onClose: () => void }) {
-  const [openSection, setOpenSection] = useState<MobileSection>(null)
-  const sectionId = useId()
+function MobileNav({
+  landingAnchors,
+  onClose,
+}: MegaMenuProps & { onClose: () => void }) {
+  const [openSection, setOpenSection] = useState<MobileSection>(null);
+  const sectionId = useId();
 
   function toggle(section: MobileSection) {
-    setOpenSection((prev) => (prev === section ? null : section))
+    setOpenSection((prev) => (prev === section ? null : section));
   }
 
   return (
@@ -298,11 +337,18 @@ function MobileNav({ landingAnchors, onClose }: MegaMenuProps & { onClose: () =>
         aria-controls={`${sectionId}-solutions`}
       >
         Solutions
-        <ChevronDown className={cn("h-4 w-4 transition-transform", openSection === "solutions" && "rotate-180")} />
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 transition-transform",
+            openSection === "solutions" && "rotate-180",
+          )}
+        />
       </button>
       {openSection === "solutions" && (
         <div id={`${sectionId}-solutions`} className="space-y-1 pl-3">
-          <p className="px-3 pt-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Use Cases</p>
+          <p className="px-3 pt-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Use Cases
+          </p>
           {useCasePages.map((page) => (
             <Link
               key={page.slug}
@@ -313,7 +359,9 @@ function MobileNav({ landingAnchors, onClose }: MegaMenuProps & { onClose: () =>
               {page.title}
             </Link>
           ))}
-          <p className="px-3 pt-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Industries</p>
+          <p className="px-3 pt-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Industries
+          </p>
           {industryPages.map((page) => (
             <Link
               key={page.slug}
@@ -336,7 +384,12 @@ function MobileNav({ landingAnchors, onClose }: MegaMenuProps & { onClose: () =>
         aria-controls={`${sectionId}-personas`}
       >
         Who It&apos;s For
-        <ChevronDown className={cn("h-4 w-4 transition-transform", openSection === "personas" && "rotate-180")} />
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 transition-transform",
+            openSection === "personas" && "rotate-180",
+          )}
+        />
       </button>
       {openSection === "personas" && (
         <div id={`${sectionId}-personas`} className="space-y-1 pl-3">
@@ -362,14 +415,27 @@ function MobileNav({ landingAnchors, onClose }: MegaMenuProps & { onClose: () =>
         aria-controls={`${sectionId}-learn`}
       >
         Learn
-        <ChevronDown className={cn("h-4 w-4 transition-transform", openSection === "learn" && "rotate-180")} />
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 transition-transform",
+            openSection === "learn" && "rotate-180",
+          )}
+        />
       </button>
       {openSection === "learn" && (
         <div id={`${sectionId}-learn`} className="space-y-1 pl-3">
-          <Link href="/blog" className="block rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted" onClick={onClose}>
+          <Link
+            href="/blog"
+            className="block rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted"
+            onClick={onClose}
+          >
             Blog
           </Link>
-          <Link href="/resources" className="block rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted" onClick={onClose}>
+          <Link
+            href="/resources"
+            className="block rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted"
+            onClick={onClose}
+          >
             Resources
           </Link>
         </div>
@@ -378,10 +444,18 @@ function MobileNav({ landingAnchors, onClose }: MegaMenuProps & { onClose: () =>
       {/* Landing anchors on mobile */}
       {landingAnchors && (
         <>
-          <a href="#features" className="block rounded-lg px-3 py-2.5 text-sm hover:bg-muted" onClick={onClose}>
+          <a
+            href="#features"
+            className="block rounded-lg px-3 py-2.5 text-sm hover:bg-muted"
+            onClick={onClose}
+          >
             Features
           </a>
-          <a href="#pricing" className="block rounded-lg px-3 py-2.5 text-sm hover:bg-muted" onClick={onClose}>
+          <a
+            href="#pricing"
+            className="block rounded-lg px-3 py-2.5 text-sm hover:bg-muted"
+            onClick={onClose}
+          >
             Pricing
           </a>
         </>
@@ -389,34 +463,40 @@ function MobileNav({ landingAnchors, onClose }: MegaMenuProps & { onClose: () =>
 
       <div className="space-y-2 pt-3">
         <Link href="/dashboard" className="block" onClick={onClose}>
-          <Button variant="outline" className="w-full">Sign In</Button>
+          <Button variant="outline" className="w-full">
+            Sign In
+          </Button>
         </Link>
         <Link href="/dashboard" className="block" onClick={onClose}>
           <Button className="w-full">Get Started</Button>
         </Link>
       </div>
     </div>
-  )
+  );
 }
 
 export function MegaMenu({ landingAnchors = false }: MegaMenuProps) {
-  const [mobileOpen, setMobileOpen] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/50 bg-background/60 backdrop-blur-2xl">
+    <header className="sticky top-0 z-[100] border-b border-border/50 bg-background/80 backdrop-blur-2xl supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Brain className="h-4 w-4" />
           </div>
-          <span className="text-lg font-bold tracking-tight">{siteConfig.name}</span>
+          <span className="text-lg font-bold tracking-tight">
+            {siteConfig.name}
+          </span>
         </Link>
 
         <DesktopNav landingAnchors={landingAnchors} />
 
         <div className="hidden items-center gap-3 md:flex">
           <Link href="/dashboard">
-            <Button variant="ghost" size="sm">Sign In</Button>
+            <Button variant="ghost" size="sm">
+              Sign In
+            </Button>
           </Link>
           <Link href="/dashboard">
             <Button size="sm">
@@ -431,16 +511,23 @@ export function MegaMenu({ landingAnchors = false }: MegaMenuProps) {
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label="Toggle menu"
         >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          {mobileOpen ? (
+            <X className="h-5 w-5" />
+          ) : (
+            <Menu className="h-5 w-5" />
+          )}
         </button>
       </div>
 
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="border-t border-border md:hidden max-h-[calc(100dvh-4rem)] overflow-y-auto">
-          <MobileNav landingAnchors={landingAnchors} onClose={() => setMobileOpen(false)} />
+          <MobileNav
+            landingAnchors={landingAnchors}
+            onClose={() => setMobileOpen(false)}
+          />
         </div>
       )}
     </header>
-  )
+  );
 }
