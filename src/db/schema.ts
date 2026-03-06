@@ -1,38 +1,30 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 
 // ─── Auth tables ────────────────────────────────────────────────────────────
 
-export const user = sqliteTable("user", {
+export const user = pgTable("user", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: text("name"),
   email: text("email").notNull().unique(),
-  emailVerified: integer("email_verified", { mode: "boolean" }),
+  emailVerified: boolean("email_verified"),
   image: text("image"),
-  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
-    () => new Date(Date.now()),
-  ),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(
-    () => new Date(Date.now()),
-  ),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
   stripeCustomerId: text("stripe_customer_id"),
   creditBalance: integer("credit_balance").default(0),
   creditExhaustionPolicy: text("credit_exhaustion_policy").default("pause"),
 });
 
-export const session = sqliteTable("session", {
+export const session = pgTable("session", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
-  expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
   token: text("token").notNull().unique(),
-  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
-    () => new Date(Date.now()),
-  ),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(
-    () => new Date(Date.now()),
-  ),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
   userId: text("user_id")
@@ -40,7 +32,7 @@ export const session = sqliteTable("session", {
     .references(() => user.id),
 });
 
-export const account = sqliteTable("account", {
+export const account = pgTable("account", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
@@ -51,41 +43,29 @@ export const account = sqliteTable("account", {
     .references(() => user.id),
   accessToken: text("access_token"),
   refreshToken: text("refresh_token"),
-  accessTokenExpiresAt: integer("access_token_expires_at", {
-    mode: "timestamp",
-  }),
-  refreshTokenExpiresAt: integer("refresh_token_expires_at", {
-    mode: "timestamp",
-  }),
+  accessTokenExpiresAt: timestamp("access_token_expires_at"),
+  refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
   scope: text("scope"),
   idToken: text("id_token"),
   password: text("password"),
-  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
-    () => new Date(Date.now()),
-  ),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(
-    () => new Date(Date.now()),
-  ),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const verification = sqliteTable("verification", {
+export const verification = pgTable("verification", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   identifier: text("identifier").notNull(),
   value: text("value").notNull(),
-  expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
-    () => new Date(Date.now()),
-  ),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(
-    () => new Date(Date.now()),
-  ),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // ─── Billing tables ─────────────────────────────────────────────────────────
 
-export const creditPurchase = sqliteTable("credit_purchase", {
+export const creditPurchase = pgTable("credit_purchase", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
@@ -99,12 +79,10 @@ export const creditPurchase = sqliteTable("credit_purchase", {
   creditAmount: integer("credit_amount").notNull(),
   priceCents: integer("price_cents").notNull(),
   status: text("status").notNull().default("pending"),
-  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
-    () => new Date(Date.now()),
-  ),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const creditLedger = sqliteTable("credit_ledger", {
+export const creditLedger = pgTable("credit_ledger", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
@@ -116,12 +94,10 @@ export const creditLedger = sqliteTable("credit_ledger", {
   description: text("description"),
   referenceId: text("reference_id"),
   balanceAfter: integer("balance_after").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
-    () => new Date(Date.now()),
-  ),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const usageLog = sqliteTable("usage_log", {
+export const usageLog = pgTable("usage_log", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
@@ -135,7 +111,5 @@ export const usageLog = sqliteTable("usage_log", {
   feature: text("feature").notNull(),
   stripeEventId: text("stripe_event_id"),
   metadata: text("metadata"),
-  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(
-    () => new Date(Date.now()),
-  ),
+  createdAt: timestamp("created_at").defaultNow(),
 });

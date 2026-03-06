@@ -7,9 +7,9 @@ export async function getBalance(userId: string): Promise<number> {
     .select({ creditBalance: user.creditBalance })
     .from(user)
     .where(eq(user.id, userId))
-    .get();
+    .limit(1);
 
-  return result?.creditBalance ?? 0;
+  return result[0]?.creditBalance ?? 0;
 }
 
 export async function deductCredits(
@@ -82,12 +82,13 @@ export async function addCredits(
 export async function completePurchase(
   checkoutSessionId: string,
 ): Promise<void> {
-  const purchase = await db
+  const rows = await db
     .select()
     .from(creditPurchase)
     .where(eq(creditPurchase.stripeCheckoutSessionId, checkoutSessionId))
-    .get();
+    .limit(1);
 
+  const purchase = rows[0];
   if (!purchase || purchase.status === "completed") {
     return;
   }

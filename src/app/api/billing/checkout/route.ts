@@ -33,12 +33,13 @@ export async function POST(request: Request) {
   const pack = CREDIT_PACKS[packSlug];
 
   // Get or create Stripe customer
-  const dbUser = await db
+  const dbUsers = await db
     .select()
     .from(user)
     .where(eq(user.id, userId))
-    .get();
+    .limit(1);
 
+  const dbUser = dbUsers[0];
   if (!dbUser) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
@@ -73,8 +74,8 @@ export async function POST(request: Request) {
         quantity: 1,
       },
     ],
-    success_url: `${baseUrl}/single-page?checkout=success`,
-    cancel_url: `${baseUrl}/single-page?checkout=cancel`,
+    success_url: `${baseUrl}/dashboard?checkout=success`,
+    cancel_url: `${baseUrl}/dashboard?checkout=cancel`,
     metadata: { userId, packSlug },
   });
 

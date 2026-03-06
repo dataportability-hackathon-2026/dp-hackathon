@@ -157,7 +157,7 @@ export function LandingPageTemplate({ page, breadcrumbCategory }: { page: Landin
           <div className="grid md:grid-cols-3 gap-8">
             {page.benefits.map((benefit, i) => (
               <div key={i} className="text-center">
-                <div className="text-5xl font-bold text-blue-400 dark:text-blue-600 mb-2">{benefit.metric}</div>
+                <div className="text-5xl font-bold text-blue-400 dark:text-blue-600 mb-2 font-heading">{benefit.metric}</div>
                 <div className="text-lg font-semibold text-white dark:text-neutral-900 mb-2">{benefit.label}</div>
                 <p className="text-neutral-400 dark:text-neutral-600 text-sm">{benefit.description}</p>
               </div>
