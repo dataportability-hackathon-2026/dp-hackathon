@@ -83,13 +83,24 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     setName(persona.name)
     setLoading(true)
     setError("")
+
+    // Try sign in first
     const { error: signInError } = await authClient.signIn.email({
       email: persona.email,
       password: persona.password,
     })
+
     if (signInError) {
-      setError(signInError.message ?? "Sign in failed")
-      setLoading(false)
+      // User doesn't exist yet — create account, then sign in
+      const { error: signUpError } = await authClient.signUp.email({
+        email: persona.email,
+        password: persona.password,
+        name: persona.name,
+      })
+      if (signUpError) {
+        setError(signUpError.message ?? "Failed to create demo account")
+        setLoading(false)
+      }
     }
   }
 

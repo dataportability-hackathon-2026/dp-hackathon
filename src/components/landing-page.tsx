@@ -16,7 +16,6 @@ import {
   Target,
   Sparkles,
   BookOpen,
-  GraduationCap,
   Microscope,
   Palette,
   Stethoscope,
@@ -46,6 +45,7 @@ import { BsMicrosoftTeams } from "react-icons/bs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { FeedbackForm } from "@/components/feedback-form";
 import { siteConfig } from "@/lib/white-label";
 import { ACADEMIC_RESOURCES } from "@/lib/academic-resources";
@@ -60,6 +60,8 @@ import {
 import Image from "next/image";
 import { BlurText } from "@/components/reactbits/blur-text";
 import { MegaMenu } from "@/components/marketing/mega-menu";
+import { HeroShader } from "@/components/landing/hero-shader";
+import { PixelSnow } from "@/components/reactbits/pixel-snow";
 
 // ── Animation Helpers ──
 
@@ -241,9 +243,9 @@ const personas = [
 const features = [
   {
     icon: Upload,
-    title: "Ingest Any Material",
+    title: "Use Your Own Materials",
     description:
-      "Upload PDFs, slides, videos, code, markdown. Core Model builds a concept map from your actual study materials.",
+      "Upload PDFs, slides, videos, code, or markdown. We build a map of what you're learning from your actual files.",
     formats: [
       { icon: FileText, label: "PDFs" },
       { icon: Presentation, label: "Slides" },
@@ -254,33 +256,33 @@ const features = [
   },
   {
     icon: Brain,
-    title: "Scientific Learner Profile",
+    title: "Your Learning Profile",
     description:
-      "Built from validated psychometric instruments and real behavior. No learning-style myths — only constructs that change decisions.",
+      "Based on how you actually study, not personality quizzes. We use it to give you better recommendations.",
   },
   {
     icon: Map,
-    title: "Adaptive 7-Day Guides",
+    title: "Weekly Study Plans",
     description:
-      "Personalized learning plans that evolve every session. Spacing, interleaving, and retrieval practice optimized to your mastery state.",
+      "A plan that updates as you go. We mix topics and schedule reviews so you remember more.",
   },
   {
     icon: Eye,
-    title: "Full Audit Trail",
+    title: "See Why We Recommend It",
     description:
-      "Every recommendation links to an observation, inference, and policy change. See exactly why each decision was made.",
+      "Every suggestion links back to your data and our reasoning. You can see exactly why we said it.",
   },
   {
     icon: LineChart,
-    title: "Uncertainty as a Feature",
+    title: "We Show Our Confidence",
     description:
-      "Estimates are distributions, not single scores. Early on, wide uncertainty drives exploration. Over time, precision sharpens.",
+      "We give you a range, not a fake single number. When we're unsure, we say so. As you learn, the range narrows.",
   },
   {
     icon: Shield,
-    title: "Evidence-Based Only",
+    title: "Only What Works",
     description:
-      "Interventions are testable hypotheses. If they don't improve outcomes, they get revised or rolled back.",
+      "If something doesn't help you learn better, we change it. We stick to methods that are proven to work.",
   },
 ];
 
@@ -394,53 +396,36 @@ const layers = [
     step: "01",
     title: "Evidence Layer",
     subtitle: "What happened",
-    description:
-      "Raw behavioral data from study sessions. Response accuracy, confidence predictions, time patterns. No interpretation — just facts.",
     icon: Target,
     color: "from-emerald-500 to-emerald-600",
-    items: [
-      "Response accuracy",
-      "Confidence ratings",
-      "Time patterns",
-      "Material coverage",
-    ],
   },
   {
     step: "02",
     title: "Inference Layer",
     subtitle: "What we estimate",
-    description:
-      "Statistical models derive mastery estimates, calibration quality, and strategy risks. Every estimate includes explicit uncertainty bounds.",
     icon: TrendingUp,
     color: "from-violet-500 to-violet-600",
-    items: [
-      "Mastery distributions",
-      "Calibration ECE/Brier",
-      "Strategy risk scores",
-      "Confidence intervals",
-    ],
   },
   {
     step: "03",
     title: "Policy Layer",
     subtitle: "What to do next",
-    description:
-      "Deterministic rules map inferences to interventions. Spacing schedules, retrieval prompts, calibration exercises. Fully auditable.",
     icon: Zap,
     color: "from-amber-500 to-amber-600",
-    items: [
-      "Spaced repetition",
-      "Retrieval practice",
-      "Calibration loops",
-      "Strategy coaching",
-    ],
   },
 ];
 
 // ── Component ──
 
+type ContentModal =
+  | { type: "feature"; index: number }
+  | { type: "layer"; index: number }
+  | { type: "persona"; index: number }
+  | null;
+
 export function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [contentModal, setContentModal] = useState<ContentModal>(null);
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -452,9 +437,19 @@ export function LandingPage() {
   const heroY = useTransform(scrollYProgress, [0, 1], [0, 100]);
 
   return (
-    <div className="min-h-dvh bg-background text-foreground overflow-x-hidden">
+    <div className="min-h-dvh bg-background text-foreground relative">
+      {/* Full-screen background: shader + multi-layer gradient to bg-background by 100dvh */}
+      <div
+        className="fixed inset-0 h-dvh w-full pointer-events-none z-0"
+        aria-hidden
+      >
+        <HeroShader />
+        <PixelSnow className="opacity-80" color="255, 255, 255" />
+        {/* Multi-layer gradient: soft blend then solid bg-background by 100dvh */}
+        <div className="absolute inset-0 h-dvh bg-linear-to-b from-transparent from-0% via-background/20 via-50% to-background to-100%" />
+      </div>
       <MegaMenu landingAnchors />
-      <div className="grayscale">
+      <div className="grayscale relative z-10 overflow-x-hidden">
         {/* ── Hero ── */}
         <section
           ref={heroRef}
@@ -516,8 +511,8 @@ export function LandingPage() {
                   <a href="#how-it-works">
                     <Button
                       size="lg"
-                      variant="outline"
-                      className="text-base px-8 py-6 rounded-xl backdrop-blur-sm"
+                      variant="ghost"
+                      className="text-base px-8 py-6 rounded-xl backdrop-blur-xl bg-white/10 dark:bg-white/5 hover:bg-white/20 dark:hover:bg-white/10"
                     >
                       <Play className="mr-2 h-4 w-4" />
                       See How It Works
@@ -570,7 +565,9 @@ export function LandingPage() {
                 height={144}
                 className="h-36 w-36 object-contain"
               />
-              <p className="text-sm text-gray-500">Trusted Partner</p>
+              <div className="grayscale">
+                <p className="text-sm text-gray-500">Trusted Partner</p>
+              </div>
             </div>
           </FadeInOnScroll>
         </div>
@@ -585,55 +582,29 @@ export function LandingPage() {
                 Features
               </Badge>
               <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight mb-4">
-                Science-first
-                <br />
-                <span className="bg-gradient-to-r from-violet-500 to-purple-600 bg-clip-text text-transparent">
-                  adaptive learning.
-                </span>
+                What you get.
               </h2>
               <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-                Every feature is grounded in validated research. No buzzwords.
-                Just evidence-based interventions that measurably improve
-                outcomes.
+                Research-backed tools that help you learn better. No fluff.
               </p>
             </FadeInOnScroll>
 
             <StaggerChildren className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {features.map((feature, i) => (
                 <StaggerItem key={i}>
-                  <motion.div
+                  <motion.button
+                    type="button"
+                    className="w-full text-left rounded-2xl overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                     whileHover={{ y: -6, scale: 1.02 }}
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    onClick={() =>
+                      setContentModal({ type: "feature", index: i })
+                    }
                   >
-                    <Card className="group relative overflow-hidden border-border/60 hover:border-primary/30 transition-colors h-full">
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <CardHeader className="relative">
-                        <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
-                          <feature.icon className="h-5 w-5" />
-                        </div>
-                        <CardTitle className="text-lg">
-                          {feature.title}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="relative">
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {feature.description}
-                        </p>
-                        {feature.formats && (
-                          <div className="mt-4 flex flex-wrap gap-2">
-                            {feature.formats.map((fmt, j) => (
-                              <span
-                                key={j}
-                                className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground"
-                              >
-                                <fmt.icon className="h-3 w-3" /> {fmt.label}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </motion.div>
+                    <div className="aspect-[4/3] relative flex items-center justify-center">
+                      <feature.icon className="h-16 w-16 text-primary" />
+                    </div>
+                  </motion.button>
                 </StaggerItem>
               ))}
             </StaggerChildren>
@@ -643,53 +614,38 @@ export function LandingPage() {
         {/* ── How It Works ── */}
         <section
           id="how-it-works"
-          className="py-24 sm:py-32 bg-muted/20 relative overflow-hidden"
+          className="py-24 sm:py-32 relative overflow-hidden"
         >
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <FadeInOnScroll className="text-center mb-16">
-              <Badge variant="secondary" className="mb-4">
+              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight mb-3">
                 How It Works
-              </Badge>
-              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight mb-4">
-                Three layers.
-                <br />
-                Total transparency.
               </h2>
-              <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-lg sm:text-xl text-muted-foreground mb-2">
+                Three layers. Total transparency.
+              </p>
+              <p className="text-base text-muted-foreground/90 max-w-2xl mx-auto">
                 {siteConfig.name}&apos;s architecture ensures every
                 recommendation is traceable from raw data to action.
               </p>
             </FadeInOnScroll>
 
-            <div className="grid gap-6 lg:gap-8 lg:grid-cols-3 max-w-5xl mx-auto">
+            <div className="grid gap-6 lg:gap-8 lg:grid-cols-3">
               {layers.map((layer, i) => (
                 <FadeInOnScroll key={i} delay={i * 0.15}>
-                  <motion.div
-                    className="relative h-full"
+                  <motion.button
+                    type="button"
+                    className="w-full text-left rounded-2xl overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                     whileHover={{ y: -8 }}
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    onClick={() => setContentModal({ type: "layer", index: i })}
                   >
-                    <div className="rounded-2xl border border-border/60 bg-card p-6 h-full shadow-sm hover:shadow-lg transition-shadow duration-300">
-                      <motion.div
-                        className={`mb-4 inline-flex items-center justify-center h-12 w-12 rounded-xl bg-gradient-to-br ${layer.color} text-white shadow-lg`}
-                        whileHover={{ rotate: 5, scale: 1.1 }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 400,
-                          damping: 15,
-                        }}
-                      >
-                        <layer.icon className="h-6 w-6" />
-                      </motion.div>
-                      <div className="text-xs font-mono text-muted-foreground mb-1">
-                        LAYER {layer.step}
-                      </div>
-                      <h3 className="text-xl font-bold mb-1">{layer.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {layer.subtitle}
-                      </p>
+                    <div
+                      className="aspect-[4/3] relative flex items-center justify-center"
+                    >
+                      <layer.icon className="h-16 w-16 text-white" />
                     </div>
-                  </motion.div>
+                  </motion.button>
                 </FadeInOnScroll>
               ))}
             </div>
@@ -722,7 +678,7 @@ export function LandingPage() {
         </section>
 
         {/* ── Case Studies ── */}
-        <section id="case-studies" className="py-24 sm:py-32 bg-muted/10">
+        <section id="case-studies" className="py-24 sm:py-32">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <FadeInOnScroll className="text-center mb-16">
               <Badge variant="secondary" className="mb-4">
@@ -741,96 +697,28 @@ export function LandingPage() {
               </p>
             </FadeInOnScroll>
 
-            <div className="space-y-8">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {personas.map((persona, i) => (
                 <FadeInOnScroll
                   key={persona.id}
                   delay={i * 0.1}
                   direction={i % 2 === 0 ? "left" : "right"}
                 >
-                  <motion.div
-                    className={`rounded-2xl border ${persona.borderColor} ${persona.bgColor} overflow-hidden`}
+                  <motion.button
+                    type="button"
+                    className="w-full text-left rounded-2xl overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                     whileHover={{ y: -4 }}
                     transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                    onClick={() =>
+                      setContentModal({ type: "persona", index: i })
+                    }
                   >
-                    <div className="grid md:grid-cols-5 gap-0">
-                      {/* Profile */}
-                      <div className="md:col-span-2 p-6 sm:p-8">
-                        <div className="flex items-center gap-3 mb-4">
-                          <motion.div
-                            className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${persona.color} text-white shadow-lg`}
-                            whileHover={{ rotate: 10, scale: 1.1 }}
-                            transition={{
-                              type: "spring",
-                              stiffness: 400,
-                              damping: 15,
-                            }}
-                          >
-                            <persona.icon className="h-6 w-6" />
-                          </motion.div>
-                          <div>
-                            <h3 className="font-bold text-base sm:text-lg">
-                              {persona.name}
-                            </h3>
-                            <p className="text-xs sm:text-sm text-muted-foreground">
-                              {persona.role}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2 mb-6">
-                          <div className="flex items-center gap-2">
-                            <GraduationCap className="h-4 w-4 text-muted-foreground shrink-0" />
-                            <span className="text-sm">
-                              {persona.institution}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-                            <span className="text-sm">
-                              {persona.weeks}-week journey
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Metric */}
-                        <div className="rounded-xl border border-border/40 bg-card p-4">
-                          <div className="text-2xl sm:text-3xl font-black font-heading">
-                            {persona.metric}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {persona.metricLabel}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Story */}
-                      <div className="md:col-span-3 border-t md:border-t-0 md:border-l border-border/40 p-6 sm:p-8 flex flex-col justify-between">
-                        <div>
-                          <h4 className="font-semibold mb-2">The Challenge</h4>
-                          <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-                            {persona.challenge}
-                          </p>
-
-                          <div className="relative rounded-xl bg-card border border-border/40 p-5">
-                            <Quote className="absolute top-3 left-3 h-5 w-5 text-primary/20" />
-                            <p className="text-sm italic leading-relaxed pl-6">
-                              &ldquo;{persona.quote}&rdquo;
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="mt-6 flex items-center gap-1">
-                          {[...Array(5)].map((_, j) => (
-                            <Star
-                              key={j}
-                              className="h-4 w-4 fill-amber-400 text-amber-400"
-                            />
-                          ))}
-                        </div>
-                      </div>
+                    <div
+                      className="aspect-[4/3] relative flex items-center justify-center"
+                    >
+                      <persona.icon className="h-16 w-16 text-white" />
                     </div>
-                  </motion.div>
+                  </motion.button>
                 </FadeInOnScroll>
               ))}
             </div>
@@ -859,10 +747,10 @@ export function LandingPage() {
               {pricingPlans.map((plan) => (
                 <StaggerItem key={plan.name}>
                   <motion.div
-                    className={`rounded-2xl border p-6 sm:p-8 h-full ${
+                    className={`rounded-2xl p-6 sm:p-8 h-full backdrop-blur-xl ${
                       plan.highlighted
-                        ? "border-primary bg-gradient-to-b from-primary/5 to-transparent shadow-xl shadow-primary/10 relative"
-                        : "border-border/60 bg-card"
+                        ? "bg-white/15 dark:bg-white/10 shadow-xl shadow-primary/10 relative"
+                        : "bg-white/10 dark:bg-white/5"
                     }`}
                     whileHover={{ y: -8, scale: 1.02 }}
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
@@ -886,8 +774,8 @@ export function LandingPage() {
                     </div>
                     <a href="/dashboard">
                       <Button
-                        className="w-full mb-6"
-                        variant={plan.highlighted ? "default" : "outline"}
+                        className={`w-full mb-6 ${!plan.highlighted ? "backdrop-blur-xl bg-white/10 dark:bg-white/5 hover:bg-white/20 dark:hover:bg-white/10 border-0" : ""}`}
+                        variant={plan.highlighted ? "default" : "ghost"}
                       >
                         {plan.cta}
                       </Button>
@@ -910,7 +798,7 @@ export function LandingPage() {
               {/* Enterprise / Call Us */}
               <StaggerItem key="enterprise">
                 <motion.div
-                  className="rounded-2xl border border-border/60 bg-card p-6 sm:p-8 h-full flex flex-col"
+                  className="rounded-2xl backdrop-blur-xl bg-white/10 dark:bg-white/5 p-6 sm:p-8 h-full flex flex-col"
                   whileHover={{ y: -8, scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 >
@@ -928,7 +816,7 @@ export function LandingPage() {
                     </span>
                   </div>
                   <a href="tel:+18005551234">
-                    <Button className="w-full mb-6 gap-2" variant="outline">
+                    <Button className="w-full mb-6 gap-2 backdrop-blur-xl bg-white/10 dark:bg-white/5 hover:bg-white/20 dark:hover:bg-white/10 border-0" variant="ghost">
                       <Phone className="h-4 w-4" />
                       Call Us
                     </Button>
@@ -960,7 +848,7 @@ export function LandingPage() {
         </section>
 
         {/* ── FAQ ── */}
-        <section id="faq" className="py-24 sm:py-32 bg-muted/20">
+        <section id="faq" className="py-24 sm:py-32">
           <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
             <FadeInOnScroll className="text-center mb-16">
               <Badge variant="secondary" className="mb-4">
@@ -974,7 +862,7 @@ export function LandingPage() {
             <StaggerChildren className="space-y-3">
               {faqs.map((faq, i) => (
                 <StaggerItem key={i}>
-                  <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+                  <div className="rounded-xl backdrop-blur-xl bg-white/10 dark:bg-white/5 overflow-hidden">
                     <button
                       className="flex w-full items-center justify-between p-5 text-left"
                       onClick={() => setOpenFaq(openFaq === i ? null : i)}
@@ -1014,7 +902,7 @@ export function LandingPage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <FadeInOnScroll>
               <motion.div
-                className="relative rounded-3xl bg-gradient-to-br from-primary via-violet-700 to-purple-800 p-10 sm:p-16 text-center text-white overflow-hidden"
+                className="relative rounded-3xl backdrop-blur-xl bg-white/10 dark:bg-white/5 p-10 sm:p-16 text-center overflow-hidden"
                 whileHover={{ scale: 1.01 }}
                 transition={{ type: "spring", stiffness: 200, damping: 20 }}
               >
@@ -1024,7 +912,7 @@ export function LandingPage() {
                     <br />
                     with evidence today.
                   </h2>
-                  <p className="text-base sm:text-lg text-white/80 max-w-2xl mx-auto mb-8">
+                  <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
                     Upload your first materials, build your scientific learner
                     profile, and get your personalized 7-day guide in minutes.
                   </p>
@@ -1032,8 +920,8 @@ export function LandingPage() {
                     <a href="/dashboard">
                       <Button
                         size="lg"
-                        variant="secondary"
-                        className="text-base px-8 py-6 rounded-xl shadow-lg group"
+                        variant="ghost"
+                        className="text-base px-8 py-6 rounded-xl backdrop-blur-xl bg-white/10 dark:bg-white/5 hover:bg-white/20 dark:hover:bg-white/10 group"
                       >
                         Sign Up Now
                         <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -1043,7 +931,7 @@ export function LandingPage() {
                       <Button
                         size="lg"
                         variant="ghost"
-                        className="text-base px-8 py-6 rounded-xl text-white/90 hover:text-white hover:bg-white/10"
+                        className="text-base px-8 py-6 rounded-xl"
                       >
                         Read Case Studies
                       </Button>
@@ -1054,6 +942,138 @@ export function LandingPage() {
             </FadeInOnScroll>
           </div>
         </section>
+
+        {/* ── Content modals (half image, half text) ── */}
+        <Dialog
+          open={contentModal !== null}
+          onOpenChange={(open) => !open && setContentModal(null)}
+        >
+          <DialogContent className="max-w-4xl p-0 gap-0 overflow-hidden">
+            <div className="grid md:grid-cols-2 min-h-[320px]">
+              {/* Half: image */}
+              <div className="relative aspect-[4/3] md:aspect-auto min-h-[200px] md:min-h-0 flex items-center justify-center">
+                {contentModal?.type === "feature" &&
+                  features[contentModal.index] && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+                      {(() => {
+                        const F = features[contentModal.index].icon;
+                        return <F className="h-20 w-20 text-primary" />;
+                      })()}
+                    </div>
+                  )}
+                {contentModal?.type === "layer" &&
+                  layers[contentModal.index] && (
+                    <div
+                      className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br ${layers[contentModal.index].color}`}
+                    >
+                      {(() => {
+                        const L = layers[contentModal.index].icon;
+                        return <L className="h-20 w-20 text-white" />;
+                      })()}
+                    </div>
+                  )}
+                {contentModal?.type === "persona" &&
+                  personas[contentModal.index] && (
+                    <div
+                      className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br ${personas[contentModal.index].color}`}
+                    >
+                      {(() => {
+                        const P = personas[contentModal.index].icon;
+                        return <P className="h-20 w-20 text-white" />;
+                      })()}
+                    </div>
+                  )}
+              </div>
+              {/* Half: content text */}
+              <div className="flex flex-col justify-center p-6 sm:p-8 overflow-y-auto">
+                {contentModal?.type === "feature" &&
+                  features[contentModal.index] && (
+                    <>
+                      <DialogTitle className="text-xl mb-2">
+                        {features[contentModal.index].title}
+                      </DialogTitle>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {features[contentModal.index].description}
+                      </p>
+                      {features[contentModal.index].formats && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {features[contentModal.index].formats?.map(
+                            (fmt, j) => (
+                              <span
+                                key={j}
+                                className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground"
+                              >
+                                <fmt.icon className="h-3 w-3" /> {fmt.label}
+                              </span>
+                            ),
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                {contentModal?.type === "layer" &&
+                  layers[contentModal.index] && (
+                    <>
+                      <DialogTitle className="text-xl mb-2">
+                        {layers[contentModal.index].title}
+                      </DialogTitle>
+                      <p className="text-sm text-muted-foreground">
+                        {layers[contentModal.index].subtitle}
+                      </p>
+                    </>
+                  )}
+                {contentModal?.type === "persona" &&
+                  personas[contentModal.index] && (
+                    <>
+                      <DialogTitle className="text-lg mb-1">
+                        {personas[contentModal.index].name}
+                      </DialogTitle>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {personas[contentModal.index].role}
+                      </p>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {personas[contentModal.index].institution}
+                      </p>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                        <Clock className="h-4 w-4 shrink-0" />
+                        <span>
+                          {personas[contentModal.index].weeks}-week journey
+                        </span>
+                      </div>
+                      <div className="rounded-lg bg-muted/30 px-3 py-2 inline-block mb-4">
+                        <span className="text-lg font-black font-heading">
+                          {personas[contentModal.index].metric}
+                        </span>
+                        <span className="text-xs text-muted-foreground ml-2">
+                          {personas[contentModal.index].metricLabel}
+                        </span>
+                      </div>
+                      <h4 className="font-semibold text-sm mb-1">
+                        The Challenge
+                      </h4>
+                      <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                        {personas[contentModal.index].challenge}
+                      </p>
+                      <div className="relative rounded-xl backdrop-blur-xl bg-white/10 dark:bg-white/5 p-4 mb-4">
+                        <Quote className="absolute top-2 left-2 h-4 w-4 text-primary/20" />
+                        <p className="text-sm italic leading-relaxed pl-5">
+                          &ldquo;{personas[contentModal.index].quote}&rdquo;
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {[...Array(5)].map((_, j) => (
+                          <Star
+                            key={j}
+                            className="h-4 w-4 fill-amber-400 text-amber-400"
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* ── Footer ── */}
         <footer className="py-12">
