@@ -59,18 +59,33 @@ cp .env.local.example .env.local
 
 Open `.env.local` in a text editor and fill in your keys. Ask a teammate if you don't have them.
 
-### 4. Run the app
+### 4. Install agent dependencies
+
+```bash
+cd agent && bun install && cd ..
+```
+
+### 5. Run the app
 
 ```bash
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+This starts both the Next.js dev server and the LiveKit voice agent concurrently. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+You can also run them individually:
+
+```bash
+bun run dev:next    # Next.js only
+bun run dev:agent   # voice agent only
+```
 
 ## Scripts
 
 ```
-bun dev             # start dev server
+bun dev             # start Next.js + voice agent
+bun run dev:next    # start Next.js only
+bun run dev:agent   # start voice agent only
 bun run build       # production build
 bun start           # production server
 bun run lint        # lint (biome)
