@@ -60,6 +60,7 @@ import {
   type MotionValue,
 } from "motion/react"
 import dynamic from "next/dynamic"
+import Image from "next/image"
 import { BlurText } from "@/components/reactbits/blur-text"
 
 const HeroShader = dynamic(
@@ -624,8 +625,14 @@ export function LandingPage() {
           <StaggerChildren className="flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16 mb-10">
             <StaggerItem>
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#BF5700] text-white font-black text-sm shadow-lg">
-                  UT
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white dark:bg-zinc-800 shadow-lg p-2">
+                  <Image
+                    src="/logos/texas-longhorns.svg"
+                    alt="UT Austin Longhorns"
+                    width={40}
+                    height={40}
+                    className="h-8 w-8 object-contain"
+                  />
                 </div>
                 <div>
                   <div className="font-bold text-sm leading-tight">UT Austin</div>
@@ -638,11 +645,17 @@ export function LandingPage() {
             </StaggerItem>
             <StaggerItem>
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#BF5700] to-[#333F48] text-white font-black text-[10px] shadow-lg tracking-wider">
-                  AITX
+                <div className="flex h-12 w-auto items-center justify-center rounded-xl bg-white dark:bg-zinc-800 shadow-lg px-3 py-2">
+                  <Image
+                    src="/logos/texas-ai.svg"
+                    alt="Texas AI"
+                    width={120}
+                    height={32}
+                    className="h-7 w-auto object-contain"
+                  />
                 </div>
                 <div>
-                  <div className="font-bold text-sm leading-tight">AITX</div>
+                  <div className="font-bold text-sm leading-tight">Texas AI</div>
                   <div className="text-xs text-muted-foreground">AI at UT Austin</div>
                 </div>
               </div>
