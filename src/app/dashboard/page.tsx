@@ -1,5 +1,5 @@
-import { SinglePageApp } from "@/components/single-page-app"
+import { TopicNavigationGrid } from "@/components/topic-navigation-grid"
 
 export default function DashboardPage() {
-  return <SinglePageApp />
+  return <TopicNavigationGrid />
 }
