@@ -60,8 +60,6 @@ import {
 import Image from "next/image";
 import { BlurText } from "@/components/reactbits/blur-text";
 import { MegaMenu } from "@/components/marketing/mega-menu";
-import { HeroShader } from "@/components/landing/hero-shader";
-import { PixelSnow } from "@/components/reactbits/pixel-snow";
 
 // ── Animation Helpers ──
 
@@ -438,16 +436,6 @@ export function LandingPage() {
 
   return (
     <div className="min-h-dvh bg-background text-foreground relative">
-      {/* Full-screen background: shader + multi-layer gradient to bg-background by 100dvh */}
-      <div
-        className="fixed inset-0 h-dvh w-full pointer-events-none z-0"
-        aria-hidden
-      >
-        <HeroShader />
-        <PixelSnow className="opacity-80" color="255, 255, 255" />
-        {/* Multi-layer gradient: soft blend then solid bg-background by 100dvh */}
-        <div className="absolute inset-0 h-dvh bg-linear-to-b from-transparent from-0% via-background/20 via-50% to-background to-100%" />
-      </div>
       <MegaMenu landingAnchors />
       <div className="grayscale relative z-10 overflow-x-hidden">
         {/* ── Hero ── */}
