@@ -37,6 +37,13 @@ yarn-error.log*
 # vercel
 .vercel
 
+# lock files (using bun)
+package-lock.json
+yarn.lock
+
+# local database
+local.db
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

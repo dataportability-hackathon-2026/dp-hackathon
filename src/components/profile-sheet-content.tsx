@@ -1,6 +1,7 @@
 "use client"
 
 import { useId, useState } from "react"
+import { authClient } from "@/lib/auth-client"
 import {
   Bell,
   Check,
@@ -13,8 +14,8 @@ import {
   Palette,
   Settings,
   Shield,
+  User,
 } from "lucide-react"
-import { authClient } from "@/lib/auth-client"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -42,30 +43,11 @@ import { Separator } from "@/components/ui/separator"
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { UsageDialog } from "@/components/billing/usage-dialog"
 import { BillingDialog } from "@/components/billing/billing-dialog"
+import { useDataStore, type MotivationProfile } from "@/lib/data-store"
 
 function formatPercent(n: number): string {
   return `${Math.round(n * 100)}%`
 }
-
-const PROFILE_STRENGTHS = [
-  { area: "Cognitive Reflection", score: 0.72, label: "Strong", description: "You pause to reason through tricky problems rather than going with your gut." },
-  { area: "Metacognitive Awareness", score: 0.58, label: "Developing", description: "You have moderate self-awareness of your own learning, but tend to overestimate mastery." },
-  { area: "Study Strategy Repertoire", score: 0.65, label: "Good", description: "You use active recall and spaced repetition. Could benefit from more elaboration techniques." },
-  { area: "Self-Regulation", score: 0.52, label: "Developing", description: "Decent time management, but you sometimes skip reflection steps when pressed for time." },
-] as const
-
-const MOTIVATION_PROFILE = {
-  autonomy: 0.78,
-  competence: 0.62,
-  relatedness: 0.45,
-} as const
-
-const CALIBRATION_TENDENCY = {
-  tendency: "Overconfident",
-  avgConfidence: 0.80,
-  avgAccuracy: 0.55,
-  gap: 0.25,
-} as const
 
 const LEARNING_PREFERENCES = [
   { pref: "Visual diagrams over text-heavy explanations" },
@@ -74,15 +56,18 @@ const LEARNING_PREFERENCES = [
   { pref: "Prefers direct, concise coaching tone" },
 ] as const
 
-const SYSTEM_ADAPTATIONS = [
-  { rule: "Chunk size reduced to 4 items", reason: "Cognitive load risk is high during eigenvalue practice" },
-  { rule: "Reflection prompts every 3rd item", reason: "Calibration error (ECE 0.18) above threshold" },
-  { rule: "Interleaved practice enabled at 40%", reason: "Cross-concept mastery reached 0.5 threshold" },
-  { rule: "Autonomy-supportive coaching tone", reason: "High autonomy drive in motivation profile" },
-] as const
+const MOTIVATION_ITEMS: Array<{ key: keyof MotivationProfile; label: string; desc: string }> = [
+  { key: "autonomy", label: "Autonomy", desc: "Need for choice and self-direction" },
+  { key: "competence", label: "Competence", desc: "Need to feel capable and effective" },
+  { key: "relatedness", label: "Relatedness", desc: "Need for connection and belonging" },
+]
 
 function OverviewTab({ onRetakeAssessment }: { onRetakeAssessment?: () => void }) {
   const listId = useId()
+  const profileStrengths = useDataStore((s) => s.profileStrengths)
+  const motivationProfile = useDataStore((s) => s.motivationProfile)
+  const calibrationTendency = useDataStore((s) => s.calibrationTendency)
+  const systemAdaptations = useDataStore((s) => s.systemAdaptations)
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -113,7 +98,7 @@ function OverviewTab({ onRetakeAssessment }: { onRetakeAssessment?: () => void }
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {PROFILE_STRENGTHS.map((s) => (
+          {profileStrengths.map((s) => (
             <div key={`${listId}-str-${s.area}`} className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">{s.area}</span>
@@ -141,21 +126,15 @@ function OverviewTab({ onRetakeAssessment }: { onRetakeAssessment?: () => void }
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {(
-            [
-              { key: "autonomy", label: "Autonomy", desc: "Need for choice and self-direction" },
-              { key: "competence", label: "Competence", desc: "Need to feel capable and effective" },
-              { key: "relatedness", label: "Relatedness", desc: "Need for connection and belonging" },
-            ] as const
-          ).map((m) => (
+          {MOTIVATION_ITEMS.map((m) => (
             <div key={`${listId}-mot-${m.key}`} className="space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-sm">{m.label}</span>
                 <span className="text-xs text-muted-foreground tabular-nums">
-                  {formatPercent(MOTIVATION_PROFILE[m.key])}
+                  {formatPercent(motivationProfile[m.key])}
                 </span>
               </div>
-              <Progress value={MOTIVATION_PROFILE[m.key] * 100}>
+              <Progress value={motivationProfile[m.key] * 100}>
                 <ProgressLabel className="sr-only">{m.label}</ProgressLabel>
               </Progress>
               <p className="text-xs text-muted-foreground">{m.desc}</p>
@@ -175,14 +154,14 @@ function OverviewTab({ onRetakeAssessment }: { onRetakeAssessment?: () => void }
           <div className="flex items-center gap-3">
             <div className="flex size-16 items-center justify-center rounded-full bg-destructive/10">
               <span className="text-lg font-bold text-destructive">
-                +{formatPercent(CALIBRATION_TENDENCY.gap)}
+                +{formatPercent(calibrationTendency.gap)}
               </span>
             </div>
             <div>
-              <p className="text-sm font-medium">{CALIBRATION_TENDENCY.tendency}</p>
+              <p className="text-sm font-medium">{calibrationTendency.tendency}</p>
               <p className="text-xs text-muted-foreground">
-                You predict {formatPercent(CALIBRATION_TENDENCY.avgConfidence)} confidence but score{" "}
-                {formatPercent(CALIBRATION_TENDENCY.avgAccuracy)} on average
+                You predict {formatPercent(calibrationTendency.avgConfidence)} confidence but score{" "}
+                {formatPercent(calibrationTendency.avgAccuracy)} on average
               </p>
             </div>
           </div>
@@ -219,7 +198,7 @@ function OverviewTab({ onRetakeAssessment }: { onRetakeAssessment?: () => void }
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {SYSTEM_ADAPTATIONS.map((a) => (
+          {systemAdaptations.map((a) => (
             <div
               key={`${listId}-adapt-${a.rule}`}
               className="rounded-lg border p-3"
@@ -237,8 +216,9 @@ function OverviewTab({ onRetakeAssessment }: { onRetakeAssessment?: () => void }
 }
 
 function SettingsDialog() {
-  const [displayName, setDisplayName] = useState("Maya Chen")
-  const [email, setEmail] = useState("maya.chen@university.edu")
+  const { data: session } = authClient.useSession()
+  const [displayName, setDisplayName] = useState(session?.user?.name ?? "")
+  const [email, setEmail] = useState(session?.user?.email ?? "")
   const [timezone, setTimezone] = useState("America/New_York")
   const [saved, setSaved] = useState(false)
 
@@ -274,6 +254,7 @@ function SettingsDialog() {
               <Label htmlFor="settings-name">Display Name</Label>
               <Input
                 id="settings-name"
+                autoComplete="name"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
               />
@@ -284,6 +265,7 @@ function SettingsDialog() {
                 <Input
                   id="settings-email"
                   type="email"
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="flex-1"
@@ -304,6 +286,7 @@ function SettingsDialog() {
               <Label htmlFor="settings-timezone">Timezone</Label>
               <Input
                 id="settings-timezone"
+                autoComplete="off"
                 value={timezone}
                 onChange={(e) => setTimezone(e.target.value)}
                 placeholder="e.g. America/New_York"
@@ -364,7 +347,16 @@ function SettingsDialog() {
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Permanently delete your account and all associated data. This action cannot be undone.
               </p>
-              <Button variant="destructive" size="sm" className="mt-3">
+              <Button
+                variant="destructive"
+                size="sm"
+                className="mt-3"
+                onClick={() => {
+                  if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+                    // TODO: implement account deletion
+                  }
+                }}
+              >
                 Delete Account
               </Button>
             </div>
@@ -416,13 +408,14 @@ function AccountSection() {
 }
 
 export function ProfileSheetContent({ onRetakeAssessment }: { onRetakeAssessment?: () => void }) {
+  const { data: session } = authClient.useSession()
   return (
     <>
       <SheetHeader className="flex-row items-center gap-3">
         <Avatar>
-          <AvatarFallback>MC</AvatarFallback>
+          <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
         </Avatar>
-        <SheetTitle>Maya Chen</SheetTitle>
+        <SheetTitle>{session?.user?.name ?? "Account"}</SheetTitle>
       </SheetHeader>
       <div className="flex-1 overflow-y-auto p-6">
         <OverviewTab onRetakeAssessment={onRetakeAssessment} />

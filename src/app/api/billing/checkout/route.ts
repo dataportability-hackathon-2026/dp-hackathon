@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
 import { stripe } from "@/lib/stripe";
 import { CREDIT_PACKS, type CreditPackSlug } from "@/lib/credit-packs";
 import { db } from "@/db";
 import { user, creditPurchase } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { getEffectiveUserId } from "@/lib/impersonate";
 
 const checkoutSchema = z.object({
   packSlug: z.enum(
@@ -15,12 +14,14 @@ const checkoutSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session)
+  // Parallelize auth + body parsing (independent operations)
+  const [userId, body] = await Promise.all([
+    getEffectiveUserId(),
+    request.json(),
+  ]);
+  if (!userId)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const userId = session.user.id;
 
-  const body = await request.json();
   const parsed = checkoutSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(

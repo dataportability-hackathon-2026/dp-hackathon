@@ -1,4 +1,4 @@
-import { pgTable, text, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, bigint, boolean, timestamp } from "drizzle-orm/pg-core";
 
 // ─── Auth tables ────────────────────────────────────────────────────────────
 
@@ -13,6 +13,7 @@ export const user = pgTable("user", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   stripeCustomerId: text("stripe_customer_id"),
+  role: text("role").default("user"),
   creditBalance: integer("credit_balance").default(0),
   creditExhaustionPolicy: text("credit_exhaustion_policy").default("pause"),
 });
@@ -96,6 +97,155 @@ export const creditLedger = pgTable("credit_ledger", {
   balanceAfter: integer("balance_after").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// ─── Project & Source tables ────────────────────────────────────────────────
+
+export const project = pgTable("project", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id),
+  name: text("name").notNull(),
+  topicSlug: text("topic_slug").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const source = pgTable("source", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id),
+  projectId: text("project_id").references(() => project.id),
+  topicSlug: text("topic_slug").notNull(),
+  filename: text("filename").notNull(),
+  mimeType: text("mime_type").notNull(),
+  sizeBytes: bigint("size_bytes", { mode: "number" }).notNull(),
+  blobUrl: text("blob_url").notNull(),
+  status: text("status").notNull().default("ready"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// ─── Conversation tables ───────────────────────────────────────────────────
+
+export const conversation = pgTable("conversation", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id),
+  title: text("title"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const message = pgTable("message", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  conversationId: text("conversation_id")
+    .notNull()
+    .references(() => conversation.id, { onDelete: "cascade" }),
+  role: text("role").notNull(), // "user" | "assistant"
+  text: text("text").notNull(),
+  modality: text("modality").notNull(), // "voice" | "text"
+  timestamp: bigint("timestamp", { mode: "number" }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ─── Promo code tables ─────────────────────────────────────────────────────
+
+export const promoCode = pgTable("promo_code", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  code: text("code").notNull().unique(),
+  creditAmount: integer("credit_amount").notNull(), // internal units (1000x display)
+  maxUses: integer("max_uses"), // null = unlimited
+  usedCount: integer("used_count").default(0).notNull(),
+  active: boolean("active").default(true).notNull(),
+  expiresAt: timestamp("expires_at"),
+  createdBy: text("created_by").references(() => user.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const promoCodeRedemption = pgTable("promo_code_redemption", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id),
+  promoCodeId: text("promo_code_id")
+    .notNull()
+    .references(() => promoCode.id),
+  creditAmount: integer("credit_amount").notNull(),
+  redeemedAt: timestamp("redeemed_at").defaultNow(),
+});
+
+// ─── Workflow tables ────────────────────────────────────────────────────────
+
+export const workflowRun = pgTable("workflow_run", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id),
+  workflowType: text("workflow_type").notNull(),
+  wdkRunId: text("wdk_run_id"),
+  status: text("status").notNull().default("running"),
+  input: text("input"),
+  output: text("output"),
+  error: text("error"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const scheduledTask = pgTable("scheduled_task", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id),
+  type: text("type").notNull(),
+  label: text("label").notNull(),
+  intervalMs: bigint("interval_ms", { mode: "number" }).notNull(),
+  nextRunAt: timestamp("next_run_at"),
+  expiresAt: timestamp("expires_at"),
+  payload: text("payload"),
+  status: text("status").notNull().default("active"),
+  wdkRunId: text("wdk_run_id"),
+  totalExecutions: integer("total_executions").default(0).notNull(),
+  maxExecutions: integer("max_executions"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const generatedArtifact = pgTable("generated_artifact", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id),
+  workflowRunId: text("workflow_run_id").references(() => workflowRun.id),
+  artifactType: text("artifact_type").notNull(),
+  title: text("title").notNull(),
+  blobUrl: text("blob_url").notNull(),
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ─── Usage tables ───────────────────────────────────────────────────────────
 
 export const usageLog = pgTable("usage_log", {
   id: text("id")

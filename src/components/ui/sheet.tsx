@@ -65,6 +65,7 @@ function SheetContent({
             <ThemeToggle />
             <SheetPrimitive.Close
               data-slot="sheet-close"
+              aria-label="Close"
               render={
                 <Button
                   variant="ghost"
@@ -72,7 +73,7 @@ function SheetContent({
                 />
               }
             >
-              <XIcon />
+              <XIcon aria-hidden="true" />
               <span className="sr-only">Close</span>
             </SheetPrimitive.Close>
           </div>

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, Suspense } from "react"
 import Link from "next/link"
 import { useQueryState, parseAsBoolean, parseAsString } from "nuqs"
-import { TOPICS, type MockProject, type MockGuideBlock, type MockFile, type MockUpload, type MockMastery, type MockAuditEvent } from "@/lib/topics"
+import { TOPICS, slugify, type MockProject, type MockGuideBlock, type MockFile, type MockMastery, type MockAuditEvent } from "@/lib/topics"
 import {
   SiOpenai,
   SiAnthropic,
@@ -14,6 +14,7 @@ import {
 } from "react-icons/si"
 import { BsMicrosoftTeams } from "react-icons/bs"
 import { siteConfig } from "@/lib/white-label"
+import { cn } from "@/lib/utils"
 import {
   ArrowLeft,
   AudioLines,
@@ -44,6 +45,7 @@ import {
   Presentation,
   Send,
   Shield,
+  Bot,
   Box,
   Clapperboard,
   Table2,
@@ -51,8 +53,12 @@ import {
   TrendingUp,
   Globe,
   Upload,
+  User,
   X,
   Video,
+  MoreVertical,
+  Waves,
+  Sparkles,
 } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -81,6 +87,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Progress, ProgressLabel } from "@/components/ui/progress"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -96,18 +108,19 @@ import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import dynamic from "next/dynamic"
 import { ShinyText } from "@/components/reactbits/shiny-text"
+import { ACADEMIC_RESOURCES } from "@/lib/academic-resources"
 
 const ArtifactCanvas = dynamic(
   () => import("@/components/artifacts/artifact-canvas").then((m) => ({ default: m.ArtifactCanvas })),
   { ssr: false },
 )
-import { type ArtifactType, artifactTypeFromLabel, getArtifactsByType } from "@/components/artifacts/artifact-store"
-import {
-  LearningProfileForm,
-  MOCK_COMPLETED_PROFILE,
-  type LearningProfileData,
-} from "@/components/learning-profile-form"
+import { type ArtifactType, artifactTypeFromLabel } from "@/components/artifacts/artifact-store"
+import { LearningProfileForm } from "@/components/learning-profile-form"
+import { dataStore, useDataStore } from "@/lib/data-store"
+import { dispatchAgentResult } from "@/lib/agent-dispatch"
 import { ProfileSheetContent } from "@/components/profile-sheet-content"
+import { authClient } from "@/lib/auth-client"
+import { CreditBadge } from "@/components/billing/credit-badge"
 import {
   LiveKitRoom,
   useVoiceAssistant,
@@ -122,19 +135,18 @@ const AgentAudioVisualizerBar = dynamic(
   () => import("@/components/agents-ui/agent-audio-visualizer-bar").then((m) => ({ default: m.AgentAudioVisualizerBar })),
   { ssr: false },
 )
-const AgentAudioVisualizerAura = dynamic(
-  () => import("@/components/agents-ui/agent-audio-visualizer-aura").then((m) => ({ default: m.AgentAudioVisualizerAura })),
-  { ssr: false },
-)
 const AgentAudioVisualizerWave = dynamic(
   () => import("@/components/agents-ui/agent-audio-visualizer-wave").then((m) => ({ default: m.AgentAudioVisualizerWave })),
+  { ssr: false },
+)
+const AgentAudioVisualizerAura = dynamic(
+  () => import("@/components/agents-ui/agent-audio-visualizer-aura").then((m) => ({ default: m.AgentAudioVisualizerAura })),
   { ssr: false },
 )
 import { useChat } from "@ai-sdk/react"
 import type { UIMessage } from "ai"
 import { conversationStore, type MessageEntry } from "@/lib/conversation-store"
 
-type VisualizerType = "bars" | "aura" | "wave"
 
 // ── Unified Conversation Store (voice + text in one timeline) ──
 // Re-export the legacy TranscriptEntry shape for components that still use it.
@@ -146,6 +158,23 @@ type TranscriptEntry = {
   timestamp: number
   isFinal: boolean
   modality?: "voice" | "text"
+}
+
+/** Ensure a conversation exists, creating one lazily if needed. */
+async function ensureConversation(): Promise<string> {
+  const existing = conversationStore.getConversationId()
+  if (existing) return existing
+
+  const res = await fetch("/api/conversations", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title: "New conversation" }),
+  })
+  if (!res.ok) throw new Error("Failed to create conversation")
+  const { id } = (await res.json()) as { id: string }
+  await conversationStore.setConversationId(id)
+  sessionStorage.setItem("conversationId", id)
+  return id
 }
 
 /** Read-only hook for the full conversation (voice + text). */
@@ -170,11 +199,6 @@ function useVoiceTranscript(): TranscriptEntry[] {
   }))
 }
 
-const MOCK_UPLOADS: MockUpload[] = [
-  { id: "u-1", filename: "Linear Algebra Textbook Ch6.pdf", sizeBytes: 8_200_000, progress: 64, status: "uploading" },
-  { id: "u-2", filename: "Midterm Review Slides.pptx", sizeBytes: 14_500_000, progress: 38, status: "uploading" },
-  { id: "u-3", filename: "Corrupted Notes.pdf", sizeBytes: 1_200_000, progress: 12, status: "error", error: "Upload failed -- file may be corrupted" },
-]
 
 const AUDIT_EVENTS: MockAuditEvent[] = [
   {
@@ -221,8 +245,23 @@ const BLOCK_TYPE_LABELS: Record<string, { label: string; color: string }> = {
 // ── Component ──
 
 export function SinglePageApp({ topicId, projectId, isAdmin = false }: { topicId?: string; projectId?: string; isAdmin?: boolean }) {
+  const { data: session } = authClient.useSession()
   const selectedTopicId = topicId ?? "topic-1"
   const selectedProjectId = projectId ?? "proj-1"
+
+  // Conversation persistence — create or resume a conversation
+  useEffect(() => {
+    const stored = sessionStorage.getItem("conversationId")
+    if (stored) {
+      void conversationStore.setConversationId(stored)
+      void conversationStore.hydrate(stored)
+    }
+
+    // Flush pending messages on page unload
+    const handleBeforeUnload = () => conversationStore.flushSync()
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
+  }, [])
 
   // URL-synced UI state via nuqs
   const [activeTab, setActiveTab] = useQueryState("tab", parseAsString.withDefault("guide"))
@@ -232,10 +271,11 @@ export function SinglePageApp({ topicId, projectId, isAdmin = false }: { topicId
   const [artifactParam, setArtifactParam] = useQueryState("artifact", parseAsString.withDefault(""))
 
   // Local-only state (not worth putting in URL)
-  const [voiceMode, setVoiceMode] = useState(true)
   const [scrollToArtifactId, setScrollToArtifactId] = useState<string | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [userProfile, setUserProfile] = useState<LearningProfileData>(MOCK_COMPLETED_PROFILE)
+  const userProfile = useDataStore((s) => s.learningProfile)
+  const guideBlocks = useDataStore((s) => s.guideBlocks)
+  const masteryScores = useDataStore((s) => s.masteryScores)
 
   // Wrappers for nuqs setters to work with component APIs expecting (boolean) => void
   const handleSetProfileSheetOpen = useCallback((open: boolean) => { void setProfileSheetOpen(open) }, [setProfileSheetOpen])
@@ -254,38 +294,6 @@ export function SinglePageApp({ topicId, projectId, isAdmin = false }: { topicId
     void setArtifactParam(null)
     setScrollToArtifactId(null)
   }, [setArtifactParam])
-
-  // Handle state updates from AI agent tool calls
-  const handleAgentStateUpdate = useCallback((payload: StateUpdatePayload) => {
-    if (!payload.__stateUpdate) return
-    switch (payload.type) {
-      case "navigate_to_view":
-      case "show_guide":
-      case "show_progress":
-      case "show_sources":
-        if (payload.view) {
-          void setActiveTab(payload.view)
-          void setArtifactParam(null)
-        }
-        break
-      case "select_topic":
-        // Topic switching would need URL navigation in a real app
-        // For now we just switch the view
-        if (payload.view) void setActiveTab(payload.view)
-        break
-      case "select_project":
-        break
-      case "open_artifact":
-        if (payload.artifact) {
-          void setArtifactParam(payload.artifact)
-          void setActiveTab("")
-        }
-        break
-      case "complete_guide_block":
-        // Guide block completion is handled via mock data in this prototype
-        break
-    }
-  }, [setActiveTab, setArtifactParam])
 
   const selectedTopic = TOPICS.find((t) => t.id === selectedTopicId) ?? TOPICS[0]
   const selectedProject =
@@ -320,7 +328,7 @@ export function SinglePageApp({ topicId, projectId, isAdmin = false }: { topicId
           <div className="ml-auto flex items-center gap-2">
             {/* Desktop: Nav + Connect + Audit + User */}
             <div className="hidden items-center gap-2 lg:flex">
-              <TabsList className="bg-muted/50">
+              <TabsList className="mr-4 bg-muted/50">
                 <TabsTrigger value="guide" className="gap-1.5 px-3 text-sm">
                   <Calendar className="size-3.5" />
                   Guide
@@ -335,6 +343,7 @@ export function SinglePageApp({ topicId, projectId, isAdmin = false }: { topicId
                 </TabsTrigger>
               </TabsList>
               <ConnectDialog />
+              <CreditBadge />
               <AuditDialog />
               <Sheet open={profileSheetOpen} onOpenChange={handleSetProfileSheetOpen}>
                 <SheetTrigger
@@ -346,7 +355,7 @@ export function SinglePageApp({ topicId, projectId, isAdmin = false }: { topicId
                   }
                 >
                   <Avatar size="sm">
-                    <AvatarFallback>MC</AvatarFallback>
+                    <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
                   </Avatar>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-full sm:max-w-lg">
@@ -424,9 +433,9 @@ export function SinglePageApp({ topicId, projectId, isAdmin = false }: { topicId
                       }
                     >
                       <Avatar size="sm">
-                        <AvatarFallback>MC</AvatarFallback>
+                        <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
                       </Avatar>
-                      <span className="text-sm font-medium">Maya Chen</span>
+                      <span className="text-sm font-medium">{session?.user?.name ?? "Account"}</span>
                     </SheetTrigger>
                     <SheetContent side="right" className="w-full sm:max-w-lg">
                       <ProfileSheetContent onRetakeAssessment={() => { handleSetAssessmentMode(true); handleSetProfileSheetOpen(false); setMobileMenuOpen(false) }} />
@@ -440,8 +449,8 @@ export function SinglePageApp({ topicId, projectId, isAdmin = false }: { topicId
 
         {assessmentMode && (
           <LearningProfileForm
-            initialData={userProfile}
-            onSave={(profileData) => setUserProfile(profileData)}
+            initialData={userProfile ?? undefined}
+            onSave={(profileData) => dataStore.setLearningProfile(profileData)}
             onCancel={() => handleSetAssessmentMode(false)}
           />
         )}
@@ -465,15 +474,15 @@ export function SinglePageApp({ topicId, projectId, isAdmin = false }: { topicId
                 ) : (
                   <div className="h-full overflow-y-auto">
                     <TabsContent value="guide" className="p-4 sm:p-6">
-                      <GuideTab blocks={selectedTopic.guideBlocks} />
+                      <GuideTab blocks={guideBlocks} />
                     </TabsContent>
 
                     <TabsContent value="sources" className="p-4 sm:p-6">
-                      <SourcesTab files={selectedTopic.files} />
+                      <SourcesTab topicSlug={slugify(selectedTopic.name)} fallbackFiles={selectedTopic.files} />
                     </TabsContent>
 
                     <TabsContent value="progress" className="p-4 sm:p-6">
-                      <ProgressTab mastery={selectedTopic.masteryData} project={selectedProject} />
+                      <ProgressTab mastery={masteryScores} project={selectedProject} />
                     </TabsContent>
                   </div>
                 )}
@@ -490,47 +499,16 @@ export function SinglePageApp({ topicId, projectId, isAdmin = false }: { topicId
               <MessageSquare className="size-4 text-muted-foreground" />
               <span className="text-sm font-medium">Agent</span>
             </div>
-            <div className="flex items-center gap-1">
-              <div className="flex items-center rounded-4xl border bg-muted/50 p-0.5">
-                <button
-                  type="button"
-                  onClick={() => setVoiceMode(true)}
-                  className={`flex items-center gap-1.5 rounded-4xl px-3 py-1 text-sm font-medium transition-colors ${
-                    voiceMode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
-                  }`}
-                >
-                  <Mic className="size-3.5" />
-                  <span className="hidden sm:inline">Voice</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVoiceMode(false)}
-                  className={`flex items-center gap-1.5 rounded-4xl px-3 py-1 text-sm font-medium transition-colors ${
-                    !voiceMode ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
-                  }`}
-                >
-                  <MessageSquare className="size-3.5" />
-                  <span className="hidden sm:inline">Chat</span>
-                </button>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                className="lg:hidden"
-                onClick={() => handleSetAgentOpen(false)}
-              >
-                <ChevronRight className="size-4" />
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              className="lg:hidden"
+              onClick={() => handleSetAgentOpen(false)}
+            >
+              <ChevronRight className="size-4" />
+            </Button>
           </div>
-          {voiceMode ? (
-            <VoiceAgent onSwitchToText={() => setVoiceMode(false)} />
-          ) : (
-            <AgentTab
-              onOpenArtifact={handleOpenArtifactType}
-              onStateUpdate={handleAgentStateUpdate}
-            />
-          )}
+          <VoiceAgent />
         </aside>
       </div>
     </Tabs>
@@ -646,7 +624,7 @@ function VoiceTranscriptTab({ entries }: { entries: TranscriptEntry[] }) {
             className={`flex gap-3 ${entry.role === "user" ? "flex-row-reverse" : ""}`}
           >
             <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
-              {entry.role === "user" ? "You" : "AI"}
+              {entry.role === "user" ? "You" : <Bot className="size-4" />}
             </div>
             <div className="flex flex-col gap-0.5 max-w-[80%]">
               {entry.modality && (
@@ -1207,7 +1185,7 @@ function exportJson() {
   downloadFile(JSON.stringify(data, null, 2), "coremodel-export.json", "application/json")
 }
 
-function ConnectDialog() {
+export function ConnectDialog() {
   const optId = useId()
   const [selectedIntegration, setSelectedIntegration] = useState<IntegrationKey | null>(null)
   const [exportingMarkdown, setExportingMarkdown] = useState(false)
@@ -1368,9 +1346,8 @@ function VoiceAgentUI({
   const connectionState = useConnectionState()
   const room = useRoomContext()
   const [isMuted, setIsMuted] = useState(false)
+  const [vizType, setVizType] = useState<"bars" | "wave" | "aura">("bars")
   const [elapsed, setElapsed] = useState(0)
-  const [showTranscript, setShowTranscript] = useState(false)
-  const [visualizer, setVisualizer] = useState<VisualizerType>("bars")
   const transcriptEndRef = useRef<HTMLDivElement>(null)
 
   // Get local participant mic track for user transcriptions
@@ -1381,6 +1358,33 @@ function VoiceAgentUI({
   const { segments: userSegments } = useTrackTranscription(localTrackRef)
 
   const [textInput, setTextInput] = useState("")
+  const [textSending, setTextSending] = useState(false)
+
+  // Send text input via LiveKit sendText so the voice agent handles it natively.
+  // The agent's RoomIO listens on "lk.chat" topic and will respond via TTS,
+  // which gets transcribed back through agentTranscriptions → conversationStore.
+  const sendTextInVoiceMode = useCallback(async (msg: string) => {
+    const msgId = `text-${Date.now()}`
+    await ensureConversation()
+    conversationStore.addMessage({
+      id: msgId,
+      role: "user",
+      text: msg,
+      timestamp: Date.now(),
+      modality: "text",
+      isFinal: true,
+    })
+    setTextSending(true)
+    try {
+      await room.localParticipant.sendText(msg, { topic: "lk.chat" })
+    } catch (err) {
+      console.error("Failed to send text via LiveKit:", err)
+      // Rollback — message never reached the agent
+      conversationStore.removeMessage(msgId)
+    } finally {
+      setTextSending(false)
+    }
+  }, [room])
 
   // Build merged transcript entries from voice segments
   const transcriptEntries = useMemo(() => {
@@ -1420,7 +1424,7 @@ function VoiceAgentUI({
   // Auto-scroll transcript
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [transcriptEntries])
+  }, [allEntries])
 
   useEffect(() => {
     const interval = setInterval(() => setElapsed((e) => e + 1), 1000)
@@ -1455,149 +1459,97 @@ function VoiceAgentUI({
   const isSpeaking = agentState === "speaking"
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-between overflow-hidden">
+    <div className="flex flex-1 flex-col overflow-hidden">
       {/* Status */}
-      <div className="flex flex-col items-center gap-1 pt-6">
+      <div className="flex flex-col items-center gap-1 pt-6 shrink-0">
         <span className="text-xs text-muted-foreground">{statusText}</span>
         <span className="text-xs tabular-nums text-muted-foreground">
           {formatTime(elapsed)}
         </span>
       </div>
 
-      {/* Main content: visualizer or transcript */}
-      {showTranscript ? (
-        <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden px-4">
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto py-2">
-            {allEntries.length === 0 ? (
-              <div className="flex flex-1 items-center justify-center">
-                <p className="text-xs text-muted-foreground">
-                  Transcriptions will appear here...
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {allEntries.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className={`flex flex-col gap-0.5 ${
-                      entry.role === "user" ? "items-end" : "items-start"
-                    }`}
-                  >
-                    <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                      {entry.modality === "text" ? (
-                        <MessageSquare className="size-2.5" />
-                      ) : (
-                        <Mic className="size-2.5" />
-                      )}
-                      {entry.role === "user" ? "You" : "Agent"}
-                    </span>
-                    <p
-                      className={`max-w-[85%] rounded-lg px-3 py-1.5 text-sm ${
-                        entry.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
-                      } ${!entry.isFinal ? "opacity-60" : ""}`}
+      {/* Main content: visualizer background + transcript foreground */}
+      <div className="relative flex flex-1 flex-col overflow-hidden">
+        {/* Background: voice visualizer — always visible, grayscale, non-interactive */}
+        <div className="absolute inset-0 pointer-events-none grayscale opacity-30 flex items-center justify-center">
+          {vizType === "bars" && (
+            <AgentAudioVisualizerBar
+              state={agentState}
+              audioTrack={audioTrack}
+              barCount={5}
+              size="lg"
+            />
+          )}
+          {vizType === "wave" && (
+            <AgentAudioVisualizerWave
+              state={agentState}
+              audioTrack={audioTrack}
+              size="lg"
+            />
+          )}
+          {vizType === "aura" && (
+            <AgentAudioVisualizerAura
+              state={agentState}
+              audioTrack={audioTrack}
+              size="lg"
+            />
+          )}
+        </div>
+
+        {/* Foreground: transcript — scrollable, interactive */}
+        <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
+          <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden px-4">
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto py-2">
+              {allEntries.length === 0 ? (
+                <div className="flex flex-1 items-center justify-center">
+                  <p className="text-xs text-muted-foreground">
+                    Transcriptions will appear here...
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {allEntries.map((entry) => (
+                    <div
+                      key={entry.id}
+                      className={`flex flex-col gap-0.5 ${
+                        entry.role === "user" ? "items-end" : "items-start"
+                      }`}
                     >
-                      {entry.text}
-                    </p>
-                  </div>
-                ))}
-                <div ref={transcriptEndRef} />
-              </div>
-            )}
+                      <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                        {entry.modality === "text" ? (
+                          <MessageSquare className="size-2.5" />
+                        ) : (
+                          <Mic className="size-2.5" />
+                        )}
+                        {entry.role === "user" ? "You" : "Agent"}
+                      </span>
+                      <p
+                        className={`max-w-[85%] rounded-lg px-3 py-1.5 text-sm ${
+                          entry.role === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted"
+                        } ${!entry.isFinal ? "opacity-60" : ""}`}
+                      >
+                        {entry.text}
+                      </p>
+                    </div>
+                  ))}
+                  <div ref={transcriptEndRef} />
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      ) : (
-        <>
-          {/* Audio visualization */}
-          <div className="flex min-h-0 w-full flex-1 items-center justify-center">
-            {visualizer === "aura" ? (
-              <AgentAudioVisualizerAura
-                state={agentState}
-                audioTrack={audioTrack}
-                size="lg"
-                themeMode="dark"
-                color="#FFFFFF"
-                colorShift={0}
-                style={{ width: 280, height: 280 }}
-                className="!aspect-auto"
-              />
-            ) : visualizer === "wave" ? (
-              <AgentAudioVisualizerWave
-                state={agentState}
-                audioTrack={audioTrack}
-                size="lg"
-                color="#FFFFFF"
-                colorShift={0}
-                style={{ width: 280, height: 280 }}
-                className="!aspect-auto"
-              />
-            ) : (
-              <AgentAudioVisualizerBar
-                state={agentState}
-                audioTrack={audioTrack}
-                barCount={5}
-                size="lg"
-              />
-            )}
-          </div>
-
-          {/* Visualizer picker + avatar */}
-          <div className="flex flex-col items-center gap-2 pb-4">
-            <div className="flex items-center gap-1 rounded-full border bg-muted/50 p-0.5">
-              {(["bars", "wave", "aura"] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => setVisualizer(v)}
-                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium capitalize transition-colors ${
-                    visualizer === v
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {v}
-                </button>
-              ))}
-            </div>
-            <Avatar
-              size="lg"
-              className={
-                isSpeaking
-                  ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
-                  : ""
-              }
-            >
-              <AvatarFallback>AI</AvatarFallback>
-            </Avatar>
-            <span className="text-xs font-medium">Learning Agent</span>
-          </div>
-        </>
-      )}
+      </div>
 
       {/* Text input during voice mode */}
       <form
         onSubmit={(e) => {
           e.preventDefault()
           const msg = textInput.trim()
-          if (!msg) return
-          // Add to unified conversation store
-          conversationStore.addMessage({
-            id: `text-${Date.now()}`,
-            role: "user",
-            text: msg,
-            timestamp: Date.now(),
-            modality: "text",
-            isFinal: true,
-          })
-          // Send to voice agent via LiveKit data channel
-          if (room?.localParticipant) {
-            const encoder = new TextEncoder()
-            const payload = JSON.stringify({ type: "text_input", text: msg })
-            room.localParticipant.publishData(encoder.encode(payload), { reliable: true })
-          }
+          if (!msg || textSending) return
+          void sendTextInVoiceMode(msg)
           setTextInput("")
-          if (!showTranscript) setShowTranscript(true)
         }}
         className="shrink-0 border-t px-3 py-2"
       >
@@ -1607,60 +1559,81 @@ function VoiceAgentUI({
             value={textInput}
             onChange={(e) => setTextInput(e.target.value)}
             className="h-8 text-sm"
+            disabled={textSending}
           />
-          <Button type="submit" size="icon-xs" disabled={!textInput.trim()}>
-            <Send className="size-3.5" />
+          <Button type="submit" size="icon-xs" disabled={!textInput.trim() || textSending}>
+            {textSending ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
           </Button>
         </div>
       </form>
 
       {/* Controls */}
-      <div className="flex shrink-0 items-center justify-center gap-3 border-t p-4 pb-6">
-        <Button
-          variant={showTranscript ? "secondary" : "outline"}
-          size="icon"
-          onClick={() => setShowTranscript((v) => !v)}
-          title="Toggle transcript"
-        >
-          <FileText className="size-4" />
-        </Button>
-        <Button
-          variant={isMuted ? "destructive" : "outline"}
-          size="icon"
-          onClick={toggleMute}
-        >
-          {isMuted ? (
-            <MicOff className="size-4" />
-          ) : (
-            <Mic className="size-4" />
-          )}
-        </Button>
-        <Button
-          variant={
-            connectionState === ConnectionState.Connected
-              ? "default"
-              : "outline"
-          }
-          size="icon-lg"
-          className={isSpeaking ? "animate-pulse" : ""}
-          disabled
-        >
-          <Mic className="size-5" />
-        </Button>
-        <Button
-          variant="destructive"
-          size="icon"
-          onClick={onDisconnect}
-        >
-          <Phone className="size-4" />
-        </Button>
+      <div className="flex shrink-0 items-center justify-between border-t p-4 pb-6">
+        {/* Spacer for symmetry */}
+        <div className="w-8" />
+        <div className="flex items-center gap-3">
+          <Button
+            variant={isMuted ? "destructive" : "outline"}
+            size="icon"
+            onClick={toggleMute}
+          >
+            {isMuted ? (
+              <MicOff className="size-4" />
+            ) : (
+              <Mic className="size-4" />
+            )}
+          </Button>
+          <Button
+            variant={
+              connectionState === ConnectionState.Connected
+                ? "default"
+                : "outline"
+            }
+            size="icon-lg"
+            className={isSpeaking ? "animate-pulse" : ""}
+            disabled
+          >
+            <Mic className="size-5" />
+          </Button>
+          <Button
+            variant="destructive"
+            size="icon"
+            onClick={onDisconnect}
+          >
+            <Phone className="size-4" />
+          </Button>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          >
+            <MoreVertical className="size-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setVizType("bars")}>
+              <AudioLines className="size-4 mr-2" />
+              Bars
+              {vizType === "bars" && <Check className="size-3 ml-auto" />}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setVizType("wave")}>
+              <Waves className="size-4 mr-2" />
+              Wave
+              {vizType === "wave" && <Check className="size-3 ml-auto" />}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setVizType("aura")}>
+              <Sparkles className="size-4 mr-2" />
+              Aura
+              {vizType === "aura" && <Check className="size-3 ml-auto" />}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <RoomAudioRenderer />
     </div>
   )
 }
 
-function VoiceAgent({ onSwitchToText }: { onSwitchToText: () => void }) {
+function VoiceAgent() {
   const [micAccess, setMicAccess] = useState<
     "pending" | "granted" | "denied"
   >("pending")
@@ -1705,8 +1678,8 @@ function VoiceAgent({ onSwitchToText }: { onSwitchToText: () => void }) {
 
   const handleDisconnect = useCallback(() => {
     setConnection(null)
-    onSwitchToText()
-  }, [onSwitchToText])
+    fetchingRef.current = false
+  }, [])
 
   if (micAccess !== "granted") {
     return (
@@ -1739,9 +1712,6 @@ function VoiceAgent({ onSwitchToText }: { onSwitchToText: () => void }) {
             />
             {requesting ? "Requesting..." : "Retry"}
           </Button>
-          <Button size="sm" variant="outline" onClick={onSwitchToText}>
-            Switch to text
-          </Button>
         </div>
       </div>
     )
@@ -1766,9 +1736,6 @@ function VoiceAgent({ onSwitchToText }: { onSwitchToText: () => void }) {
           >
             <RefreshCw className="size-3.5" data-icon="inline-start" />
             Retry
-          </Button>
-          <Button size="sm" variant="outline" onClick={onSwitchToText}>
-            Switch to text
           </Button>
         </div>
       </div>
@@ -1843,30 +1810,34 @@ const STATE_TOOL_NAMES = new Set([
   "get_current_state",
 ])
 
-type StateUpdatePayload = {
-  __stateUpdate: boolean
-  type?: string
-  view?: string
-  topicId?: string
-  topicName?: string
-  projectId?: string
-  projectName?: string
-  highlightBlockId?: string | null
-  blockId?: string
-  artifact?: string
-  [key: string]: unknown
-}
-
 function AgentTab({
   onOpenArtifact,
-  onStateUpdate,
+  onToolResult,
 }: {
   onOpenArtifact: (type: ArtifactType, scrollToId?: string) => void
-  onStateUpdate?: (payload: StateUpdatePayload) => void
+  onToolResult?: (toolName: string, result: Record<string, unknown>) => void
 }) {
   const msgId = useId()
   const scrollRef = useRef<HTMLDivElement>(null)
-  const { messages, sendMessage, status, error } = useChat()
+  const { messages, sendMessage, status, error } = useChat({
+    onFinish: ({ message }) => {
+      // Sync assistant responses into the unified conversation store
+      const textContent = message.parts
+        .filter((p): p is Extract<typeof p, { type: "text" }> => p.type === "text")
+        .map((p) => p.text)
+        .join("")
+      if (textContent.trim()) {
+        conversationStore.addMessage({
+          id: `chat-assistant-${message.id}`,
+          role: "assistant",
+          text: textContent,
+          timestamp: Date.now(),
+          modality: "text",
+          isFinal: true,
+        })
+      }
+    },
+  })
   const [input, setInput] = useState("")
   const processedToolCalls = useRef(new Set<string>())
 
@@ -1876,26 +1847,25 @@ function AgentTab({
     scrollRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  // Process state update tool results from messages
+  // Process tool results from messages — routes to agent-dispatch
   useEffect(() => {
-    if (!onStateUpdate) return
+    if (!onToolResult) return
     for (const msg of messages) {
       if (msg.role !== "assistant") continue
       for (const part of msg.parts) {
         if (part.type.startsWith("tool-")) {
           const toolName = part.type.replace("tool-", "")
-          if (!STATE_TOOL_NAMES.has(toolName)) continue
-          const toolPart = part as { type: string; state: string; toolCallId: string; result?: StateUpdatePayload }
-          if (toolPart.state === "result" && toolPart.result?.__stateUpdate && !processedToolCalls.current.has(toolPart.toolCallId)) {
+          const toolPart = part as { type: string; state: string; toolCallId: string; result?: Record<string, unknown> }
+          if (toolPart.state === "result" && toolPart.result && !processedToolCalls.current.has(toolPart.toolCallId)) {
             processedToolCalls.current.add(toolPart.toolCallId)
-            onStateUpdate(toolPart.result)
+            onToolResult(toolName, toolPart.result)
           }
         }
       }
     }
-  }, [messages, onStateUpdate])
+  }, [messages, onToolResult])
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!input.trim() || isLoading) return
     // Also add to unified store so voice mode picks it up
@@ -1907,7 +1877,12 @@ function AgentTab({
       modality: "text",
       isFinal: true,
     })
-    const priorContext = conversationStore.toMessageHistory()
+    await ensureConversation()
+    // Send all non-useChat messages as prior context (voice + text-in-voice-mode).
+    // useChat tracks its own messages, so we exclude those (they have "text-chat-" prefix).
+    const priorContext = conversationStore.getSnapshot()
+      .filter((entry) => entry.isFinal && !entry.id.startsWith("text-chat-") && !entry.id.startsWith("chat-assistant-"))
+      .map((entry) => ({ role: entry.role, content: entry.text }))
     sendMessage({ text: input }, { body: { priorContext } })
     setInput("")
   }
@@ -1929,7 +1904,7 @@ function AgentTab({
             >
               {msg.role === "assistant" && (
                 <Avatar size="sm" className="mt-0.5 shrink-0">
-                  <AvatarFallback>AI</AvatarFallback>
+                  <AvatarFallback><Bot className="size-4" /></AvatarFallback>
                 </Avatar>
               )}
               <div className={`max-w-[85%] ${msg.role === "user" ? "" : ""}`}>
@@ -1995,7 +1970,7 @@ function AgentTab({
               </div>
               {msg.role === "user" && (
                 <Avatar size="sm" className="mt-0.5 shrink-0">
-                  <AvatarFallback>MC</AvatarFallback>
+                  <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
                 </Avatar>
               )}
             </div>
@@ -2241,16 +2216,211 @@ function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function SourcesTab({ files }: { files: MockFile[] }) {
+type UploadItem = {
+  tempId: string
+  filename: string
+  sizeBytes: number
+  progress: number
+  status: "uploading" | "error" | "done"
+  error?: string
+  abortController?: AbortController
+}
+
+type SourceRow = {
+  id: string
+  filename: string
+  mimeType: string
+  sizeBytes: number
+  blobUrl: string
+  createdAt: string
+}
+
+function SourcesTab({ topicSlug, fallbackFiles }: { topicSlug: string; fallbackFiles: MockFile[] }) {
   const fileId = useId()
   const uploadId = useId()
   const [dragOver, setDragOver] = useState(false)
+  const [uploads, setUploads] = useState<UploadItem[]>([])
+  const [sources, setSources] = useState<SourceRow[]>([])
+  const [loaded, setLoaded] = useState(false)
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState("")
+  const [quotaError, setQuotaError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Fetch sources from API
+  const fetchSources = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/sources?topicSlug=${encodeURIComponent(topicSlug)}`)
+      if (res.ok) {
+        const data = await res.json()
+        setSources(data.sources)
+      }
+    } finally {
+      setLoaded(true)
+    }
+  }, [topicSlug])
+
+  useEffect(() => {
+    fetchSources()
+  }, [fetchSources])
+
+  const uploadFiles = useCallback(async (fileList: FileList | File[]) => {
+    const files = Array.from(fileList)
+    if (files.length === 0) return
+
+    const newUploads: UploadItem[] = files.map((f) => ({
+      tempId: crypto.randomUUID(),
+      filename: f.name,
+      sizeBytes: f.size,
+      progress: 0,
+      status: "uploading" as const,
+      abortController: new AbortController(),
+    }))
+
+    setUploads((prev) => [...prev, ...newUploads])
+
+    // Upload all files in a single request
+    const formData = new FormData()
+    formData.append("topicSlug", topicSlug)
+    for (const file of files) {
+      formData.append("files", file)
+    }
+
+    // Use a shared abort controller for the batch
+    const controller = new AbortController()
+    for (const u of newUploads) {
+      u.abortController = controller
+    }
+
+    try {
+      const res = await fetch("/api/sources", {
+        method: "POST",
+        body: formData,
+        signal: controller.signal,
+      })
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Upload failed" }))
+        if (res.status === 413) {
+          setQuotaError(err.error ?? "Storage quota exceeded")
+        }
+        setUploads((prev) =>
+          prev.map((u) =>
+            newUploads.some((n) => n.tempId === u.tempId)
+              ? { ...u, status: "error" as const, error: err.error ?? "Upload failed" }
+              : u
+          )
+        )
+        return
+      }
+
+      const data = await res.json()
+      // Remove completed uploads from the upload list
+      setUploads((prev) => prev.filter((u) => !newUploads.some((n) => n.tempId === u.tempId)))
+
+      // Check for per-file errors
+      const errors = data.results.filter((r: { error?: string }) => r.error)
+      if (errors.length > 0) {
+        setUploads((prev) => [
+          ...prev,
+          ...errors.map((e: { filename: string; error: string }) => ({
+            tempId: crypto.randomUUID(),
+            filename: e.filename,
+            sizeBytes: 0,
+            progress: 0,
+            status: "error" as const,
+            error: e.error,
+          })),
+        ])
+      }
+
+      fetchSources()
+    } catch (err) {
+      if ((err as Error).name === "AbortError") {
+        setUploads((prev) => prev.filter((u) => !newUploads.some((n) => n.tempId === u.tempId)))
+        return
+      }
+      setUploads((prev) =>
+        prev.map((u) =>
+          newUploads.some((n) => n.tempId === u.tempId)
+            ? { ...u, status: "error" as const, error: "Network error" }
+            : u
+        )
+      )
+    }
+  }, [topicSlug, fetchSources])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    if (e.dataTransfer.files.length > 0) {
+      uploadFiles(e.dataTransfer.files)
+    }
+  }, [uploadFiles])
+
+  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      uploadFiles(e.target.files)
+      e.target.value = ""
+    }
+  }, [uploadFiles])
+
+  const cancelUpload = useCallback((tempId: string) => {
+    setUploads((prev) => {
+      const item = prev.find((u) => u.tempId === tempId)
+      item?.abortController?.abort()
+      return prev.filter((u) => u.tempId !== tempId)
+    })
+  }, [])
+
+  const deleteSource = useCallback(async (id: string) => {
+    const res = await fetch(`/api/sources/${id}`, { method: "DELETE" })
+    if (res.ok) {
+      setSources((prev) => prev.filter((s) => s.id !== id))
+      setQuotaError(null)
+    }
+  }, [])
+
+  const startRename = useCallback((id: string, currentName: string) => {
+    setRenamingId(id)
+    setRenameValue(currentName)
+  }, [])
+
+  const submitRename = useCallback(async () => {
+    if (!renamingId || !renameValue.trim()) return
+    const res = await fetch(`/api/sources/${renamingId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename: renameValue.trim() }),
+    })
+    if (res.ok) {
+      const data = await res.json()
+      setSources((prev) =>
+        prev.map((s) => (s.id === renamingId ? { ...s, filename: data.source.filename } : s))
+      )
+    }
+    setRenamingId(null)
+    setRenameValue("")
+  }, [renamingId, renameValue])
+
+  const displayFiles = loaded ? sources : []
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold">Sources & Resources</h2>
       </div>
+
+      {/* Quota alert */}
+      {quotaError && (
+        <div className="flex items-center gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-3">
+          <AlertCircle className="size-4 shrink-0 text-destructive" />
+          <div className="flex-1 text-sm text-destructive">{quotaError}</div>
+          <Button variant="ghost" size="icon-xs" onClick={() => setQuotaError(null)}>
+            <X className="size-3" />
+          </Button>
+        </div>
+      )}
 
       {/* Dropzone */}
       <label
@@ -2261,24 +2431,33 @@ function SourcesTab({ files }: { files: MockFile[] }) {
         }`}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
         onDragLeave={() => setDragOver(false)}
-        onDrop={(e) => { e.preventDefault(); setDragOver(false) }}
+        onDrop={handleDrop}
+        data-testid="dropzone"
       >
         <Upload className="size-5 text-muted-foreground" />
         <div className="text-center">
           <p className="text-sm font-medium">Drop files here or click to browse</p>
-          <p className="text-xs text-muted-foreground">PDF, Markdown, images up to 50 MB</p>
+          <p className="text-xs text-muted-foreground">Any file type — documents, images, audio, video, data, code (50 MB, 500 MB for media)</p>
         </div>
-        <input type="file" multiple className="hidden" accept=".pdf,.md,.png,.jpg,.jpeg" />
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={handleFileInput}
+          data-testid="file-input"
+        />
       </label>
 
       {/* Uploading files */}
-      {MOCK_UPLOADS.length > 0 && (
+      {uploads.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-medium text-muted-foreground uppercase">Uploading</p>
-          {MOCK_UPLOADS.map((upload) => (
+          {uploads.map((upload) => (
             <div
-              key={`${uploadId}-${upload.id}`}
+              key={`${uploadId}-${upload.tempId}`}
               className="flex flex-col gap-2 rounded-lg border p-3"
+              data-testid="upload-item"
             >
               <div className="flex items-center gap-3">
                 {upload.status === "uploading" ? (
@@ -2290,10 +2469,15 @@ function SourcesTab({ files }: { files: MockFile[] }) {
                   <p className="truncate text-sm font-medium">{upload.filename}</p>
                   <p className="text-xs text-muted-foreground">
                     {formatFileSize(upload.sizeBytes)}
-                    {upload.status === "uploading" && ` · ${upload.progress}%`}
+                    {upload.status === "uploading" && " · uploading..."}
                   </p>
                 </div>
-                <Button variant="ghost" size="icon-xs">
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => cancelUpload(upload.tempId)}
+                  data-testid="cancel-upload"
+                >
                   <X className="size-3" />
                 </Button>
               </div>
@@ -2309,25 +2493,125 @@ function SourcesTab({ files }: { files: MockFile[] }) {
 
       {/* Existing files */}
       <div className="space-y-2">
-        <p className="text-xs font-medium text-muted-foreground uppercase">Sources</p>
-        {files.map((file) => (
-          <div
-            key={`${fileId}-${file.id}`}
-            className="flex items-center gap-3 rounded-lg border p-3"
-          >
-            <FileText className="size-4 shrink-0 text-muted-foreground" />
-            <div className="flex-1 min-w-0">
-              <p className="truncate text-sm font-medium">{file.filename}</p>
-              <p className="text-xs text-muted-foreground">
-                {formatFileSize(file.sizeBytes)} · {file.uploadedAt}
-              </p>
-            </div>
-            <Badge variant="outline" className="shrink-0 text-xs">
-              {file.scope === "topic" ? "Topic" : "Project"}
-            </Badge>
+        <p className="text-xs font-medium text-muted-foreground uppercase">
+          Sources {loaded && `(${displayFiles.length})`}
+        </p>
+        {!loaded && (
+          <div className="flex justify-center py-4">
+            <Loader2 className="size-5 animate-spin text-muted-foreground" />
           </div>
-        ))}
+        )}
+        {loaded && displayFiles.length === 0 && fallbackFiles.length === 0 && (
+          <p className="py-4 text-center text-sm text-muted-foreground">
+            No sources yet. Upload files to get started.
+          </p>
+        )}
+        {(displayFiles.length > 0 ? displayFiles : (!loaded ? [] : fallbackFiles)).map((file) => {
+          const id = "id" in file ? file.id : (file as MockFile).id
+          const filename = file.filename
+          const size = "sizeBytes" in file ? file.sizeBytes : (file as MockFile).sizeBytes
+          const isRenaming = renamingId === id
+          return (
+            <div
+              key={`${fileId}-${id}`}
+              className="flex items-center gap-3 rounded-lg border p-3"
+              data-testid="source-item"
+            >
+              <FileText className="size-4 shrink-0 text-muted-foreground" />
+              <div className="flex-1 min-w-0">
+                {isRenaming ? (
+                  <form
+                    onSubmit={(e) => { e.preventDefault(); submitRename() }}
+                    className="flex items-center gap-2"
+                  >
+                    <Input
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      className="h-7 text-sm"
+                      autoFocus
+                      data-testid="rename-input"
+                    />
+                    <Button type="submit" size="xs" variant="outline" data-testid="rename-save">
+                      <Check className="size-3" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="ghost"
+                      onClick={() => setRenamingId(null)}
+                      data-testid="rename-cancel"
+                    >
+                      <X className="size-3" />
+                    </Button>
+                  </form>
+                ) : (
+                  <>
+                    <p className="truncate text-sm font-medium">{filename}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatFileSize(size)}
+                    </p>
+                  </>
+                )}
+              </div>
+              {!isRenaming && displayFiles.length > 0 && (
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => startRename(id, filename)}
+                    data-testid="rename-button"
+                  >
+                    <Pencil className="size-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => deleteSource(id)}
+                    data-testid="delete-button"
+                  >
+                    <Trash2 className="size-3 text-destructive" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
+
+      {/* Academic Resources */}
+      <AcademicResourcesList />
+    </div>
+  )
+}
+
+function AcademicResourcesList() {
+  const [open, setOpen] = useState(false)
+  const resourceId = useId()
+
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="text-xs font-medium text-muted-foreground uppercase cursor-pointer hover:text-foreground transition-colors"
+      >
+        Academic Resources ({ACADEMIC_RESOURCES.length})
+      </button>
+      {open && ACADEMIC_RESOURCES.map((resource) => (
+        <a
+          key={`${resourceId}-${resource.id}`}
+          href={resource.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 rounded-lg border p-3"
+        >
+          <resource.icon className="h-6 w-8 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="truncate text-sm font-medium">{resource.shortName}</p>
+            <p className="text-xs text-muted-foreground">{resource.description}</p>
+          </div>
+        </a>
+      ))}
     </div>
   )
 }
@@ -2530,18 +2814,18 @@ function AuditTab({ events }: { events: MockAuditEvent[] }) {
 // ── Artifact Grid ──
 
 const ARTIFACT_TYPES = [
-  { label: "Audio", icon: AudioLines, count: 0, unread: 0 },
-  { label: "Video", icon: Video, count: 0, unread: 0 },
-  { label: "Mind Map", icon: Map, count: 1, unread: 0 },
-  { label: "3D Spatial", icon: Box, count: 3, unread: 1 },
-  { label: "Flashcards", icon: FlipHorizontal, count: 3, unread: 2 },
-  { label: "Quiz", icon: HelpCircle, count: 2, unread: 1 },
-  { label: "Infographic", icon: BarChart3, count: 0, unread: 0 },
-  { label: "Slide Deck", icon: Presentation, count: 1, unread: 0 },
-  { label: "Data Table", icon: Table2, count: 0, unread: 0 },
-  { label: "Reports", icon: FileText, count: 0, unread: 0 },
-  { label: "Manim", icon: Clapperboard, count: 3, unread: 1 },
-  { label: "Geo", icon: Globe, count: 2, unread: 1 },
+  { label: "Audio", icon: AudioLines },
+  { label: "Video", icon: Video },
+  { label: "Mind Map", icon: Map },
+  { label: "3D Spatial", icon: Box },
+  { label: "Flashcards", icon: FlipHorizontal },
+  { label: "Quiz", icon: HelpCircle },
+  { label: "Infographic", icon: BarChart3 },
+  { label: "Slide Deck", icon: Presentation },
+  { label: "Data Table", icon: Table2 },
+  { label: "Reports", icon: FileText },
+  { label: "Manim", icon: Clapperboard },
+  { label: "Geo", icon: Globe },
 ] as const
 
 function ArtifactGrid({
@@ -2552,13 +2836,27 @@ function ArtifactGrid({
   activeType: ArtifactType | null
 }) {
   const gridId = useId()
+  const artifactState = useDataStore((s) => s.artifacts)
+  const seenCounts = useDataStore((s) => s.artifactSeenCounts)
+
+  // Mark the active type as seen whenever it changes
+  useEffect(() => {
+    if (activeType) {
+      dataStore.markArtifactTypeSeen(activeType)
+    }
+  }, [activeType])
 
   return (
     <div className="grid grid-cols-2 gap-1.5">
       {ARTIFACT_TYPES.map((artifact) => {
         const Icon = artifact.icon
         const artifactType = artifactTypeFromLabel(artifact.label)
-        const realCount = artifactType ? getArtifactsByType(artifactType).length : 0
+        const realCount = artifactType
+          ? Array.from(artifactState.values()).filter((a) => a.type === artifactType).length
+          : 0
+        const unreadCount = artifactType
+          ? Math.max(0, realCount - (seenCounts.get(artifactType) ?? 0))
+          : 0
         const hasItems = realCount > 0
         const isActive = activeType === artifactType
         return (
@@ -2578,9 +2876,9 @@ function ArtifactGrid({
             <span className={`truncate text-xs font-medium ${hasItems || isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"}`}>
               {artifact.label}
             </span>
-            {realCount > 0 && (
-              <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
-                {realCount}
+            {unreadCount > 0 && !isActive && (
+              <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground">
+                {unreadCount}
               </span>
             )}
             {!hasItems && !isActive && (

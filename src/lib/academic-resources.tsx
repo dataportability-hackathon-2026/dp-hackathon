@@ -1,50 +1,29 @@
-import type { ComponentType, SVGProps } from "react"
-import { SiArxiv } from "react-icons/si"
-import { BookOpen, Database, GraduationCap, Library, FlaskConical } from "lucide-react"
+import type { ComponentType } from "react"
 
-type IconProps = SVGProps<SVGSVGElement> & { className?: string; size?: number }
-
-// Custom SVG logo components for services without react-icons entries
-
-function SemanticScholarLogo({ className, ...props }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} {...props}>
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15.5v-2.09c-1.35-.28-2.51-1.01-3.28-2.01l1.55-1.3c.53.71 1.32 1.19 2.23 1.35V10.7c-2.19-.54-3.5-1.67-3.5-3.45C8 5.54 9.46 4.18 11 3.97V3h2v.97c1.12.17 2.09.72 2.81 1.53l-1.47 1.38c-.42-.43-1-.73-1.34-.84v2.76c2.29.58 3.5 1.73 3.5 3.5 0 1.93-1.46 3.28-3.5 3.53V17h-2zm0-11.56c-.76.17-1.25.7-1.25 1.36 0 .63.42 1.12 1.25 1.4V5.94zm2 9.81c.82-.17 1.25-.73 1.25-1.45 0-.65-.42-1.17-1.25-1.5v2.95z" />
-    </svg>
-  )
+// Helper to create img-based logo components from public SVG files
+function createLogoComponent(src: string, alt: string) {
+  function LogoImg({ className }: { className?: string }) {
+    return <img src={src} alt={alt} className={`${className ?? ""} object-contain`} />
+  }
+  LogoImg.displayName = `${alt}Logo`
+  return LogoImg
 }
 
-function CoreLogo({ className, ...props }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} {...props}>
-      <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm0 2a8 8 0 110 16 8 8 0 010-16zm0 2a6 6 0 100 12 6 6 0 000-12zm0 2a4 4 0 110 8 4 4 0 010-8zm0 2a2 2 0 100 4 2 2 0 000-4z" />
-    </svg>
-  )
-}
-
-function OpenEdxLogo({ className, ...props }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} {...props}>
-      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function MitOcwLogo({ className, ...props }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} {...props}>
-      <path d="M2 4h4v16H2V4zm8 0h4v16h-4V4zm8 0h4v16h-4V4z" />
-    </svg>
-  )
-}
-
-function OpenLibraryLogo({ className, ...props }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} {...props}>
-      <path d="M4 2h2v20H4V2zm4 2h2v16H8V4zm4-2h2v20h-2V2zm4 2h2v16h-2V4zm4-2h2v20h-2V2z" />
-    </svg>
-  )
-}
+// Official logos (SVG files in /public/logos/)
+const UTAustinLogo = createLogoComponent("/logos/ut-austin.svg", "UT Austin")
+const HarvardLogo = createLogoComponent("/logos/harvard.svg", "Harvard")
+const YaleLogo = createLogoComponent("/logos/yale.svg", "Yale")
+const StanfordLogo = createLogoComponent("/logos/stanford.svg", "Stanford")
+const ColumbiaLogo = createLogoComponent("/logos/columbia.svg", "Columbia")
+const PennLogo = createLogoComponent("/logos/upenn.svg", "Penn")
+const PrincetonLogo = createLogoComponent("/logos/princeton.svg", "Princeton")
+const CornellLogo = createLogoComponent("/logos/cornell.svg", "Cornell")
+const SemanticScholarLogo = createLogoComponent("/logos/semantic-scholar.svg", "Semantic Scholar")
+const ArxivLogo = createLogoComponent("/logos/arxiv.svg", "arXiv")
+const OpenLibraryLogo = createLogoComponent("/logos/open-library.svg", "Open Library")
+const CoreLogo = createLogoComponent("/logos/core.svg", "CORE")
+const OpenEdxLogo = createLogoComponent("/logos/edx.svg", "edX")
+const MitOcwLogo = createLogoComponent("/logos/mit.svg", "MIT OCW")
 
 export type AcademicResource = {
   id: string
@@ -60,6 +39,102 @@ export type AcademicResource = {
 }
 
 export const ACADEMIC_RESOURCES: AcademicResource[] = [
+  {
+    id: "ut-austin-law",
+    name: "UT Austin Tarlton Law Library",
+    shortName: "Tarlton Law",
+    description: "Comprehensive legal research guides and open resources from UT Austin",
+    icon: UTAustinLogo,
+    color: "text-[#BF5700] dark:text-[#E8852F]",
+    bgColor: "bg-orange-50 dark:bg-orange-950/30",
+    borderColor: "border-orange-200 dark:border-orange-800",
+    url: "https://tarltonguides.law.utexas.edu",
+    category: "content",
+  },
+  {
+    id: "harvard",
+    name: "Harvard Online Learning",
+    shortName: "Harvard",
+    description: "Free online courses and learning resources from Harvard University",
+    icon: HarvardLogo,
+    color: "text-[#A51C30] dark:text-[#E85468]",
+    bgColor: "bg-red-50 dark:bg-red-950/30",
+    borderColor: "border-red-200 dark:border-red-800",
+    url: "https://pll.harvard.edu/catalog/free",
+    category: "courses",
+  },
+  {
+    id: "yale",
+    name: "Yale Open Courses",
+    shortName: "Yale OYC",
+    description: "Free open courses and lectures from Yale University",
+    icon: YaleLogo,
+    color: "text-[#00356B] dark:text-[#4A8FD4]",
+    bgColor: "bg-blue-50 dark:bg-blue-950/30",
+    borderColor: "border-blue-200 dark:border-blue-800",
+    url: "https://oyc.yale.edu",
+    category: "courses",
+  },
+  {
+    id: "stanford",
+    name: "Stanford Online",
+    shortName: "Stanford",
+    description: "Free courses and educational content from Stanford University",
+    icon: StanfordLogo,
+    color: "text-[#8C1515] dark:text-[#D45454]",
+    bgColor: "bg-red-50 dark:bg-red-950/30",
+    borderColor: "border-red-200 dark:border-red-800",
+    url: "https://online.stanford.edu/free-courses",
+    category: "courses",
+  },
+  {
+    id: "columbia",
+    name: "Columbia University (edX)",
+    shortName: "Columbia",
+    description: "Open courses from Columbia University on edX",
+    icon: ColumbiaLogo,
+    color: "text-[#003DA5] dark:text-[#5A8FE8]",
+    bgColor: "bg-blue-50 dark:bg-blue-950/30",
+    borderColor: "border-blue-200 dark:border-blue-800",
+    url: "https://www.edx.org/school/columbiax",
+    category: "courses",
+  },
+  {
+    id: "upenn",
+    name: "Penn / Wharton (Coursera)",
+    shortName: "Penn",
+    description: "Courses from the University of Pennsylvania and Wharton School on Coursera",
+    icon: PennLogo,
+    color: "text-[#011F5B] dark:text-[#4A6FA5]",
+    bgColor: "bg-indigo-50 dark:bg-indigo-950/30",
+    borderColor: "border-indigo-200 dark:border-indigo-800",
+    url: "https://www.coursera.org/penn",
+    category: "courses",
+  },
+  {
+    id: "princeton",
+    name: "Princeton (Coursera)",
+    shortName: "Princeton",
+    description: "Courses from Princeton University on Coursera",
+    icon: PrincetonLogo,
+    color: "text-[#E77500] dark:text-[#F5A030]",
+    bgColor: "bg-orange-50 dark:bg-orange-950/30",
+    borderColor: "border-orange-200 dark:border-orange-800",
+    url: "https://www.coursera.org/princeton",
+    category: "courses",
+  },
+  {
+    id: "cornell",
+    name: "Cornell (edX)",
+    shortName: "Cornell",
+    description: "Open courses from Cornell University on edX",
+    icon: CornellLogo,
+    color: "text-[#B31B1B] dark:text-[#E85454]",
+    bgColor: "bg-red-50 dark:bg-red-950/30",
+    borderColor: "border-red-200 dark:border-red-800",
+    url: "https://www.edx.org/school/cornellx",
+    category: "courses",
+  },
   {
     id: "semantic-scholar",
     name: "Semantic Scholar",
@@ -77,7 +152,7 @@ export const ACADEMIC_RESOURCES: AcademicResource[] = [
     name: "arXiv",
     shortName: "arXiv",
     description: "Cutting-edge STEM preprints and research papers",
-    icon: SiArxiv,
+    icon: ArxivLogo,
     color: "text-[#B31B1B] dark:text-[#E85454]",
     bgColor: "bg-red-50 dark:bg-red-950/30",
     borderColor: "border-red-200 dark:border-red-800",

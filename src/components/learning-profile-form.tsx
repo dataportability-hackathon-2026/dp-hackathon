@@ -263,7 +263,9 @@ function Screen1({
         <div className="space-y-2">
           <Label>What should we call you?</Label>
           <Input
+            name="displayName"
             placeholder="Your preferred name"
+            autoComplete="given-name"
             value={data.displayName}
             onChange={(e) => onChange({ displayName: e.target.value })}
           />
@@ -294,7 +296,9 @@ function Screen1({
         <div className="space-y-2">
           <Label>What are you studying or learning about?</Label>
           <Input
+            name="fieldOfStudy"
             placeholder="e.g. Linear Algebra, Machine Learning, Spanish"
+            autoComplete="off"
             value={data.fieldOfStudy}
             onChange={(e) => onChange({ fieldOfStudy: e.target.value })}
           />
@@ -363,7 +367,9 @@ function Screen2({
         <div className="space-y-2">
           <Label>Do you have a deadline?</Label>
           <Input
+            name="deadline"
             type="date"
+            autoComplete="off"
             value={data.deadline}
             onChange={(e) => onChange({ deadline: e.target.value })}
           />

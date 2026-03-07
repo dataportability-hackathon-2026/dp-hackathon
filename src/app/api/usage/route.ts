@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
 import { getUsageHistory } from "@/lib/usage";
+import { getEffectiveUserId } from "@/lib/impersonate";
 
 export async function GET(request: Request) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session)
+  const userId = await getEffectiveUserId();
+  if (!userId)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const userId = session.user.id;
 
   const { searchParams } = new URL(request.url);
   const limit = Number(searchParams.get("limit") ?? 50);
