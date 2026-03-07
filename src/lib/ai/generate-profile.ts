@@ -1,46 +1,46 @@
-import { generateText, Output } from "ai"
-import { openai } from "./provider"
-import { LearningProfileAnalysisSchema } from "./schemas"
-import type { LearningProfileAnalysis } from "./schemas"
+import { generateText, Output } from "ai";
+import { openai } from "./provider";
+import type { LearningProfileAnalysis } from "./schemas";
+import { LearningProfileAnalysisSchema } from "./schemas";
 
 type LearningProfileInput = {
-  displayName: string
-  educationLevel: string
-  fieldOfStudy: string
-  primaryGoal: string
-  goalDescription: string
-  deadline: string
-  urgency: string
-  minutesPerDay: number
-  daysPerWeek: number
-  preferredTimeOfDay: string
-  sessionLength: string
-  crtAnswer1: string
-  crtAnswer2: string
-  crtAnswer3: string
-  metacogPlanningFrequency: string
-  metacogMonitoring: string
-  metacogSelfEvaluation: string
-  studyStrategies: string[]
-  primaryStrategy: string
-  motivationAutonomy: number
-  motivationCompetence: number
-  motivationRelatedness: number
-  calibrationConfidence: number
-  calibrationExplanation: string
-  biggestChallenge: string
-  procrastinationFrequency: string
-  distractionSources: string[]
-  preferredFormats: string[]
-  feedbackStyle: string
-  coachingTone: string
-  priorKnowledgeLevel: string
-  priorKnowledgeDetails: string
-  relatedSubjects: string[]
-  learningSuperpowers: string
-  areasToImprove: string
-  anythingElse: string
-}
+  displayName: string;
+  educationLevel: string;
+  fieldOfStudy: string;
+  primaryGoal: string;
+  goalDescription: string;
+  deadline: string;
+  urgency: string;
+  minutesPerDay: number;
+  daysPerWeek: number;
+  preferredTimeOfDay: string;
+  sessionLength: string;
+  crtAnswer1: string;
+  crtAnswer2: string;
+  crtAnswer3: string;
+  metacogPlanningFrequency: string;
+  metacogMonitoring: string;
+  metacogSelfEvaluation: string;
+  studyStrategies: string[];
+  primaryStrategy: string;
+  motivationAutonomy: number;
+  motivationCompetence: number;
+  motivationRelatedness: number;
+  calibrationConfidence: number;
+  calibrationExplanation: string;
+  biggestChallenge: string;
+  procrastinationFrequency: string;
+  distractionSources: string[];
+  preferredFormats: string[];
+  feedbackStyle: string;
+  coachingTone: string;
+  priorKnowledgeLevel: string;
+  priorKnowledgeDetails: string;
+  relatedSubjects: string[];
+  learningSuperpowers: string;
+  areasToImprove: string;
+  anythingElse: string;
+};
 
 export async function generateLearningProfile(
   profile: LearningProfileInput,
@@ -49,11 +49,11 @@ export async function generateLearningProfile(
     model: openai("gpt-4o-mini"),
     output: Output.object({ schema: LearningProfileAnalysisSchema }),
     prompt: buildProfilePrompt(profile),
-  })
+  });
   if (!result.output) {
-    throw new Error("Failed to generate learning profile analysis")
+    throw new Error("Failed to generate learning profile analysis");
   }
-  return result.output
+  return result.output;
 }
 
 function buildProfilePrompt(p: LearningProfileInput): string {
@@ -68,8 +68,8 @@ function buildProfilePrompt(p: LearningProfileInput): string {
       ? 1
       : 0,
     p.crtAnswer3?.toLowerCase().includes("47") ? 1 : 0,
-  ]
-  const crtScore = crtCorrect.reduce((a, b) => a + b, 0)
+  ];
+  const crtScore = crtCorrect.reduce((a, b) => a + b, 0);
 
   return `You are an evidence-based learning scientist analyzing a learner profile. Produce a structured analysis.
 
@@ -112,7 +112,7 @@ function buildProfilePrompt(p: LearningProfileInput): string {
 3. Compare self-reported confidence (${p.calibrationConfidence}%) against CRT performance and prior knowledge level to assess calibration.
 4. Map SDT scores to identify the lowest-scoring motivation dimension as the primary focus.
 5. Recommend evidence-based strategies that address identified risks.
-6. Set coaching approach based on stated preferences AND identified needs.`
+6. Set coaching approach based on stated preferences AND identified needs.`;
 }
 
-export type { LearningProfileInput }
+export type { LearningProfileInput };

@@ -1,11 +1,11 @@
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
-import { stripe } from "@/lib/stripe";
-import { CREDIT_PACKS, type CreditPackSlug } from "@/lib/credit-packs";
 import { db } from "@/db";
-import { user, creditPurchase } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { creditPurchase, user } from "@/db/schema";
+import { CREDIT_PACKS, type CreditPackSlug } from "@/lib/credit-packs";
 import { getEffectiveUserId } from "@/lib/impersonate";
+import { stripe } from "@/lib/stripe";
 
 const checkoutSchema = z.object({
   packSlug: z.enum(
@@ -53,14 +53,10 @@ export async function POST(request: Request) {
       metadata: { userId },
     });
     stripeCustomerId = customer.id;
-    await db
-      .update(user)
-      .set({ stripeCustomerId })
-      .where(eq(user.id, userId));
+    await db.update(user).set({ stripeCustomerId }).where(eq(user.id, userId));
   }
 
-  const baseUrl =
-    process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
+  const baseUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 
   const checkoutSession = await stripe.checkout.sessions.create({
     mode: "payment",

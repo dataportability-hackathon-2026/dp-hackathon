@@ -1,26 +1,26 @@
-import { generateText, Output } from "ai"
-import { openai } from "./provider"
-import {
-  QuizArtifactSchema,
-  FlashcardArtifactSchema,
-  MindMapArtifactSchema,
-  SlideArtifactSchema,
-  SpatialArtifactSchema,
-} from "./schemas"
+import { generateText, Output } from "ai";
+import { openai } from "./provider";
 import type {
-  QuizArtifactData,
   FlashcardArtifactData,
   MindMapArtifactData,
+  QuizArtifactData,
   SlideArtifactData,
   SpatialArtifactData,
-} from "./schemas"
+} from "./schemas";
+import {
+  FlashcardArtifactSchema,
+  MindMapArtifactSchema,
+  QuizArtifactSchema,
+  SlideArtifactSchema,
+  SpatialArtifactSchema,
+} from "./schemas";
 
 type ArtifactInput = {
-  subject: string
-  concepts: string[]
-  priorKnowledgeLevel: string
-  goalType: string
-}
+  subject: string;
+  concepts: string[];
+  priorKnowledgeLevel: string;
+  goalType: string;
+};
 
 export async function generateQuiz(
   input: ArtifactInput,
@@ -43,11 +43,11 @@ Create a quiz with 5-8 questions that:
 - Progress from easier to harder questions
 - Use domain-accurate terminology and correct facts
 - Each question id should be "q1", "q2", etc.`,
-  })
+  });
   if (!result.output) {
-    throw new Error("Failed to generate quiz")
+    throw new Error("Failed to generate quiz");
   }
-  return result.output
+  return result.output;
 }
 
 export async function generateFlashcards(
@@ -70,11 +70,11 @@ Create 8-12 flashcards that:
 - Include both factual recall and conceptual understanding cards
 - Use precise domain terminology
 - Each card id should be "c1", "c2", etc.`,
-  })
+  });
   if (!result.output) {
-    throw new Error("Failed to generate flashcards")
+    throw new Error("Failed to generate flashcards");
   }
-  return result.output
+  return result.output;
 }
 
 export async function generateMindMap(
@@ -98,11 +98,11 @@ Create a hierarchical mind map that:
 - Has 10-20 total nodes
 - Node ids should be "n1", "n2", etc.
 - Forms a proper tree structure (no cycles, one root)`,
-  })
+  });
   if (!result.output) {
-    throw new Error("Failed to generate mind map")
+    throw new Error("Failed to generate mind map");
   }
-  return result.output
+  return result.output;
 }
 
 export async function generateSlides(
@@ -125,11 +125,11 @@ Create a slide deck with 4-8 slides that:
 - Each slide has 3-5 concise bullet points
 - Uses clear, educational language appropriate for the student level
 - Progresses logically from foundational to advanced material`,
-  })
+  });
   if (!result.output) {
-    throw new Error("Failed to generate slides")
+    throw new Error("Failed to generate slides");
   }
-  return result.output
+  return result.output;
 }
 
 export async function generateSpatial(
@@ -154,11 +154,11 @@ Create a 3D spatial model that:
 - Assigns appropriate shapes: sphere for atoms/nodes, box for containers, cylinder for bonds/axes, torus for orbits/cycles
 - Sets autoRotate to true for better visualization
 - Scale values between 0.2 and 2.0`,
-  })
+  });
   if (!result.output) {
-    throw new Error("Failed to generate spatial model")
+    throw new Error("Failed to generate spatial model");
   }
-  return result.output
+  return result.output;
 }
 
-export type { ArtifactInput }
+export type { ArtifactInput };

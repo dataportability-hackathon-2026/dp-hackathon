@@ -1,4 +1,11 @@
-import { pgTable, text, integer, bigint, boolean, timestamp } from "drizzle-orm/pg-core";
+import {
+  bigint,
+  boolean,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 
 // ─── Auth tables ────────────────────────────────────────────────────────────
 

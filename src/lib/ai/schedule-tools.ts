@@ -1,11 +1,11 @@
-import { tool } from "ai"
-import { z } from "zod"
-import { start } from "workflow/api"
-import { db } from "@/db"
-import { scheduledTask } from "@/db/schema"
-import { eq } from "drizzle-orm"
-import { scheduledTaskWorkflow } from "@/workflows/scheduled-task"
-import { generateAllArtifactsWorkflow } from "@/workflows/generate-all-artifacts"
+import { tool } from "ai";
+import { eq } from "drizzle-orm";
+import { start } from "workflow/api";
+import { z } from "zod";
+import { db } from "@/db";
+import { scheduledTask } from "@/db/schema";
+import { generateAllArtifactsWorkflow } from "@/workflows/generate-all-artifacts";
+import { scheduledTaskWorkflow } from "@/workflows/scheduled-task";
 
 export const scheduleTools = {
   create_schedule: tool({
@@ -31,10 +31,7 @@ export const scheduleTools = {
         .positive()
         .optional()
         .describe("Maximum number of times to run (null = unlimited)"),
-      message: z
-        .string()
-        .optional()
-        .describe("Message content for reminders"),
+      message: z.string().optional().describe("Message content for reminders"),
       email: z
         .string()
         .email()
@@ -44,15 +41,21 @@ export const scheduleTools = {
         .array(z.string())
         .optional()
         .describe("Artifact types to refresh (for artifact_refresh type)"),
-      subject: z.string().optional().describe("Subject for artifact generation"),
-      concepts: z.array(z.string()).optional().describe("Concepts for artifact generation"),
+      subject: z
+        .string()
+        .optional()
+        .describe("Subject for artifact generation"),
+      concepts: z
+        .array(z.string())
+        .optional()
+        .describe("Concepts for artifact generation"),
     }),
     execute: async (input) => {
-      const scheduleId = crypto.randomUUID()
-      const intervalMs = input.intervalHours * 60 * 60 * 1000
+      const scheduleId = crypto.randomUUID();
+      const intervalMs = input.intervalHours * 60 * 60 * 1000;
       const expiresAt = input.durationDays
         ? new Date(Date.now() + input.durationDays * 24 * 60 * 60 * 1000)
-        : null
+        : null;
 
       const payload = JSON.stringify({
         message: input.message,
@@ -60,7 +63,7 @@ export const scheduleTools = {
         artifactTypes: input.artifactTypes,
         subject: input.subject,
         concepts: input.concepts,
-      })
+      });
 
       await db.insert(scheduledTask).values({
         id: scheduleId,
@@ -73,14 +76,14 @@ export const scheduleTools = {
         payload,
         status: "active",
         maxExecutions: input.maxExecutions ?? null,
-      })
+      });
 
-      const run = await start(scheduledTaskWorkflow, [{ scheduleId }])
+      const run = await start(scheduledTaskWorkflow, [{ scheduleId }]);
 
       await db
         .update(scheduledTask)
         .set({ wdkRunId: run.runId })
-        .where(eq(scheduledTask.id, scheduleId))
+        .where(eq(scheduledTask.id, scheduleId));
 
       return {
         scheduleId,
@@ -91,7 +94,7 @@ export const scheduleTools = {
         maxExecutions: input.maxExecutions ?? null,
         status: "active",
         message: `Schedule created: "${input.label}" — runs every ${input.intervalHours}h${input.durationDays ? ` for ${input.durationDays} days` : ""}.`,
-      }
+      };
     },
   }),
 
@@ -123,44 +126,46 @@ export const scheduleTools = {
         .select()
         .from(scheduledTask)
         .where(eq(scheduledTask.id, input.scheduleId))
-        .limit(1)
+        .limit(1);
 
       if (!existing[0]) {
-        return { error: `Schedule ${input.scheduleId} not found.` }
+        return { error: `Schedule ${input.scheduleId} not found.` };
       }
 
-      const updates: Record<string, unknown> = { updatedAt: new Date() }
+      const updates: Record<string, unknown> = { updatedAt: new Date() };
 
       if (input.intervalHours) {
-        updates.intervalMs = input.intervalHours * 60 * 60 * 1000
+        updates.intervalMs = input.intervalHours * 60 * 60 * 1000;
       }
 
       if (input.durationDays) {
-        updates.expiresAt = new Date(Date.now() + input.durationDays * 24 * 60 * 60 * 1000)
+        updates.expiresAt = new Date(
+          Date.now() + input.durationDays * 24 * 60 * 60 * 1000,
+        );
       }
 
       if (input.maxExecutions) {
-        updates.maxExecutions = input.maxExecutions
+        updates.maxExecutions = input.maxExecutions;
       }
 
       if (input.message) {
         const currentPayload = existing[0].payload
           ? JSON.parse(existing[0].payload)
-          : {}
-        currentPayload.message = input.message
-        updates.payload = JSON.stringify(currentPayload)
+          : {};
+        currentPayload.message = input.message;
+        updates.payload = JSON.stringify(currentPayload);
       }
 
       await db
         .update(scheduledTask)
         .set(updates)
-        .where(eq(scheduledTask.id, input.scheduleId))
+        .where(eq(scheduledTask.id, input.scheduleId));
 
       return {
         scheduleId: input.scheduleId,
         updated: Object.keys(updates).filter((k) => k !== "updatedAt"),
         message: `Schedule "${existing[0].label}" updated. Changes take effect on next cycle.`,
-      }
+      };
     },
   }),
 
@@ -175,23 +180,23 @@ export const scheduleTools = {
         .select()
         .from(scheduledTask)
         .where(eq(scheduledTask.id, input.scheduleId))
-        .limit(1)
+        .limit(1);
 
       if (!existing[0]) {
-        return { error: `Schedule ${input.scheduleId} not found.` }
+        return { error: `Schedule ${input.scheduleId} not found.` };
       }
 
       await db
         .update(scheduledTask)
         .set({ status: "cancelled", updatedAt: new Date() })
-        .where(eq(scheduledTask.id, input.scheduleId))
+        .where(eq(scheduledTask.id, input.scheduleId));
 
       return {
         scheduleId: input.scheduleId,
         label: existing[0].label,
         status: "cancelled",
         message: `Schedule "${existing[0].label}" cancelled. It will stop on its next cycle.`,
-      }
+      };
     },
   }),
 
@@ -212,7 +217,7 @@ export const scheduleTools = {
         .describe("Email to notify when all artifacts are ready"),
     }),
     execute: async (input) => {
-      const workflowRunId = crypto.randomUUID()
+      const workflowRunId = crypto.randomUUID();
 
       const run = await start(generateAllArtifactsWorkflow, [
         {
@@ -226,15 +231,21 @@ export const scheduleTools = {
           },
           notifyEmail: input.notifyEmail,
         },
-      ])
+      ]);
 
       return {
         workflowRunId,
         wdkRunId: run.runId,
         status: "running",
-        artifactTypes: ["quiz", "flashcards", "mindmap", "slidedeck", "spatial"],
+        artifactTypes: [
+          "quiz",
+          "flashcards",
+          "mindmap",
+          "slidedeck",
+          "spatial",
+        ],
         message: `Generating all 5 artifact types for "${input.subject}". This may take a few minutes. ${input.notifyEmail ? `You'll be emailed at ${input.notifyEmail} when complete.` : "Check back in the artifacts panel."}`,
-      }
+      };
     },
   }),
-}
+};

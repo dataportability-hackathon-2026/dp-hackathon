@@ -1,48 +1,58 @@
-"use client"
+"use client";
 
-import { useRef, useMemo } from "react"
-import { Canvas, useFrame } from "@react-three/fiber"
-import { OrbitControls, Text, Line } from "@react-three/drei"
-import type { Mesh } from "three"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import type { SpatialArtifact, SpatialObject } from "./artifact-store"
+import { Line, OrbitControls, Text } from "@react-three/drei";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useMemo, useRef } from "react";
+import type { Mesh } from "three";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import type { SpatialArtifact, SpatialObject } from "./artifact-store";
 
 function ShapeGeometry({ shape }: { shape: SpatialObject["shape"] }) {
   switch (shape) {
     case "sphere":
-      return <sphereGeometry args={[0.5, 32, 32]} />
+      return <sphereGeometry args={[0.5, 32, 32]} />;
     case "box":
-      return <boxGeometry args={[0.8, 0.8, 0.8]} />
+      return <boxGeometry args={[0.8, 0.8, 0.8]} />;
     case "torus":
-      return <torusGeometry args={[0.4, 0.15, 16, 32]} />
+      return <torusGeometry args={[0.4, 0.15, 16, 32]} />;
     case "cone":
-      return <coneGeometry args={[0.5, 1, 32]} />
+      return <coneGeometry args={[0.5, 1, 32]} />;
     case "cylinder":
-      return <cylinderGeometry args={[0.5, 0.5, 1, 32]} />
+      return <cylinderGeometry args={[0.5, 0.5, 1, 32]} />;
     case "dodecahedron":
-      return <dodecahedronGeometry args={[0.5]} />
+      return <dodecahedronGeometry args={[0.5]} />;
     case "octahedron":
-      return <octahedronGeometry args={[0.5]} />
+      return <octahedronGeometry args={[0.5]} />;
     case "icosahedron":
-      return <icosahedronGeometry args={[0.5]} />
+      return <icosahedronGeometry args={[0.5]} />;
   }
 }
 
 function SpatialObjectMesh({ obj }: { obj: SpatialObject }) {
-  const meshRef = useRef<Mesh>(null)
+  const meshRef = useRef<Mesh>(null);
 
   useFrame((_state, delta) => {
     if (obj.rotate && meshRef.current) {
-      meshRef.current.rotation.x += delta * 0.5
-      meshRef.current.rotation.y += delta * 0.3
+      meshRef.current.rotation.x += delta * 0.5;
+      meshRef.current.rotation.y += delta * 0.3;
     }
-  })
+  });
 
   return (
     <group position={obj.position}>
       <mesh ref={meshRef} scale={obj.scale ?? 1}>
         <ShapeGeometry shape={obj.shape} />
-        <meshStandardMaterial color={obj.color} roughness={0.4} metalness={0.1} />
+        <meshStandardMaterial
+          color={obj.color}
+          roughness={0.4}
+          metalness={0.1}
+        />
       </mesh>
       <Text
         position={[0, (obj.scale ?? 1) * 0.7 + 0.3, 0]}
@@ -54,7 +64,7 @@ function SpatialObjectMesh({ obj }: { obj: SpatialObject }) {
         {obj.label}
       </Text>
     </group>
-  )
+  );
 }
 
 function ConnectionLine({
@@ -62,27 +72,21 @@ function ConnectionLine({
   to,
   color = "#94a3b8",
 }: {
-  from: [number, number, number]
-  to: [number, number, number]
-  color?: string
+  from: [number, number, number];
+  to: [number, number, number];
+  color?: string;
 }) {
-  return (
-    <Line
-      points={[from, to]}
-      color={color}
-      lineWidth={2}
-    />
-  )
+  return <Line points={[from, to]} color={color} lineWidth={2} />;
 }
 
 function SpatialScene({ artifact }: { artifact: SpatialArtifact }) {
   const objectMap = useMemo(() => {
-    const map = new Map<string, SpatialObject>()
+    const map = new Map<string, SpatialObject>();
     for (const obj of artifact.objects) {
-      map.set(obj.id, obj)
+      map.set(obj.id, obj);
     }
-    return map
-  }, [artifact.objects])
+    return map;
+  }, [artifact.objects]);
 
   return (
     <>
@@ -95,9 +99,9 @@ function SpatialScene({ artifact }: { artifact: SpatialArtifact }) {
       ))}
 
       {artifact.connections?.map((conn) => {
-        const fromObj = objectMap.get(conn.from)
-        const toObj = objectMap.get(conn.to)
-        if (!fromObj || !toObj) return null
+        const fromObj = objectMap.get(conn.from);
+        const toObj = objectMap.get(conn.to);
+        if (!fromObj || !toObj) return null;
         return (
           <ConnectionLine
             key={`${conn.from}-${conn.to}`}
@@ -105,7 +109,7 @@ function SpatialScene({ artifact }: { artifact: SpatialArtifact }) {
             to={toObj.position}
             color={conn.color}
           />
-        )
+        );
       })}
 
       <OrbitControls
@@ -116,7 +120,7 @@ function SpatialScene({ artifact }: { artifact: SpatialArtifact }) {
         autoRotateSpeed={1.5}
       />
     </>
-  )
+  );
 }
 
 export function SpatialCard({ artifact }: { artifact: SpatialArtifact }) {
@@ -141,5 +145,5 @@ export function SpatialCard({ artifact }: { artifact: SpatialArtifact }) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -5,54 +5,54 @@
 
 export type SiteConfig = {
   // ── Identity ──
-  name: string
-  tagline: string
-  description: string
+  name: string;
+  tagline: string;
+  description: string;
   /** URL path to logo (placed in /public). null = use default icon. */
-  logoPath: string | null
+  logoPath: string | null;
   /** Lucide icon name used when logoPath is null */
-  fallbackIcon: string
-  supportEmail: string
+  fallbackIcon: string;
+  supportEmail: string;
   /** Legal entity shown in footer / terms */
-  legalEntity: string
+  legalEntity: string;
 
   // ── Auth copy ──
   auth: {
-    signInHeading: string
-    signUpHeading: string
-    signUpCta: string
-    emailPlaceholder: string
-  }
+    signInHeading: string;
+    signUpHeading: string;
+    signUpCta: string;
+    emailPlaceholder: string;
+  };
 
   // ── Feature flags ──
   features: {
     /** Show credit-pack billing UI */
-    billing: boolean
+    billing: boolean;
     /** Show MCP / API integration panel */
-    integrations: boolean
+    integrations: boolean;
     /** Show LiveKit voice agent */
-    voiceAgent: boolean
+    voiceAgent: boolean;
     /** Show the landing / marketing page */
-    landingPage: boolean
+    landingPage: boolean;
     /** Allow users to create custom topics */
-    customTopics: boolean
-  }
+    customTopics: boolean;
+  };
 
   // ── Theme overrides (CSS custom properties) ──
   // Values here are injected as CSS vars on <html>, overriding globals.css.
   // Use oklch() strings to match the existing design tokens.
   theme: {
-    light?: Record<string, string>
-    dark?: Record<string, string>
-  }
+    light?: Record<string, string>;
+    dark?: Record<string, string>;
+  };
 
   // ── Content defaults ──
   /** Pre-loaded topic groups shown for new users (empty = all) */
-  defaultTopicGroups: string[]
+  defaultTopicGroups: string[];
   /** URL shown in MCP / API integration panel */
-  apiBaseUrl: string
-  mcpBaseUrl: string
-}
+  apiBaseUrl: string;
+  mcpBaseUrl: string;
+};
 
 // ─── Built-in Presets ────────────────────────────────────────────────────────
 
@@ -86,7 +86,7 @@ const coreModelConfig: SiteConfig = {
   defaultTopicGroups: [],
   apiBaseUrl: "https://api.coremodel.ai/v1",
   mcpBaseUrl: "https://mcp.coremodel.ai/v1/sse",
-}
+};
 
 const consumerConfig: SiteConfig = {
   name: "StudyPal",
@@ -127,7 +127,7 @@ const consumerConfig: SiteConfig = {
   defaultTopicGroups: [],
   apiBaseUrl: "https://api.studypal.app/v1",
   mcpBaseUrl: "https://mcp.studypal.app/v1/sse",
-}
+};
 
 const higherEdConfig: SiteConfig = {
   name: "Adaptive Campus",
@@ -168,7 +168,7 @@ const higherEdConfig: SiteConfig = {
   defaultTopicGroups: [],
   apiBaseUrl: "https://api.adaptivecampus.edu/v1",
   mcpBaseUrl: "https://mcp.adaptivecampus.edu/v1/sse",
-}
+};
 
 // ─── Preset registry ─────────────────────────────────────────────────────────
 
@@ -176,18 +176,18 @@ export const SITE_PRESETS = {
   coremodel: coreModelConfig,
   consumer: consumerConfig,
   "higher-ed": higherEdConfig,
-} as const
+} as const;
 
-export type SitePresetKey = keyof typeof SITE_PRESETS
+export type SitePresetKey = keyof typeof SITE_PRESETS;
 
 // ─── Active config resolution ────────────────────────────────────────────────
 // Set NEXT_PUBLIC_SITE_PRESET=consumer | higher-ed | coremodel (default)
 
 function resolveConfig(): SiteConfig {
   const key =
-    (process.env.NEXT_PUBLIC_SITE_PRESET as SitePresetKey) || "coremodel"
-  return SITE_PRESETS[key] ?? SITE_PRESETS.coremodel
+    (process.env.NEXT_PUBLIC_SITE_PRESET as SitePresetKey) || "coremodel";
+  return SITE_PRESETS[key] ?? SITE_PRESETS.coremodel;
 }
 
 /** The active site configuration. Import this everywhere you need brand values. */
-export const siteConfig: SiteConfig = resolveConfig()
+export const siteConfig: SiteConfig = resolveConfig();

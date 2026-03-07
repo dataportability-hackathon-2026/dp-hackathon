@@ -1,1 +1,1 @@
-export { useCredits } from "@/components/providers/credit-provider"
+export { useCredits } from "@/components/providers/credit-provider";

@@ -1,9 +1,9 @@
-import { generateText } from "ai"
-import { openai } from "@/lib/ai/provider"
-import { NextResponse } from "next/server"
+import { generateText } from "ai";
+import { NextResponse } from "next/server";
+import { openai } from "@/lib/ai/provider";
 
 export async function POST(request: Request) {
-  const state = await request.json()
+  const state = await request.json();
 
   const result = await generateText({
     model: openai("gpt-4o-mini"),
@@ -15,7 +15,7 @@ DATA:
 ${JSON.stringify(state, null, 2)}
 
 Generate the full Markdown document now. Do NOT wrap in code fences. Output raw Markdown only.`,
-  })
+  });
 
-  return NextResponse.json({ markdown: result.text })
+  return NextResponse.json({ markdown: result.text });
 }

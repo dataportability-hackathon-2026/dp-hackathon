@@ -1,6 +1,6 @@
-import { db } from "@/db";
-import { user, creditLedger, creditPurchase } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { db } from "@/db";
+import { creditLedger, creditPurchase, user } from "@/db/schema";
 
 export async function getBalance(userId: string): Promise<number> {
   const result = await db
@@ -24,9 +24,7 @@ export async function deductCredits(
       .set({
         creditBalance: sql`${user.creditBalance} - ${amount}`,
       })
-      .where(
-        sql`${user.id} = ${userId} AND ${user.creditBalance} >= ${amount}`,
-      )
+      .where(sql`${user.id} = ${userId} AND ${user.creditBalance} >= ${amount}`)
       .returning({ creditBalance: user.creditBalance });
 
     if (updated.length === 0) {

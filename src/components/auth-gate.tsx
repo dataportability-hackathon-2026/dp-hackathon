@@ -1,25 +1,40 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Brain, Eye, EyeOff, GraduationCap, Loader2, Palette, Shield, Stethoscope } from "lucide-react"
-import { siteConfig } from "@/lib/white-label"
-import { useRouter } from "next/navigation"
-import { authClient } from "@/lib/auth-client"
+import {
+  Brain,
+  Eye,
+  EyeOff,
+  GraduationCap,
+  Loader2,
+  Palette,
+  Shield,
+  Stethoscope,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { authClient } from "@/lib/auth-client";
+import { siteConfig } from "@/lib/white-label";
 
-const isDev = process.env.NODE_ENV === "development"
+const isDev = process.env.NODE_ENV === "development";
 
 type DemoPersona = {
-  label: string
-  name: string
-  email: string
-  password: string
-  icon: React.ComponentType<{ className?: string }>
-  color: string
-}
+  label: string;
+  name: string;
+  email: string;
+  password: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+};
 
 const DEMO_PERSONAS: DemoPersona[] = [
   {
@@ -46,7 +61,7 @@ const DEMO_PERSONAS: DemoPersona[] = [
     icon: GraduationCap,
     color: "border-border hover:bg-muted",
   },
-]
+];
 
 const ADMIN_PERSONA: DemoPersona = {
   label: "Admin",
@@ -55,42 +70,42 @@ const ADMIN_PERSONA: DemoPersona = {
   password: "password123",
   icon: Shield,
   color: "border-border hover:bg-muted",
-}
+};
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const { data: session, isPending } = authClient.useSession()
-  const router = useRouter()
-  const [isSignUp, setIsSignUp] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [name, setName] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const { data: session, isPending } = authClient.useSession();
+  const router = useRouter();
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   if (isPending) {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
-    )
+    );
   }
 
   if (session) {
-    return <>{children}</>
+    return <>{children}</>;
   }
 
   async function loginAsPersona(persona: DemoPersona) {
-    setEmail(persona.email)
-    setName(persona.name)
-    setLoading(true)
-    setError("")
+    setEmail(persona.email);
+    setName(persona.name);
+    setLoading(true);
+    setError("");
 
     // Try sign in first
     const { error: signInError } = await authClient.signIn.email({
       email: persona.email,
       password: persona.password,
-    })
+    });
 
     if (signInError) {
       // User doesn't exist yet — create account
@@ -98,7 +113,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         email: persona.email,
         password: persona.password,
         name: persona.name,
-      })
+      });
       if (signUpError) {
         // Account exists with stale password hash (e.g. from old DB).
         // In dev mode, reset and retry.
@@ -107,61 +122,61 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email: persona.email }),
-          })
+          });
           if (resetRes.ok) {
             const { error: retryError } = await authClient.signUp.email({
               email: persona.email,
               password: persona.password,
               name: persona.name,
-            })
+            });
             if (retryError) {
-              setError(retryError.message ?? "Failed to create demo account")
-              setLoading(false)
-              return
+              setError(retryError.message ?? "Failed to create demo account");
+              setLoading(false);
+              return;
             }
           } else {
-            setError(signUpError.message ?? "Failed to create demo account")
-            setLoading(false)
-            return
+            setError(signUpError.message ?? "Failed to create demo account");
+            setLoading(false);
+            return;
           }
         } else {
-          setError(signUpError.message ?? "Failed to create demo account")
-          setLoading(false)
-          return
+          setError(signUpError.message ?? "Failed to create demo account");
+          setLoading(false);
+          return;
         }
       }
     }
 
     // Set admin role and redirect if this is the admin persona
     if (persona.email === ADMIN_PERSONA.email) {
-      await fetch("/api/admin/set-role", { method: "POST" })
-      router.push("/admin")
+      await fetch("/api/admin/set-role", { method: "POST" });
+      router.push("/admin");
     }
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
     if (isSignUp) {
       const { error: signUpError } = await authClient.signUp.email({
         email,
         password,
         name,
-      })
+      });
       if (signUpError) {
-        setError(signUpError.message ?? "Sign up failed")
-        setLoading(false)
+        setError(signUpError.message ?? "Sign up failed");
+        setLoading(false);
       }
     } else {
       const { error: signInError } = await authClient.signIn.email({
         email,
         password,
-      })
+      });
       if (signInError) {
-        setError(signInError.message ?? "Sign in failed")
-        setLoading(false)
+        setError(signInError.message ?? "Sign in failed");
+        setLoading(false);
       }
     }
   }
@@ -174,7 +189,9 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             <Brain className="h-6 w-6" />
           </div>
           <CardTitle className="text-2xl">
-            {isSignUp ? siteConfig.auth.signUpHeading : siteConfig.auth.signInHeading}
+            {isSignUp
+              ? siteConfig.auth.signUpHeading
+              : siteConfig.auth.signInHeading}
           </CardTitle>
           <CardDescription>
             {isSignUp
@@ -224,17 +241,23 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </div>
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
+            {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
-              ) : isSignUp ? "Create account" : "Sign in"}
+              ) : isSignUp ? (
+                "Create account"
+              ) : (
+                "Sign in"
+              )}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm text-muted-foreground">
@@ -242,7 +265,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               <>
                 Already have an account?{" "}
                 <button
-                  onClick={() => { setIsSignUp(false); setError("") }}
+                  onClick={() => {
+                    setIsSignUp(false);
+                    setError("");
+                  }}
                   className="text-primary underline-offset-4 hover:underline"
                 >
                   Sign in
@@ -252,7 +278,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               <>
                 Don&apos;t have an account?{" "}
                 <button
-                  onClick={() => { setIsSignUp(true); setError("") }}
+                  onClick={() => {
+                    setIsSignUp(true);
+                    setError("");
+                  }}
                   className="text-primary underline-offset-4 hover:underline"
                 >
                   Sign up
@@ -268,7 +297,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {DEMO_PERSONAS.map((persona) => {
-                  const Icon = persona.icon
+                  const Icon = persona.icon;
                   return (
                     <button
                       key={persona.email}
@@ -280,7 +309,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                       <Icon className="size-4 shrink-0" />
                       <span className="truncate">{persona.label}</span>
                     </button>
-                  )
+                  );
                 })}
                 <button
                   type="button"
@@ -297,5 +326,5 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

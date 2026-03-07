@@ -1,7 +1,26 @@
-"use client"
+"use client";
 
-import type { ReactNode } from "react"
-import { useId, useState } from "react"
+import {
+  CreditCard,
+  ExternalLink,
+  FileDown,
+  Gift,
+  Loader2,
+  Ticket,
+} from "lucide-react";
+import type { ReactNode } from "react";
+import { useId, useState } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -10,27 +29,15 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Progress, ProgressLabel } from "@/components/ui/progress"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Checkbox } from "@/components/ui/checkbox"
-import { CreditCard, ExternalLink, FileDown, Gift, Loader2, Ticket } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { useCredits } from "@/hooks/use-credits"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { CREDIT_PACKS, type CreditPackSlug } from "@/lib/credit-packs"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Progress, ProgressLabel } from "@/components/ui/progress";
+import { useCredits } from "@/hooks/use-credits";
+import { CREDIT_PACKS, type CreditPackSlug } from "@/lib/credit-packs";
 
 type CheckoutResponse = {
-  checkoutUrl: string
-}
+  checkoutUrl: string;
+};
 
 const EXHAUSTION_OPTIONS = [
   {
@@ -48,96 +55,104 @@ const EXHAUSTION_OPTIONS = [
     label: "Notify me only",
     desc: "Send an email alert but allow overage",
   },
-] as const
+] as const;
 
-const PACKS = Object.values(CREDIT_PACKS)
+const PACKS = Object.values(CREDIT_PACKS);
 
 type BillingDialogProps = {
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
-  trigger?: ReactNode
-}
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  trigger?: ReactNode;
+};
 
-export function BillingDialog({ open, onOpenChange, trigger }: BillingDialogProps = {}) {
-  const packId = useId()
-  const optionId = useId()
-  const { displayCredits, loading: creditsLoading, refresh } = useCredits()
-  const [loadingPack, setLoadingPack] = useState<CreditPackSlug | null>(null)
-  const [activeExhaustion, setActiveExhaustion] = useState("auto-purchase")
-  const [claimingFree, setClaimingFree] = useState(false)
-  const [claimError, setClaimError] = useState("")
-  const [promoCode, setPromoCode] = useState("")
-  const [redeemingPromo, setRedeemingPromo] = useState(false)
-  const [promoMessage, setPromoMessage] = useState("")
-  const [promoSuccess, setPromoSuccess] = useState(false)
+export function BillingDialog({
+  open,
+  onOpenChange,
+  trigger,
+}: BillingDialogProps = {}) {
+  const packId = useId();
+  const optionId = useId();
+  const { displayCredits, loading: creditsLoading, refresh } = useCredits();
+  const [loadingPack, setLoadingPack] = useState<CreditPackSlug | null>(null);
+  const [activeExhaustion, setActiveExhaustion] = useState("auto-purchase");
+  const [claimingFree, setClaimingFree] = useState(false);
+  const [claimError, setClaimError] = useState("");
+  const [promoCode, setPromoCode] = useState("");
+  const [redeemingPromo, setRedeemingPromo] = useState(false);
+  const [promoMessage, setPromoMessage] = useState("");
+  const [promoSuccess, setPromoSuccess] = useState(false);
 
-  const creditsTotal = 50
+  const creditsTotal = 50;
   const progressValue =
-    creditsTotal > 0 ? (displayCredits / creditsTotal) * 100 : 0
+    creditsTotal > 0 ? (displayCredits / creditsTotal) * 100 : 0;
 
-  const noCredits = !creditsLoading && Math.round(displayCredits) <= 0
+  const noCredits = !creditsLoading && Math.round(displayCredits) <= 0;
 
   async function handleClaimFreeCredits() {
-    setClaimingFree(true)
-    setClaimError("")
+    setClaimingFree(true);
+    setClaimError("");
     try {
-      const res = await fetch("/api/billing/claim-credits", { method: "POST" })
+      const res = await fetch("/api/billing/claim-credits", { method: "POST" });
       if (res.status === 409) {
-        setClaimError("You've already claimed your free credits")
-        return
+        setClaimError("You've already claimed your free credits");
+        return;
       }
-      if (!res.ok) throw new Error("Failed to claim credits")
-      refresh()
+      if (!res.ok) throw new Error("Failed to claim credits");
+      refresh();
     } catch {
-      setClaimError("Something went wrong")
+      setClaimError("Something went wrong");
     } finally {
-      setClaimingFree(false)
+      setClaimingFree(false);
     }
   }
 
   async function handlePurchase(slug: CreditPackSlug) {
-    setLoadingPack(slug)
+    setLoadingPack(slug);
     try {
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ packSlug: slug }),
-      })
-      if (!res.ok) throw new Error("Checkout failed")
-      const data = (await res.json()) as CheckoutResponse
-      window.location.href = data.checkoutUrl
+      });
+      if (!res.ok) throw new Error("Checkout failed");
+      const data = (await res.json()) as CheckoutResponse;
+      window.location.href = data.checkoutUrl;
     } catch {
       // Reset loading state on error
-      setLoadingPack(null)
+      setLoadingPack(null);
     }
   }
 
   async function handleRedeemPromo() {
-    if (!promoCode.trim()) return
-    setRedeemingPromo(true)
-    setPromoMessage("")
-    setPromoSuccess(false)
+    if (!promoCode.trim()) return;
+    setRedeemingPromo(true);
+    setPromoMessage("");
+    setPromoSuccess(false);
     try {
       const res = await fetch("/api/billing/redeem-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: promoCode }),
-      })
-      const data = (await res.json()) as { success?: boolean; creditsAdded?: number; error?: string }
+      });
+      const data = (await res.json()) as {
+        success?: boolean;
+        creditsAdded?: number;
+        error?: string;
+      };
       if (!res.ok) {
-        setPromoMessage(data.error ?? "Failed to redeem code")
-        setPromoSuccess(false)
+        setPromoMessage(data.error ?? "Failed to redeem code");
+        setPromoSuccess(false);
       } else {
-        setPromoMessage(`Added ${data.creditsAdded} credits!`)
-        setPromoSuccess(true)
-        setPromoCode("")
-        refresh()
+        setPromoMessage(`Added ${data.creditsAdded} credits!`);
+        setPromoSuccess(true);
+        setPromoCode("");
+        refresh();
       }
     } catch {
-      setPromoMessage("Something went wrong")
-      setPromoSuccess(false)
+      setPromoMessage("Something went wrong");
+      setPromoSuccess(false);
     } finally {
-      setRedeemingPromo(false)
+      setRedeemingPromo(false);
     }
   }
 
@@ -185,7 +200,10 @@ export function BillingDialog({ open, onOpenChange, trigger }: BillingDialogProp
                       className="shrink-0"
                     >
                       {claimingFree ? (
-                        <Loader2 className="size-3 animate-spin" data-icon="inline-start" />
+                        <Loader2
+                          className="size-3 animate-spin"
+                          data-icon="inline-start"
+                        />
                       ) : (
                         <Gift className="size-3" data-icon="inline-start" />
                       )}
@@ -193,7 +211,9 @@ export function BillingDialog({ open, onOpenChange, trigger }: BillingDialogProp
                     </Button>
                   </AlertDescription>
                   {claimError && (
-                    <p className="mt-2 text-xs text-destructive">{claimError}</p>
+                    <p className="mt-2 text-xs text-destructive">
+                      {claimError}
+                    </p>
                   )}
                 </Alert>
               )}
@@ -279,11 +299,11 @@ export function BillingDialog({ open, onOpenChange, trigger }: BillingDialogProp
                       placeholder="Enter code"
                       value={promoCode}
                       onChange={(e) => {
-                        setPromoCode(e.target.value)
-                        setPromoMessage("")
+                        setPromoCode(e.target.value);
+                        setPromoMessage("");
                       }}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") handleRedeemPromo()
+                        if (e.key === "Enter") handleRedeemPromo();
                       }}
                       className="uppercase font-mono"
                     />
@@ -319,9 +339,7 @@ export function BillingDialog({ open, onOpenChange, trigger }: BillingDialogProp
                   <div className="flex items-center gap-3 rounded-lg border p-3">
                     <CreditCard className="size-5 text-muted-foreground" />
                     <div className="flex-1">
-                      <p className="text-sm font-medium">
-                        Managed via Stripe
-                      </p>
+                      <p className="text-sm font-medium">Managed via Stripe</p>
                       <p className="text-xs text-muted-foreground">
                         View and update your payment details
                       </p>
@@ -384,5 +402,5 @@ export function BillingDialog({ open, onOpenChange, trigger }: BillingDialogProp
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

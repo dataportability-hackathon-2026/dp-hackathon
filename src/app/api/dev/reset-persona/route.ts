@@ -1,17 +1,17 @@
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import {
-  user,
   account,
-  session,
   conversation,
-  creditPurchase,
   creditLedger,
-  usageLog,
-  source,
+  creditPurchase,
   project,
+  session,
+  source,
+  usageLog,
+  user,
 } from "@/db/schema";
-import { eq } from "drizzle-orm";
 
 /**
  * DEV ONLY: Delete a stale demo persona account so it can be re-created

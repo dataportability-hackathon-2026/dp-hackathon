@@ -1,29 +1,40 @@
-import type { Metadata } from "next"
-import { ArrowRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { useCasePages } from "@/lib/content/use-cases"
-import { MarketingNav } from "@/components/marketing/marketing-nav"
-import { MarketingFooter } from "@/components/marketing/marketing-footer"
+import { ArrowRight } from "lucide-react";
+import type { Metadata } from "next";
+import { MarketingFooter } from "@/components/marketing/marketing-footer";
+import { MarketingNav } from "@/components/marketing/marketing-nav";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { useCasePages } from "@/lib/content/use-cases";
 
 export const metadata: Metadata = {
   title: "Use Cases | Core Model - Adaptive Learning Platform",
-  description: "Discover how Core Model helps with exam preparation, professional development, research, language learning, interview prep, and curriculum design.",
-  keywords: ["adaptive learning use cases", "study tool", "exam prep", "professional development", "learning platform"],
-}
+  description:
+    "Discover how Core Model helps with exam preparation, professional development, research, language learning, interview prep, and curriculum design.",
+  keywords: [
+    "adaptive learning use cases",
+    "study tool",
+    "exam prep",
+    "professional development",
+    "learning platform",
+  ],
+};
 
 export default function UseCasesIndex() {
   return (
     <div className="min-h-screen bg-white dark:bg-neutral-950">
       <MarketingNav />
       <section className="max-w-6xl mx-auto px-6 pt-20 pb-12">
-        <Badge variant="outline" className="mb-4">Use Cases</Badge>
+        <Badge variant="outline" className="mb-4">
+          Use Cases
+        </Badge>
         <h1 className="text-4xl md:text-5xl font-bold text-neutral-900 dark:text-neutral-100 mb-6">
           One Platform. Every Learning Goal.
         </h1>
         <p className="text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mb-16">
-          Whether you&apos;re preparing for an exam, switching careers, or mastering a new language, Core Model adapts to your specific needs with evidence-based learning science.
+          Whether you&apos;re preparing for an exam, switching careers, or
+          mastering a new language, Core Model adapts to your specific needs
+          with evidence-based learning science.
         </p>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {useCasePages.map((page) => (
@@ -46,13 +57,19 @@ export default function UseCasesIndex() {
         </div>
       </section>
       <section className="py-16 text-center">
-        <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-4">Don&apos;t See Your Use Case?</h2>
-        <p className="text-neutral-600 dark:text-neutral-400 mb-6">Core Model works for any knowledge-based learning goal. Try it free.</p>
+        <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-4">
+          Don&apos;t See Your Use Case?
+        </h2>
+        <p className="text-neutral-600 dark:text-neutral-400 mb-6">
+          Core Model works for any knowledge-based learning goal. Try it free.
+        </p>
         <a href="/dashboard">
-          <Button size="lg">Get Started Free <ArrowRight className="ml-2 h-5 w-5" /></Button>
+          <Button size="lg">
+            Get Started Free <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
         </a>
       </section>
       <MarketingFooter />
     </div>
-  )
+  );
 }

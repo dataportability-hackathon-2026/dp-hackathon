@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getUsageHistory } from "@/lib/usage";
 import { getEffectiveUserId } from "@/lib/impersonate";
+import { getUsageHistory } from "@/lib/usage";
 
 export async function GET(request: Request) {
   const userId = await getEffectiveUserId();
