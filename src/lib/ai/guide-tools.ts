@@ -1,16 +1,9 @@
 import { generateText, Output, tool } from "ai";
 import { z } from "zod";
-import {
-  type CitationKey,
-  getCitationBlock,
-  getCitationGuardrails,
-} from "./citations";
+import { loadSourceContent } from "@/lib/sources/load-sources";
+import { getCitationBlock, getCitationGuardrails } from "./citations";
 import { openai } from "./provider";
-import {
-  GuideBlockSchema,
-  LearningGuideSchema,
-  type LearningProfileAnalysis,
-} from "./schemas";
+import { GuideBlockSchema, LearningGuideSchema } from "./schemas";
 
 // ── Guide-specific schemas ──
 
@@ -137,6 +130,11 @@ const guideGenerationInputSchema = z.object({
   metacognitiveAwareness: z.enum(["low", "medium", "high"]),
   motivationalFocus: z.enum(["autonomy", "competence", "relatedness"]),
   coachingTone: z.string(),
+  sourceIds: z
+    .array(z.string())
+    .optional()
+    .describe("IDs of uploaded source materials to use as reference content"),
+  userId: z.string().optional().describe("User ID for source content access"),
 });
 
 type GuideGenerationInput = z.infer<typeof guideGenerationInputSchema>;
@@ -151,10 +149,21 @@ export const guideTools = {
     execute: async (input: GuideGenerationInput) => {
       const totalWeeklyMinutes = input.minutesPerDay * input.daysPerWeek;
 
+      let sourceContent: string | undefined;
+      if (input.sourceIds?.length && input.userId) {
+        sourceContent = await loadSourceContent(input.sourceIds, input.userId);
+      }
+
+      const prompt =
+        buildGuidePrompt(input, totalWeeklyMinutes) +
+        (sourceContent
+          ? `\n\n## Reference Material\nUse this material as the primary content source for concepts and examples:\n${sourceContent}`
+          : "");
+
       const result = await generateText({
         model: openai("gpt-4o-mini"),
         output: Output.object({ schema: LearningGuideSchema }),
-        prompt: buildGuidePrompt(input, totalWeeklyMinutes),
+        prompt,
       });
       if (!result.output) {
         throw new Error("Failed to generate learning guide");

@@ -1,4 +1,11 @@
-import { pgTable, text, integer, bigint, boolean, timestamp } from "drizzle-orm/pg-core";
+import {
+  bigint,
+  boolean,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 
 // ─── Auth tables ────────────────────────────────────────────────────────────
 
@@ -98,6 +105,27 @@ export const creditLedger = pgTable("credit_ledger", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// ─── Topic table ───────────────────────────────────────────────────────────
+
+export const topic = pgTable("topic", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id),
+  name: text("name").notNull().default("Untitled"),
+  slug: text("slug").notNull().unique(),
+  domain: text("domain"),
+  parentGroup: text("parent_group"),
+  icon: text("icon"),
+  isCommunity: boolean("is_community").notNull().default(false),
+  isFavorite: boolean("is_favorite").notNull().default(false),
+  sourceCount: integer("source_count").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // ─── Project & Source tables ────────────────────────────────────────────────
 
 export const project = pgTable("project", {
@@ -109,6 +137,7 @@ export const project = pgTable("project", {
     .references(() => user.id),
   name: text("name").notNull(),
   topicSlug: text("topic_slug").notNull(),
+  topicId: text("topic_id").references(() => topic.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -262,4 +291,40 @@ export const usageLog = pgTable("usage_log", {
   stripeEventId: text("stripe_event_id"),
   metadata: text("metadata"),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// ─── User preferences ───────────────────────────────────────────────────────
+
+export const userPreferences = pgTable("user_preferences", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .unique()
+    .references(() => user.id),
+  preferences: text("preferences").notNull(), // JSON-serialized UserPreferences
+  templateId: text("template_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// ─── Assessment tables ──────────────────────────────────────────────────────
+
+export const assessment = pgTable("assessment", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id),
+  type: text("type").notNull(), // "full_onboarding" | "section_retake" | "periodic_check_in"
+  status: text("status").notNull().default("in_progress"), // "in_progress" | "completed"
+  version: integer("version").notNull().default(1),
+  currentStep: integer("current_step").notNull().default(0),
+  responses: text("responses"), // JSON-serialized LearningProfileData
+  fingerprint: text("fingerprint"), // JSON-serialized cognitive fingerprint
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });

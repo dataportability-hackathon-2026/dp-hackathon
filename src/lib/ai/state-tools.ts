@@ -1,6 +1,6 @@
-import { tool } from "ai"
-import { z } from "zod"
-import { TOPICS } from "@/lib/topics"
+import { tool } from "ai";
+import { z } from "zod";
+import { TOPICS } from "@/lib/topics";
 
 /**
  * AI agent tools for updating UI state.
@@ -18,7 +18,7 @@ export const stateTools = {
         .describe("The view to navigate to"),
     }),
     execute: async ({ view }) => {
-      return { __stateUpdate: true, type: "navigate_to_view", view }
+      return { __stateUpdate: true, type: "navigate_to_view", view };
     },
   }),
 
@@ -29,22 +29,22 @@ export const stateTools = {
       topicIdentifier: z
         .string()
         .describe(
-          "The topic name (e.g. 'Linear Algebra') or topic ID (e.g. 'topic-1')"
+          "The topic name (e.g. 'Linear Algebra') or topic ID (e.g. 'topic-1')",
         ),
     }),
     execute: async ({ topicIdentifier }) => {
       const topic = TOPICS.find(
         (t) =>
           t.id === topicIdentifier ||
-          t.name.toLowerCase() === topicIdentifier.toLowerCase()
-      )
+          t.name.toLowerCase() === topicIdentifier.toLowerCase(),
+      );
       if (!topic) {
         return {
           __stateUpdate: false,
           error: `Topic "${topicIdentifier}" not found. Available topics: ${TOPICS.map((t) => t.name).join(", ")}`,
-        }
+        };
       }
-      const defaultProject = topic.projects[0]
+      const defaultProject = topic.projects[0];
       return {
         __stateUpdate: true,
         type: "select_topic",
@@ -52,7 +52,7 @@ export const stateTools = {
         topicName: topic.name,
         projectId: defaultProject?.id ?? null,
         projectName: defaultProject?.name ?? null,
-      }
+      };
     },
   }),
 
@@ -63,13 +63,13 @@ export const stateTools = {
       projectIdentifier: z
         .string()
         .describe(
-          "The project name (e.g. 'Midterm Exam Prep') or project ID (e.g. 'proj-1')"
+          "The project name (e.g. 'Midterm Exam Prep') or project ID (e.g. 'proj-1')",
         ),
       topicIdentifier: z
         .string()
         .optional()
         .describe(
-          "Optional topic name or ID to search within. If omitted, searches all topics."
+          "Optional topic name or ID to search within. If omitted, searches all topics.",
         ),
     }),
     execute: async ({ projectIdentifier, topicIdentifier }) => {
@@ -77,16 +77,16 @@ export const stateTools = {
         ? TOPICS.filter(
             (t) =>
               t.id === topicIdentifier ||
-              t.name.toLowerCase() === topicIdentifier.toLowerCase()
+              t.name.toLowerCase() === topicIdentifier.toLowerCase(),
           )
-        : TOPICS
+        : TOPICS;
 
       for (const topic of searchTopics) {
         const project = topic.projects.find(
           (p) =>
             p.id === projectIdentifier ||
-            p.name.toLowerCase() === projectIdentifier.toLowerCase()
-        )
+            p.name.toLowerCase() === projectIdentifier.toLowerCase(),
+        );
         if (project) {
           return {
             __stateUpdate: true,
@@ -95,17 +95,17 @@ export const stateTools = {
             topicName: topic.name,
             projectId: project.id,
             projectName: project.name,
-          }
+          };
         }
       }
 
       const allProjects = searchTopics.flatMap((t) =>
-        t.projects.map((p) => `${t.name} > ${p.name}`)
-      )
+        t.projects.map((p) => `${t.name} > ${p.name}`),
+      );
       return {
         __stateUpdate: false,
         error: `Project "${projectIdentifier}" not found. Available projects: ${allProjects.join(", ")}`,
-      }
+      };
     },
   }),
 
@@ -117,7 +117,7 @@ export const stateTools = {
         .string()
         .optional()
         .describe(
-          "Optional guide block ID to highlight/scroll to (e.g. 'gb-1')"
+          "Optional guide block ID to highlight/scroll to (e.g. 'gb-1')",
         ),
     }),
     execute: async ({ highlightBlockId }) => {
@@ -126,7 +126,7 @@ export const stateTools = {
         type: "show_guide",
         view: "guide",
         highlightBlockId: highlightBlockId ?? null,
-      }
+      };
     },
   }),
 
@@ -140,7 +140,7 @@ export const stateTools = {
         .describe("Optional message to accompany the navigation"),
     }),
     execute: async () => {
-      return { __stateUpdate: true, type: "show_progress", view: "progress" }
+      return { __stateUpdate: true, type: "show_progress", view: "progress" };
     },
   }),
 
@@ -154,7 +154,7 @@ export const stateTools = {
         .describe("Optional message to accompany the navigation"),
     }),
     execute: async () => {
-      return { __stateUpdate: true, type: "show_sources", view: "sources" }
+      return { __stateUpdate: true, type: "show_sources", view: "sources" };
     },
   }),
 
@@ -169,7 +169,7 @@ export const stateTools = {
         __stateUpdate: true,
         type: "complete_guide_block",
         blockId,
-      }
+      };
     },
   }),
 
@@ -199,7 +199,7 @@ export const stateTools = {
         __stateUpdate: true,
         type: "open_artifact",
         artifact: artifactType,
-      }
+      };
     },
   }),
 
@@ -224,11 +224,11 @@ export const stateTools = {
         completedBlocks: t.guideBlocks.filter((b) => b.completed).length,
         fileCount: t.files.length,
         conceptCount: t.masteryData.length,
-      }))
+      }));
       return {
         __stateUpdate: false,
         topics: topicSummaries,
-      }
+      };
     },
   }),
-}
+};

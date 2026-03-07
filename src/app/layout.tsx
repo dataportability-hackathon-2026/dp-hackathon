@@ -1,13 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, Inter } from "next/font/google";
+import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import "@livekit/components-styles";
-import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { ThemeProvider } from "next-themes";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { CreditProvider } from "@/components/providers/credit-provider";
 import { SiteConfigProvider } from "@/components/providers/site-config-provider";
-import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { siteConfig } from "@/lib/white-label";
 
 export const viewport: Viewport = {

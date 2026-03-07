@@ -1,19 +1,28 @@
-import type { BlogPost } from "./types"
+import type { BlogPost } from "./types";
 
 export const blogPosts: BlogPost[] = [
   {
     slug: "spaced-repetition-science",
-    title: "The Science of Spaced Repetition: Why Cramming Fails and What Actually Works",
+    title:
+      "The Science of Spaced Repetition: Why Cramming Fails and What Actually Works",
     metaTitle: "The Science of Spaced Repetition | Core Model Blog",
-    metaDescription: "Discover why spaced repetition is 2.4x more effective than cramming. Learn the neuroscience behind memory consolidation and how to apply it to your studies.",
-    keywords: ["spaced repetition", "memory science", "study techniques", "learning science", "forgetting curve"],
+    metaDescription:
+      "Discover why spaced repetition is 2.4x more effective than cramming. Learn the neuroscience behind memory consolidation and how to apply it to your studies.",
+    keywords: [
+      "spaced repetition",
+      "memory science",
+      "study techniques",
+      "learning science",
+      "forgetting curve",
+    ],
     author: "Core Model Research Team",
     authorRole: "Learning Science",
     publishedAt: "2026-02-15",
     readingTime: 8,
     category: "Learning Science",
     tags: ["spaced repetition", "memory", "study tips", "neuroscience"],
-    excerpt: "You study hard, feel confident, and then bomb the exam. Sound familiar? The problem isn't effort — it's timing. Here's what 130 years of memory research tells us about when and how to review.",
+    excerpt:
+      "You study hard, feel confident, and then bomb the exam. Sound familiar? The problem isn't effort — it's timing. Here's what 130 years of memory research tells us about when and how to review.",
     content: `## The Forgetting Curve Is Real — And It's Brutal
 
 In 1885, Hermann Ebbinghaus conducted the first rigorous experiments on human memory. His discovery was sobering: without review, we forget approximately 70% of new information within 24 hours and over 90% within a week.
@@ -50,21 +59,30 @@ This adaptive approach means you never waste time reviewing material you already
 3. **Trust the discomfort.** If recall feels effortful, that's a sign learning is happening. Easy recall often means the interval was too short.
 4. **Use a system.** Memory is too important to manage with willpower alone. Use tools that schedule reviews automatically.
 
-The science is clear: how you time your study matters as much as how hard you study. Stop fighting your brain's architecture and start working with it.`
+The science is clear: how you time your study matters as much as how hard you study. Stop fighting your brain's architecture and start working with it.`,
   },
   {
     slug: "dunning-kruger-learning",
-    title: "The Dunning-Kruger Effect in Education: Why Students Don't Know What They Don't Know",
+    title:
+      "The Dunning-Kruger Effect in Education: Why Students Don't Know What They Don't Know",
     metaTitle: "Dunning-Kruger Effect in Learning | Core Model Blog",
-    metaDescription: "Learn how the Dunning-Kruger effect undermines student learning and how calibration training can help learners accurately assess their own knowledge.",
-    keywords: ["Dunning-Kruger effect", "metacognition", "self-assessment", "calibration", "overconfidence"],
+    metaDescription:
+      "Learn how the Dunning-Kruger effect undermines student learning and how calibration training can help learners accurately assess their own knowledge.",
+    keywords: [
+      "Dunning-Kruger effect",
+      "metacognition",
+      "self-assessment",
+      "calibration",
+      "overconfidence",
+    ],
     author: "Core Model Research Team",
     authorRole: "Learning Science",
     publishedAt: "2026-02-22",
     readingTime: 7,
     category: "Learning Science",
     tags: ["metacognition", "self-assessment", "cognitive bias", "learning"],
-    excerpt: "Students who know the least are often the most confident. This isn't arrogance — it's a well-documented cognitive phenomenon with serious implications for education.",
+    excerpt:
+      "Students who know the least are often the most confident. This isn't arrogance — it's a well-documented cognitive phenomenon with serious implications for education.",
     content: `## When Confidence and Competence Diverge
 
 The Dunning-Kruger effect, first described in 1999, reveals a troubling pattern: people with the least knowledge in a domain tend to overestimate their competence the most, while experts tend to slightly underestimate theirs.
@@ -102,21 +120,35 @@ This data drives two powerful features:
 
 Accurate self-assessment isn't just an academic skill. In professional settings — especially high-stakes fields like medicine, law, and engineering — the ability to know what you know and what you don't is critical for making safe decisions.
 
-A surgeon who overestimates their knowledge of a new procedure puts patients at risk. A lawyer who overestimates their understanding of a legal doctrine may miss a critical issue. Core Model's calibration training builds the metacognitive awareness that these fields demand.`
+A surgeon who overestimates their knowledge of a new procedure puts patients at risk. A lawyer who overestimates their understanding of a legal doctrine may miss a critical issue. Core Model's calibration training builds the metacognitive awareness that these fields demand.`,
   },
   {
     slug: "retrieval-practice-guide",
-    title: "Retrieval Practice: The Most Powerful Study Technique You're Not Using",
+    title:
+      "Retrieval Practice: The Most Powerful Study Technique You're Not Using",
     metaTitle: "Retrieval Practice Study Guide | Core Model Blog",
-    metaDescription: "Retrieval practice is the single most effective study technique backed by research. Learn how to implement it for any subject and why it beats re-reading every time.",
-    keywords: ["retrieval practice", "active recall", "study techniques", "testing effect", "learning strategies"],
+    metaDescription:
+      "Retrieval practice is the single most effective study technique backed by research. Learn how to implement it for any subject and why it beats re-reading every time.",
+    keywords: [
+      "retrieval practice",
+      "active recall",
+      "study techniques",
+      "testing effect",
+      "learning strategies",
+    ],
     author: "Core Model Research Team",
     authorRole: "Learning Science",
     publishedAt: "2026-03-01",
     readingTime: 9,
     category: "Learning Science",
-    tags: ["retrieval practice", "active recall", "study strategies", "evidence-based learning"],
-    excerpt: "Re-reading feels comfortable. Highlighting feels productive. But the research is unequivocal: actively retrieving information from memory is the single most powerful way to learn.",
+    tags: [
+      "retrieval practice",
+      "active recall",
+      "study strategies",
+      "evidence-based learning",
+    ],
+    excerpt:
+      "Re-reading feels comfortable. Highlighting feels productive. But the research is unequivocal: actively retrieving information from memory is the single most powerful way to learn.",
     content: `## The Testing Effect: Learning by Remembering
 
 Here's a counterintuitive finding: taking a test on material produces more learning than studying that material for the same amount of time. This phenomenon, called the "testing effect" or "retrieval practice effect," is one of the most replicated findings in all of cognitive psychology.
@@ -162,21 +194,35 @@ This might feel harder than re-reading. That's the point. The effort of retrieva
 
 ### The Bottom Line
 
-If you only change one thing about how you study, make it this: stop re-reading and start testing yourself. The science is unequivocal — retrieval practice is the most effective study strategy available, and it works for every subject, every age group, and every learning goal.`
+If you only change one thing about how you study, make it this: stop re-reading and start testing yourself. The science is unequivocal — retrieval practice is the most effective study strategy available, and it works for every subject, every age group, and every learning goal.`,
   },
   {
     slug: "bayesian-knowledge-tracking",
-    title: "How Bayesian Knowledge Tracking Works (And Why It Matters for Your Learning)",
+    title:
+      "How Bayesian Knowledge Tracking Works (And Why It Matters for Your Learning)",
     metaTitle: "Bayesian Knowledge Tracking Explained | Core Model Blog",
-    metaDescription: "Learn how Bayesian mastery tracking provides more accurate learning assessment than traditional grading. Understand why uncertainty matters in education.",
-    keywords: ["Bayesian knowledge tracking", "mastery estimation", "learning analytics", "adaptive assessment", "knowledge modeling"],
+    metaDescription:
+      "Learn how Bayesian mastery tracking provides more accurate learning assessment than traditional grading. Understand why uncertainty matters in education.",
+    keywords: [
+      "Bayesian knowledge tracking",
+      "mastery estimation",
+      "learning analytics",
+      "adaptive assessment",
+      "knowledge modeling",
+    ],
     author: "Core Model Research Team",
     authorRole: "Learning Science",
     publishedAt: "2026-03-05",
     readingTime: 10,
     category: "Technology",
-    tags: ["Bayesian statistics", "knowledge tracking", "adaptive learning", "edtech"],
-    excerpt: "Traditional grading tells you 'you got 78%.' Bayesian tracking tells you 'we're 85% confident your mastery is between 72% and 84%, with particular weakness in eigenvalues.' That difference matters.",
+    tags: [
+      "Bayesian statistics",
+      "knowledge tracking",
+      "adaptive learning",
+      "edtech",
+    ],
+    excerpt:
+      "Traditional grading tells you 'you got 78%.' Bayesian tracking tells you 'we're 85% confident your mastery is between 72% and 84%, with particular weakness in eigenvalues.' That difference matters.",
     content: `## Beyond Right and Wrong
 
 Traditional assessment treats answers as binary: right or wrong. Get 78 out of 100 correct, and your score is 78%. This tells you almost nothing useful about what you actually know.
@@ -231,21 +277,35 @@ Students using Bayesian knowledge tracking report:
 - Less anxiety (uncertainty is quantified, not vague)
 - Better preparation (study plans target confirmed weaknesses, not assumed ones)
 
-The shift from "what's my score?" to "what do I actually know, and how confident are we?" is transformative for serious learners.`
+The shift from "what's my score?" to "what do I actually know, and how confident are we?" is transformative for serious learners.`,
   },
   {
     slug: "active-learning-vs-passive",
-    title: "Active vs. Passive Learning: A Meta-Analysis of What Actually Works",
+    title:
+      "Active vs. Passive Learning: A Meta-Analysis of What Actually Works",
     metaTitle: "Active vs Passive Learning Research | Core Model Blog",
-    metaDescription: "A comprehensive review of research comparing active and passive learning methods. See the data on why active learning produces better outcomes across every discipline.",
-    keywords: ["active learning", "passive learning", "learning effectiveness", "study methods comparison", "education research"],
+    metaDescription:
+      "A comprehensive review of research comparing active and passive learning methods. See the data on why active learning produces better outcomes across every discipline.",
+    keywords: [
+      "active learning",
+      "passive learning",
+      "learning effectiveness",
+      "study methods comparison",
+      "education research",
+    ],
     author: "Core Model Research Team",
     authorRole: "Learning Science",
     publishedAt: "2026-02-08",
     readingTime: 11,
     category: "Learning Science",
-    tags: ["active learning", "passive learning", "meta-analysis", "education research"],
-    excerpt: "Freeman et al.'s landmark meta-analysis of 225 studies found that active learning reduces failure rates by 33% and increases exam scores by half a standard deviation. Here's what that means for how you study.",
+    tags: [
+      "active learning",
+      "passive learning",
+      "meta-analysis",
+      "education research",
+    ],
+    excerpt:
+      "Freeman et al.'s landmark meta-analysis of 225 studies found that active learning reduces failure rates by 33% and increases exam scores by half a standard deviation. Here's what that means for how you study.",
     content: `## 225 Studies, One Clear Conclusion
 
 In 2014, Freeman et al. published a landmark meta-analysis in the Proceedings of the National Academy of Sciences. They analyzed 225 studies comparing active learning to traditional lectures in STEM courses. The results were striking:
@@ -300,21 +360,35 @@ When studying feels too easy, you're probably not learning much. When it feels e
 
 Every Core Model study session is built on active learning principles. The system never shows you information passively — it always asks you to retrieve, apply, or explain before providing feedback. Sessions are spaced optimally, interleaved across topics, and difficulty is calibrated to your current mastery level.
 
-The research is overwhelming: active learning works better than passive learning, in every subject, for every learner. The only question is whether your study tools are designed around this evidence.`
+The research is overwhelming: active learning works better than passive learning, in every subject, for every learner. The only question is whether your study tools are designed around this evidence.`,
   },
   {
     slug: "knowledge-graphs-learning",
-    title: "Knowledge Graphs in Education: How Mapping Concepts Accelerates Understanding",
+    title:
+      "Knowledge Graphs in Education: How Mapping Concepts Accelerates Understanding",
     metaTitle: "Knowledge Graphs in Education | Core Model Blog",
-    metaDescription: "Discover how knowledge graphs help learners understand relationships between concepts and identify gaps. Learn how concept mapping accelerates deep understanding.",
-    keywords: ["knowledge graphs", "concept mapping", "learning relationships", "knowledge structure", "educational technology"],
+    metaDescription:
+      "Discover how knowledge graphs help learners understand relationships between concepts and identify gaps. Learn how concept mapping accelerates deep understanding.",
+    keywords: [
+      "knowledge graphs",
+      "concept mapping",
+      "learning relationships",
+      "knowledge structure",
+      "educational technology",
+    ],
     author: "Core Model Research Team",
     authorRole: "Technology",
     publishedAt: "2026-02-01",
     readingTime: 7,
     category: "Technology",
-    tags: ["knowledge graphs", "concept mapping", "edtech", "learning technology"],
-    excerpt: "Expertise isn't just knowing more facts — it's understanding how they connect. Knowledge graphs make these connections visible, revealing the structure that separates novices from experts.",
+    tags: [
+      "knowledge graphs",
+      "concept mapping",
+      "edtech",
+      "learning technology",
+    ],
+    excerpt:
+      "Expertise isn't just knowing more facts — it's understanding how they connect. Knowledge graphs make these connections visible, revealing the structure that separates novices from experts.",
     content: `## The Structure of Expert Knowledge
 
 Research in cognitive science has consistently shown that the difference between novices and experts isn't primarily about how much they know — it's about how their knowledge is organized.
@@ -356,21 +430,35 @@ Even without specialized tools, you can benefit from knowledge graph thinking:
 3. Compare your graph to the textbook's structure — missing connections reveal gaps
 4. Revisit and expand your graph as your understanding deepens
 
-The act of building a knowledge graph is itself a powerful learning activity — it forces you to think about structure, not just content.`
+The act of building a knowledge graph is itself a powerful learning activity — it forces you to think about structure, not just content.`,
   },
   {
     slug: "metacognition-study-skills",
-    title: "Metacognition: The Study Skill That Teaches You How to Learn Everything Else",
+    title:
+      "Metacognition: The Study Skill That Teaches You How to Learn Everything Else",
     metaTitle: "Metacognition and Study Skills | Core Model Blog",
-    metaDescription: "Metacognition — thinking about your thinking — is the master skill of effective learning. Learn how to develop metacognitive awareness and transform your study habits.",
-    keywords: ["metacognition", "study skills", "learning how to learn", "self-regulated learning", "metacognitive strategies"],
+    metaDescription:
+      "Metacognition — thinking about your thinking — is the master skill of effective learning. Learn how to develop metacognitive awareness and transform your study habits.",
+    keywords: [
+      "metacognition",
+      "study skills",
+      "learning how to learn",
+      "self-regulated learning",
+      "metacognitive strategies",
+    ],
     author: "Core Model Research Team",
     authorRole: "Learning Science",
     publishedAt: "2026-01-25",
     readingTime: 8,
     category: "Learning Science",
-    tags: ["metacognition", "study skills", "self-regulation", "learning strategies"],
-    excerpt: "The students who learn most effectively aren't necessarily the smartest — they're the most self-aware. Metacognition is the skill that separates efficient learners from everyone else.",
+    tags: [
+      "metacognition",
+      "study skills",
+      "self-regulation",
+      "learning strategies",
+    ],
+    excerpt:
+      "The students who learn most effectively aren't necessarily the smartest — they're the most self-aware. Metacognition is the skill that separates efficient learners from everyone else.",
     content: `## Thinking About Thinking
 
 Metacognition — literally "thinking about thinking" — refers to your ability to monitor, evaluate, and regulate your own cognitive processes. In learning contexts, it means:
@@ -429,21 +517,35 @@ Core Model integrates metacognitive training into every interaction:
 - **Metacognitive prompts**: Regular reflective exercises during study sessions
 - **Awareness feedback**: Learn whether you tend to be overconfident or underconfident
 
-The goal isn't just to help you learn specific content — it's to help you become a better learner, period. Metacognitive skills transfer across every subject and context.`
+The goal isn't just to help you learn specific content — it's to help you become a better learner, period. Metacognitive skills transfer across every subject and context.`,
   },
   {
     slug: "adaptive-learning-vs-traditional",
-    title: "Adaptive Learning vs. Traditional Education: A Data-Driven Comparison",
+    title:
+      "Adaptive Learning vs. Traditional Education: A Data-Driven Comparison",
     metaTitle: "Adaptive vs Traditional Learning Comparison | Core Model Blog",
-    metaDescription: "Compare adaptive learning with traditional education methods using data from research studies. See why personalized pacing and mastery tracking produce better outcomes.",
-    keywords: ["adaptive learning", "traditional education", "personalized learning", "education comparison", "learning outcomes"],
+    metaDescription:
+      "Compare adaptive learning with traditional education methods using data from research studies. See why personalized pacing and mastery tracking produce better outcomes.",
+    keywords: [
+      "adaptive learning",
+      "traditional education",
+      "personalized learning",
+      "education comparison",
+      "learning outcomes",
+    ],
     author: "Core Model Research Team",
     authorRole: "Learning Science",
     publishedAt: "2026-01-18",
     readingTime: 9,
     category: "Learning Science",
-    tags: ["adaptive learning", "education reform", "personalized learning", "learning outcomes"],
-    excerpt: "Traditional education moves at one speed for all students. Adaptive learning adjusts to each individual. The research shows a clear winner — and it's not close.",
+    tags: [
+      "adaptive learning",
+      "education reform",
+      "personalized learning",
+      "learning outcomes",
+    ],
+    excerpt:
+      "Traditional education moves at one speed for all students. Adaptive learning adjusts to each individual. The research shows a clear winner — and it's not close.",
     content: `## The One-Speed Problem
 
 Traditional education operates on a fixed timeline: 15-week semesters, daily lectures, weekly assignments, a midterm, and a final. Every student moves through the same material at the same pace, regardless of their prior knowledge, learning speed, or specific struggles.
@@ -488,21 +590,35 @@ The most effective approach combines both: traditional instruction for social an
 
 Core Model is designed as a complement to traditional instruction, not a replacement. It handles what technology does best — adaptive content delivery, spaced repetition, mastery tracking — while freeing up human instructors to focus on what they do best: mentoring, discussing, and inspiring.
 
-The future of education isn't choosing between human and machine instruction. It's combining them intelligently. Core Model represents the adaptive technology side of that partnership.`
+The future of education isn't choosing between human and machine instruction. It's combining them intelligently. Core Model represents the adaptive technology side of that partnership.`,
   },
   {
     slug: "interleaving-practice",
-    title: "Interleaving: Why Mixing Topics During Study Beats Blocking Every Time",
+    title:
+      "Interleaving: Why Mixing Topics During Study Beats Blocking Every Time",
     metaTitle: "Interleaving Practice for Better Learning | Core Model Blog",
-    metaDescription: "Learn why studying different topics in mixed order (interleaving) produces better learning than studying one topic at a time (blocking). Backed by 40+ studies.",
-    keywords: ["interleaving", "blocked practice", "study techniques", "learning strategies", "mixed practice"],
+    metaDescription:
+      "Learn why studying different topics in mixed order (interleaving) produces better learning than studying one topic at a time (blocking). Backed by 40+ studies.",
+    keywords: [
+      "interleaving",
+      "blocked practice",
+      "study techniques",
+      "learning strategies",
+      "mixed practice",
+    ],
     author: "Core Model Research Team",
     authorRole: "Learning Science",
     publishedAt: "2026-01-11",
     readingTime: 7,
     category: "Learning Science",
-    tags: ["interleaving", "study strategies", "practice techniques", "learning science"],
-    excerpt: "It feels logical to master one topic before moving to the next. But research shows that mixing topics during study — even though it feels harder — produces dramatically better learning.",
+    tags: [
+      "interleaving",
+      "study strategies",
+      "practice techniques",
+      "learning science",
+    ],
+    excerpt:
+      "It feels logical to master one topic before moving to the next. But research shows that mixing topics during study — even though it feels harder — produces dramatically better learning.",
     content: `## The Intuition Is Wrong
 
 Ask any student how they study and you'll hear some version of: "I study Chapter 1 until I understand it, then move to Chapter 2."
@@ -552,21 +668,30 @@ Next time you study, instead of finishing all of Chapter 5 before starting Chapt
 3. Switch to 20 minutes of Chapter 7
 4. Return to Chapter 5
 
-It will feel harder. That's how you know it's working.`
+It will feel harder. That's how you know it's working.`,
   },
   {
     slug: "ai-tutoring-future",
-    title: "The Future of AI Tutoring: Beyond Chatbots to True Adaptive Learning",
+    title:
+      "The Future of AI Tutoring: Beyond Chatbots to True Adaptive Learning",
     metaTitle: "Future of AI Tutoring | Core Model Blog",
-    metaDescription: "Explore how AI tutoring is evolving beyond simple chatbots to true adaptive learning systems with mastery tracking, metacognitive support, and evidence-based pedagogy.",
-    keywords: ["AI tutoring", "adaptive learning AI", "educational AI", "future of education", "AI in education"],
+    metaDescription:
+      "Explore how AI tutoring is evolving beyond simple chatbots to true adaptive learning systems with mastery tracking, metacognitive support, and evidence-based pedagogy.",
+    keywords: [
+      "AI tutoring",
+      "adaptive learning AI",
+      "educational AI",
+      "future of education",
+      "AI in education",
+    ],
     author: "Core Model Research Team",
     authorRole: "Technology",
     publishedAt: "2026-01-04",
     readingTime: 10,
     category: "Technology",
     tags: ["AI", "tutoring", "edtech", "future of education"],
-    excerpt: "ChatGPT can answer questions. But answering questions isn't teaching. Real AI tutoring requires mastery models, pedagogical knowledge, and metacognitive support. Here's where we're headed.",
+    excerpt:
+      "ChatGPT can answer questions. But answering questions isn't teaching. Real AI tutoring requires mastery models, pedagogical knowledge, and metacognitive support. Here's where we're headed.",
     content: `## The Chatbot Illusion
 
 When ChatGPT launched, many predicted it would revolutionize education. Students could ask any question and get an instant, fluent answer. Some called it "the end of tutoring."
@@ -614,21 +739,29 @@ AI tutoring will continue to evolve. We expect to see:
 
 But the foundation will always be the same: models of knowledge, evidence-based pedagogy, and metacognitive support. Tools that skip these fundamentals for flashy chatbot interfaces will produce engagement without learning.
 
-The future of education isn't AI that answers questions for you. It's AI that helps you answer questions yourself.`
+The future of education isn't AI that answers questions for you. It's AI that helps you answer questions yourself.`,
   },
   {
     slug: "measuring-learning-outcomes",
     title: "Beyond Grades: How to Actually Measure Learning Outcomes",
     metaTitle: "Measuring Learning Outcomes | Core Model Blog",
-    metaDescription: "Grades are a poor proxy for learning. Discover better approaches to measuring educational outcomes including mastery tracking, calibration metrics, and transfer assessments.",
-    keywords: ["learning outcomes", "assessment", "educational measurement", "mastery assessment", "learning analytics"],
+    metaDescription:
+      "Grades are a poor proxy for learning. Discover better approaches to measuring educational outcomes including mastery tracking, calibration metrics, and transfer assessments.",
+    keywords: [
+      "learning outcomes",
+      "assessment",
+      "educational measurement",
+      "mastery assessment",
+      "learning analytics",
+    ],
     author: "Core Model Research Team",
     authorRole: "Learning Science",
     publishedAt: "2025-12-28",
     readingTime: 8,
     category: "Learning Science",
     tags: ["assessment", "learning outcomes", "grading", "education reform"],
-    excerpt: "A student gets an A. What does that tell you about what they actually learned? Surprisingly little. Here's why traditional grading fails as a learning measure and what works better.",
+    excerpt:
+      "A student gets an A. What does that tell you about what they actually learned? Surprisingly little. Here's why traditional grading fails as a learning measure and what works better.",
     content: `## The Grading Problem
 
 Grades are the primary metric used to measure learning in education. They're also deeply flawed:
@@ -683,21 +816,29 @@ When you have concept-level mastery data for your students, you can:
 - Provide specific feedback ("Your mastery of X is strong, but Y needs more practice")
 - Make evidence-based curriculum decisions
 
-The goal isn't to replace grades — it's to supplement them with data that actually drives learning improvement.`
+The goal isn't to replace grades — it's to supplement them with data that actually drives learning improvement.`,
   },
   {
     slug: "study-burnout-prevention",
     title: "Study Burnout Is a System Failure, Not a Personal Failure",
     metaTitle: "Preventing Study Burnout | Core Model Blog",
-    metaDescription: "Study burnout isn't about willpower — it's about inefficient systems. Learn how adaptive learning prevents burnout by eliminating wasted study time and optimizing cognitive load.",
-    keywords: ["study burnout", "academic burnout", "study efficiency", "cognitive load", "study motivation"],
+    metaDescription:
+      "Study burnout isn't about willpower — it's about inefficient systems. Learn how adaptive learning prevents burnout by eliminating wasted study time and optimizing cognitive load.",
+    keywords: [
+      "study burnout",
+      "academic burnout",
+      "study efficiency",
+      "cognitive load",
+      "study motivation",
+    ],
     author: "Core Model Research Team",
     authorRole: "Learning Science",
     publishedAt: "2025-12-21",
     readingTime: 7,
     category: "Wellness",
     tags: ["burnout", "mental health", "study efficiency", "motivation"],
-    excerpt: "If you're burning out, the problem probably isn't that you lack discipline. It's that your study methods waste 40% of your time on material you already know. That's exhausting and demoralizing.",
+    excerpt:
+      "If you're burning out, the problem probably isn't that you lack discipline. It's that your study methods waste 40% of your time on material you already know. That's exhausting and demoralizing.",
     content: `## Burnout Isn't Laziness
 
 Study burnout is epidemic in higher education. Symptoms include chronic exhaustion, cynicism about academic work, reduced performance, and loss of motivation. It affects an estimated 40-50% of college students at some point during their studies.
@@ -746,6 +887,6 @@ Efficient studying means you don't need to study 12 hours a day. Adaptive system
 4. **Prioritize ruthlessly**: Study your weakest concepts first. Don't waste energy on material you already know
 5. **Take real breaks**: Cognitive performance declines without rest. Breaks are part of the system, not a sign of weakness
 
-Core Model is designed around these principles. By eliminating wasted effort and showing concrete progress, it makes studying sustainable — not just effective.`
+Core Model is designed around these principles. By eliminating wasted effort and showing concrete progress, it makes studying sustainable — not just effective.`,
   },
-]
+];

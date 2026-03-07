@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { ReactShaderToy } from "@/components/agents-ui/react-shader-toy"
+import { ReactShaderToy } from "@/components/agents-ui/react-shader-toy";
 
 const HERO_SHADER = `
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
@@ -36,18 +36,22 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 
     fragColor = vec4(color, 1.0);
 }
-`
+`;
 
 export function HeroShader() {
   return (
     <div className="absolute inset-0 opacity-70 dark:opacity-100">
       <ReactShaderToy
         fs={HERO_SHADER}
-        devicePixelRatio={typeof window !== "undefined" ? Math.min(window.devicePixelRatio, 1.5) : 1}
+        devicePixelRatio={
+          typeof window !== "undefined"
+            ? Math.min(window.devicePixelRatio, 1.5)
+            : 1
+        }
         style={{ width: "100%", height: "100%" }}
       />
       {/* Overlay gradient for readability */}
       <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/20 to-background" />
     </div>
-  )
+  );
 }

@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -17,8 +17,9 @@ export default function proxy(request: NextRequest) {
     pathname.startsWith("/api/billing") ||
     pathname.startsWith("/api/usage")
   ) {
-    const sessionToken =
-      request.cookies.get("better-auth.session_token")?.value;
+    const sessionToken = request.cookies.get(
+      "better-auth.session_token",
+    )?.value;
     if (!sessionToken) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

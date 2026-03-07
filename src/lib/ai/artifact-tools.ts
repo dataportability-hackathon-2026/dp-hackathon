@@ -1,5 +1,6 @@
 import { generateText, Output, tool } from "ai";
 import { z } from "zod";
+import { loadSourceContent } from "@/lib/sources/load-sources";
 import { getCitationBlock, getCitationGuardrails } from "./citations";
 import { openai } from "./provider";
 import {
@@ -144,9 +145,21 @@ const profileAwareInputSchema = z.object({
   coachingTone: z
     .enum(["direct", "encouraging", "socratic", "collaborative"])
     .describe("Preferred coaching tone"),
+  sourceIds: z
+    .array(z.string())
+    .optional()
+    .describe("IDs of uploaded source materials to use as reference content"),
+  userId: z.string().optional().describe("User ID for source content access"),
 });
 
 type ProfileAwareInput = z.infer<typeof profileAwareInputSchema>;
+
+async function resolveSourceContent(input: ProfileAwareInput): Promise<string> {
+  if (!input.sourceIds?.length || !input.userId) return "";
+  const content = await loadSourceContent(input.sourceIds, input.userId);
+  if (!content) return "";
+  return `\n\n## Reference Material\nUse this material as the primary content source for questions, examples, and concepts:\n${content}`;
+}
 
 // ── Tools ──
 
@@ -156,6 +169,7 @@ export const artifactTools = {
       "Create a quiz adapted to the learner's profile. Uses retrieval practice [ROEDIGER_KARPICKE_2006] as the primary learning mechanism — testing is a learning event, not just assessment. Questions span Bloom's taxonomy levels appropriate to knowledge level. Includes confidence predictions for calibration training [SCHRAW_1994]. Adjusts difficulty based on cognitive load risk [SWELLER_1988].",
     inputSchema: profileAwareInputSchema,
     execute: async (input: ProfileAwareInput) => {
+      const sourceBlock = await resolveSourceContent(input);
       const result = await generateText({
         model: openai("gpt-4o-mini"),
         output: Output.object({ schema: QuizArtifactSchema }),
@@ -199,7 +213,7 @@ ${getCitationBlock(["ROEDIGER_KARPICKE_2006", "DUNLOSKY_2013", "SWELLER_1988", "
 - Exactly 4 options per question.
 - Explanations must be educational, not just "A is correct because A."
 - Progress from easier to harder.
-- Cover all listed concepts proportionally.`,
+- Cover all listed concepts proportionally.${sourceBlock}`,
       });
       if (!result.output) {
         throw new Error("Failed to generate quiz");
@@ -213,6 +227,7 @@ ${getCitationBlock(["ROEDIGER_KARPICKE_2006", "DUNLOSKY_2013", "SWELLER_1988", "
       "Create flashcards optimized for active recall and spaced repetition [ROEDIGER_KARPICKE_2006, CEPEDA_2006]. Cards use elaborative interrogation prompts [DUNLOSKY_2013] — not just 'define X' but 'why does X work this way?' Adapted to learner's knowledge level and calibration needs.",
     inputSchema: profileAwareInputSchema,
     execute: async (input: ProfileAwareInput) => {
+      const sourceBlock = await resolveSourceContent(input);
       const result = await generateText({
         model: openai("gpt-4o-mini"),
         output: Output.object({ schema: FlashcardArtifactSchema }),
@@ -251,7 +266,7 @@ ${getCitationBlock(["ROEDIGER_KARPICKE_2006", "CEPEDA_2006", "DUNLOSKY_2013", "B
 - At least 1 card per concept.
 - Back answers: 1-3 sentences, precise and accurate.
 - Mix: factual recall (40%), conceptual understanding (40%), application (20%).
-- NEVER include cards that can be answered by pattern matching without understanding.`,
+- NEVER include cards that can be answered by pattern matching without understanding.${sourceBlock}`,
       });
       if (!result.output) {
         throw new Error("Failed to generate flashcards");
@@ -268,7 +283,8 @@ ${getCitationBlock(["ROEDIGER_KARPICKE_2006", "CEPEDA_2006", "DUNLOSKY_2013", "B
         .string()
         .describe("The specific problem or scenario to demonstrate"),
     }),
-    execute: async (input) => {
+    execute: async (input: ProfileAwareInput & { problemContext: string }) => {
+      const sourceBlock = await resolveSourceContent(input);
       const fadeLevel: "full" | "partial" | "minimal" =
         input.priorKnowledgeLevel === "beginner"
           ? "full"
@@ -320,7 +336,7 @@ ${getCitationBlock(["SWELLER_1988", "DUNLOSKY_2013", "BJORK_2011"])}
 - 3-10 steps per example.
 - Each step must have an explanation building schema understanding.
 - Set fadeLevel to "${fadeLevel}" based on knowledge level.
-- Common mistakes should be specific and realistic, not generic.`,
+- Common mistakes should be specific and realistic, not generic.${sourceBlock}`,
       });
       if (!result.output) {
         throw new Error("Failed to generate worked example");
@@ -334,6 +350,7 @@ ${getCitationBlock(["SWELLER_1988", "DUNLOSKY_2013", "BJORK_2011"])}
       "Create an elaborative interrogation exercise — 'Why does this make sense?' prompts that connect new facts to prior knowledge. Rated moderate-utility by Dunlosky et al. (2013). Particularly effective when learners have sufficient prior knowledge to generate explanations. Builds deeper encoding than simple review.",
     inputSchema: profileAwareInputSchema,
     execute: async (input: ProfileAwareInput) => {
+      const sourceBlock = await resolveSourceContent(input);
       const result = await generateText({
         model: openai("gpt-4o-mini"),
         output: Output.object({ schema: ElaborativeInterrogationSchema }),
@@ -369,7 +386,7 @@ ${getCitationBlock(["DUNLOSKY_2013", "ROEDIGER_KARPICKE_2006", "BJORK_2011"])}
 - Each item id: "ei1", "ei2", etc.
 - 3-10 items covering all listed concepts.
 - Each item connects to at least 1 related concept.
-- Tone: ${input.coachingTone}.`,
+- Tone: ${input.coachingTone}.${sourceBlock}`,
       });
       if (!result.output) {
         throw new Error("Failed to generate elaborative interrogation");
@@ -386,6 +403,7 @@ ${getCitationBlock(["DUNLOSKY_2013", "ROEDIGER_KARPICKE_2006", "BJORK_2011"])}
       "Create a prediction-reflection-repair exercise for calibration training. The learner predicts their confidence, attempts the problem, then reflects on the gap between prediction and outcome [SCHRAW_1994]. This is the core mechanism for improving metacognitive accuracy. Critical for over-confident learners.",
     inputSchema: profileAwareInputSchema,
     execute: async (input: ProfileAwareInput) => {
+      const sourceBlock = await resolveSourceContent(input);
       const result = await generateText({
         model: openai("gpt-4o-mini"),
         output: Output.object({ schema: PredictionReflectionSchema }),
@@ -422,7 +440,7 @@ ${getCitationBlock(["SCHRAW_1994", "BJORK_2011", "FREDERICK_2005", "DUNLOSKY_201
 - 3-8 items covering listed concepts.
 - Prediction prompts should be natural, not formulaic.
 - Reflection prompts should be specific to the problem, not generic.
-- Repair hints: null if no common misconception applies.`,
+- Repair hints: null if no common misconception applies.${sourceBlock}`,
       });
       if (!result.output) {
         throw new Error("Failed to generate prediction-reflection exercise");
@@ -448,6 +466,7 @@ ${getCitationBlock(["SCHRAW_1994", "BJORK_2011", "FREDERICK_2005", "DUNLOSKY_201
         };
       }
 
+      const sourceBlock = await resolveSourceContent(input);
       const result = await generateText({
         model: openai("gpt-4o-mini"),
         output: Output.object({ schema: InterleavedProblemSetSchema }),
@@ -487,7 +506,7 @@ ${getCitationBlock(["ROHRER_TAYLOR_2007", "BJORK_2011", "DUNLOSKY_2013"])}
 - At least 2 problems per concept.
 - conceptOrder must be interleaved (not blocked).
 - Solutions must be complete and correct.
-- discriminationNote is required for every problem.`,
+- discriminationNote is required for every problem.${sourceBlock}`,
       });
       if (!result.output) {
         throw new Error("Failed to generate interleaved problem set");
@@ -504,6 +523,7 @@ ${getCitationBlock(["ROHRER_TAYLOR_2007", "BJORK_2011", "DUNLOSKY_2013"])}
       "Create a concept mind map showing prerequisite and co-requisite relationships. Helps learners visualize the knowledge graph structure and identify gaps. Uses elaboration [DUNLOSKY_2013] — connecting concepts builds deeper understanding than isolated study.",
     inputSchema: profileAwareInputSchema,
     execute: async (input: ProfileAwareInput) => {
+      const sourceBlock = await resolveSourceContent(input);
       const result = await generateText({
         model: openai("gpt-4o-mini"),
         output: Output.object({ schema: MindMapArtifactSchema }),
@@ -526,7 +546,7 @@ ${getCitationBlock(["DUNLOSKY_2013", "BJORK_2011"])}
 - Labels: 1-4 words, precise domain terminology.
 - Node ids: "n1", "n2", etc.
 - Must form a proper tree (no cycles, one root).
-- Show prerequisite relationships through hierarchy.`,
+- Show prerequisite relationships through hierarchy.${sourceBlock}`,
       });
       if (!result.output) {
         throw new Error("Failed to generate mind map");
@@ -540,6 +560,7 @@ ${getCitationBlock(["DUNLOSKY_2013", "BJORK_2011"])}
       "Create a review slide deck for structured overview. Best used for consolidation AFTER active learning, not as a primary learning tool [DUNLOSKY_2013]. Slides summarize and organize, but should always be paired with retrieval practice.",
     inputSchema: profileAwareInputSchema,
     execute: async (input: ProfileAwareInput) => {
+      const sourceBlock = await resolveSourceContent(input);
       const result = await generateText({
         model: openai("gpt-4o-mini"),
         output: Output.object({ schema: SlideArtifactSchema }),
@@ -568,7 +589,7 @@ Passive reading of slides is a low-utility strategy. These slides should:
 - 1-2 slides per major concept.
 - Closes with summary + "next steps for practice."
 - Concise, educational language for ${input.priorKnowledgeLevel} level.
-- Logical progression from foundational to advanced.`,
+- Logical progression from foundational to advanced.${sourceBlock}`,
       });
       if (!result.output) {
         throw new Error("Failed to generate slides");
@@ -582,6 +603,7 @@ Passive reading of slides is a low-utility strategy. These slides should:
       "Create a 3D spatial visualization of concept relationships. Useful for subjects where spatial reasoning aids understanding (molecular structures, system architectures, mathematical spaces). Not a learning-style accommodation — spatial representations help when the content is inherently spatial [PASHLER_2008].",
     inputSchema: profileAwareInputSchema,
     execute: async (input: ProfileAwareInput) => {
+      const sourceBlock = await resolveSourceContent(input);
       const result = await generateText({
         model: openai("gpt-4o-mini"),
         output: Output.object({ schema: SpatialArtifactSchema }),
@@ -607,7 +629,7 @@ Bad uses: memorizing vocabulary, learning historical dates (spatial adds no valu
 - Hex colors (e.g., "#ef4444").
 - Shape semantics: sphere=node, box=container, cylinder=bond/axis, torus=cycle/orbit.
 - Scale: 0.2-2.0.
-- autoRotate: true for better perspective.`,
+- autoRotate: true for better perspective.${sourceBlock}`,
       });
       if (!result.output) {
         throw new Error("Failed to generate spatial model");

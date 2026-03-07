@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
-import { checkAffordability } from "@/lib/usage";
 import { getEffectiveUserId } from "@/lib/impersonate";
+import { checkAffordability } from "@/lib/usage";
 
 const checkSchema = z.object({
   estimatedCredits: z.number(),

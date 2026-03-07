@@ -1,65 +1,57 @@
 "use client";
 
-import { useState, useId, useRef, type ReactNode } from "react";
 import {
-  Brain,
-  Upload,
-  BarChart3,
-  Shield,
-  ChevronDown,
-  FileText,
-  Presentation,
-  Video,
+  ArrowRight,
   Braces,
+  Brain,
+  Building2,
+  CheckCircle2,
+  ChevronDown,
+  Clock,
+  Eye,
+  FileText,
+  LineChart,
   Map,
-  TrendingUp,
-  Target,
-  Sparkles,
-  BookOpen,
   Microscope,
   Palette,
-  Stethoscope,
-  Scale,
-  Users,
-  Clock,
-  CheckCircle2,
-  ArrowRight,
-  Star,
-  Quote,
-  Zap,
-  Eye,
-  LineChart,
-  Play,
   Phone,
-  Building2,
+  Play,
+  Presentation,
+  Quote,
+  Shield,
+  Star,
+  Stethoscope,
+  Target,
+  TrendingUp,
+  Upload,
+  Video,
+  Zap,
 } from "lucide-react";
 import {
-  SiOpenai,
-  SiAnthropic,
-  SiSlack,
-  SiDiscord,
-  SiModelcontextprotocol,
-  SiMarkdown,
-} from "react-icons/si";
-import { BsMicrosoftTeams } from "react-icons/bs";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { FeedbackForm } from "@/components/feedback-form";
-import { siteConfig } from "@/lib/white-label";
-import { ACADEMIC_RESOURCES } from "@/lib/academic-resources";
-import {
-  motion,
-  useScroll,
-  useTransform,
-  useInView,
-  useSpring,
   type MotionValue,
+  motion,
+  useInView,
+  useScroll,
+  useSpring,
+  useTransform,
 } from "motion/react";
 import Image from "next/image";
-import { BlurText } from "@/components/reactbits/blur-text";
+import { type ReactNode, useId, useRef, useState } from "react";
+import { BsMicrosoftTeams } from "react-icons/bs";
+import {
+  SiAnthropic,
+  SiDiscord,
+  SiMarkdown,
+  SiModelcontextprotocol,
+  SiOpenai,
+  SiSlack,
+} from "react-icons/si";
 import { MegaMenu } from "@/components/marketing/mega-menu";
+import { BlurText } from "@/components/reactbits/blur-text";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { siteConfig } from "@/lib/white-label";
 
 // ── Animation Helpers ──
 
@@ -165,7 +157,7 @@ function StaggerItem({
   );
 }
 
-function useParallax(value: MotionValue<number>, distance: number) {
+function _useParallax(value: MotionValue<number>, distance: number) {
   return useTransform(value, [0, 1], [-distance, distance]);
 }
 
@@ -621,7 +613,10 @@ export function LandingPage() {
 
             <div className="grid gap-6 lg:gap-8 lg:grid-cols-3">
               {layers.map((layer, i) => (
-                <FadeInOnScroll key={`${listId}-layer-${layer.title}`} delay={i * 0.15}>
+                <FadeInOnScroll
+                  key={`${listId}-layer-${layer.title}`}
+                  delay={i * 0.15}
+                >
                   <motion.button
                     type="button"
                     className="w-full text-left rounded-2xl overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
@@ -629,9 +624,7 @@ export function LandingPage() {
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
                     onClick={() => setContentModal({ type: "layer", index: i })}
                   >
-                    <div
-                      className="aspect-[4/3] relative flex items-center justify-center"
-                    >
+                    <div className="aspect-[4/3] relative flex items-center justify-center">
                       <layer.icon className="h-16 w-16 text-white" />
                     </div>
                   </motion.button>
@@ -702,9 +695,7 @@ export function LandingPage() {
                       setContentModal({ type: "persona", index: i })
                     }
                   >
-                    <div
-                      className="aspect-[4/3] relative flex items-center justify-center"
-                    >
+                    <div className="aspect-[4/3] relative flex items-center justify-center">
                       <persona.icon className="h-16 w-16 text-white" />
                     </div>
                   </motion.button>
@@ -805,7 +796,10 @@ export function LandingPage() {
                     </span>
                   </div>
                   <a href="tel:+18005551234">
-                    <Button className="w-full mb-6 gap-2 backdrop-blur-xl bg-white/10 dark:bg-white/5 hover:bg-white/20 dark:hover:bg-white/10 border-0" variant="ghost">
+                    <Button
+                      className="w-full mb-6 gap-2 backdrop-blur-xl bg-white/10 dark:bg-white/5 hover:bg-white/20 dark:hover:bg-white/10 border-0"
+                      variant="ghost"
+                    >
                       <Phone className="h-4 w-4" />
                       Call Us
                     </Button>

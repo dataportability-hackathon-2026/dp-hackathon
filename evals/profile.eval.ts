@@ -1,23 +1,23 @@
-import { evalite } from "evalite"
-import { generateLearningProfile } from "../src/lib/ai/generate-profile"
-import type { LearningProfileInput } from "../src/lib/ai/generate-profile"
-import type { LearningProfileAnalysis } from "../src/lib/ai/schemas"
-import { BEGINNER_LEARNER, ADVANCED_LEARNER, CAREER_CHANGER } from "./fixtures"
+import { evalite } from "evalite";
+import type { LearningProfileInput } from "../src/lib/ai/generate-profile";
+import { generateLearningProfile } from "../src/lib/ai/generate-profile";
+import type { LearningProfileAnalysis } from "../src/lib/ai/schemas";
+import { ADVANCED_LEARNER, BEGINNER_LEARNER, CAREER_CHANGER } from "./fixtures";
 import {
+  profileCalibrationDetection,
   profileCoversAllDimensions,
   profileCrtAlignment,
-  profileCalibrationDetection,
   profileMotivationFocus,
-} from "./scorers"
+} from "./scorers";
 
 type ProfileEvalInput = LearningProfileInput & {
-  crtScore: number
-  confidence: number
-  priorLevel: string
-  autonomy: number
-  competence: number
-  relatedness: number
-}
+  crtScore: number;
+  confidence: number;
+  priorLevel: string;
+  autonomy: number;
+  competence: number;
+  relatedness: number;
+};
 
 function enrichInput(profile: LearningProfileInput): ProfileEvalInput {
   const crtCorrect = [
@@ -30,7 +30,7 @@ function enrichInput(profile: LearningProfileInput): ProfileEvalInput {
       ? 1
       : 0,
     profile.crtAnswer3?.toLowerCase().includes("47") ? 1 : 0,
-  ]
+  ];
   return {
     ...profile,
     crtScore: crtCorrect.reduce((a, b) => a + b, 0),
@@ -39,31 +39,34 @@ function enrichInput(profile: LearningProfileInput): ProfileEvalInput {
     autonomy: profile.motivationAutonomy,
     competence: profile.motivationCompetence,
     relatedness: profile.motivationRelatedness,
-  }
+  };
 }
 
-evalite<ProfileEvalInput, LearningProfileAnalysis>("Learning Profile Generation", {
-  data: () => [
-    {
-      input: enrichInput(BEGINNER_LEARNER),
-      expected: undefined,
+evalite<ProfileEvalInput, LearningProfileAnalysis>(
+  "Learning Profile Generation",
+  {
+    data: () => [
+      {
+        input: enrichInput(BEGINNER_LEARNER),
+        expected: undefined,
+      },
+      {
+        input: enrichInput(ADVANCED_LEARNER),
+        expected: undefined,
+      },
+      {
+        input: enrichInput(CAREER_CHANGER),
+        expected: undefined,
+      },
+    ],
+    task: async (input) => {
+      return generateLearningProfile(input);
     },
-    {
-      input: enrichInput(ADVANCED_LEARNER),
-      expected: undefined,
-    },
-    {
-      input: enrichInput(CAREER_CHANGER),
-      expected: undefined,
-    },
-  ],
-  task: async (input) => {
-    return generateLearningProfile(input)
+    scorers: [
+      profileCoversAllDimensions,
+      profileCrtAlignment,
+      profileCalibrationDetection,
+      profileMotivationFocus,
+    ],
   },
-  scorers: [
-    profileCoversAllDimensions,
-    profileCrtAlignment,
-    profileCalibrationDetection,
-    profileMotivationFocus,
-  ],
-})
+);

@@ -1,8 +1,20 @@
-"use client"
+"use client";
 
-import { useCallback, useEffect, useState } from "react"
-import { authClient } from "@/lib/auth-client"
-import { useRouter } from "next/navigation"
+import {
+  Eye,
+  Loader2,
+  Minus,
+  Plus,
+  Save,
+  Ticket,
+  ToggleLeft,
+  ToggleRight,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -10,133 +22,134 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Eye, Loader2, Minus, Plus, Save, Ticket, ToggleLeft, ToggleRight } from "lucide-react"
+} from "@/components/ui/table";
+import { authClient } from "@/lib/auth-client";
 
 type UserRow = {
-  id: string
-  name: string | null
-  email: string
-  role: string | null
-  creditBalance: number
-  displayCredits: number
-  createdAt: string | null
-}
+  id: string;
+  name: string | null;
+  email: string;
+  role: string | null;
+  creditBalance: number;
+  displayCredits: number;
+  createdAt: string | null;
+};
 
 type PromoCodeRow = {
-  id: string
-  code: string
-  creditAmount: number
-  displayCredits: number
-  maxUses: number | null
-  usedCount: number
-  active: boolean
-  expiresAt: string | null
-  createdAt: string | null
-}
+  id: string;
+  code: string;
+  creditAmount: number;
+  displayCredits: number;
+  maxUses: number | null;
+  usedCount: number;
+  active: boolean;
+  expiresAt: string | null;
+  createdAt: string | null;
+};
 
-type UsersResponse = { users: UserRow[] }
-type PromoCodesResponse = { codes: PromoCodeRow[] }
-type PatchResponse = { success: boolean; displayCredits: number }
-type PromoCreateResponse = { success: boolean; promoCode: PromoCodeRow }
-type PromoUpdateResponse = { success: boolean; promoCode: PromoCodeRow }
+type UsersResponse = { users: UserRow[] };
+type PromoCodesResponse = { codes: PromoCodeRow[] };
+type PatchResponse = { success: boolean; displayCredits: number };
+type PromoCreateResponse = { success: boolean; promoCode: PromoCodeRow };
+type PromoUpdateResponse = { success: boolean; promoCode: PromoCodeRow };
 
 export default function AdminPage() {
-  const { data: session, isPending } = authClient.useSession()
-  const router = useRouter()
-  const [users, setUsers] = useState<UserRow[]>([])
-  const [promoCodes, setPromoCodes] = useState<PromoCodeRow[]>([])
-  const [loading, setLoading] = useState(true)
-  const [adjustments, setAdjustments] = useState<Record<string, number>>({})
-  const [saving, setSaving] = useState<string | null>(null)
-  const [tab, setTab] = useState<"users" | "promos">("users")
+  const { data: session, isPending } = authClient.useSession();
+  const router = useRouter();
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [promoCodes, setPromoCodes] = useState<PromoCodeRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [adjustments, setAdjustments] = useState<Record<string, number>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+  const [tab, setTab] = useState<"users" | "promos">("users");
 
   // Promo code creation form
-  const [newCode, setNewCode] = useState("")
-  const [newCredits, setNewCredits] = useState("")
-  const [newMaxUses, setNewMaxUses] = useState("")
-  const [newExpiry, setNewExpiry] = useState("")
-  const [creatingPromo, setCreatingPromo] = useState(false)
-  const [promoError, setPromoError] = useState("")
+  const [newCode, setNewCode] = useState("");
+  const [newCredits, setNewCredits] = useState("");
+  const [newMaxUses, setNewMaxUses] = useState("");
+  const [newExpiry, setNewExpiry] = useState("");
+  const [creatingPromo, setCreatingPromo] = useState(false);
+  const [promoError, setPromoError] = useState("");
 
   const fetchUsers = useCallback(async () => {
-    const res = await fetch("/api/admin/users")
+    const res = await fetch("/api/admin/users");
     if (res.status === 403) {
-      router.push("/")
-      return
+      router.push("/");
+      return;
     }
-    const data = (await res.json()) as UsersResponse
-    setUsers(data.users)
-  }, [router])
+    const data = (await res.json()) as UsersResponse;
+    setUsers(data.users);
+  }, [router]);
 
   const fetchPromoCodes = useCallback(async () => {
-    const res = await fetch("/api/admin/promo-codes")
+    const res = await fetch("/api/admin/promo-codes");
     if (res.ok) {
-      const data = (await res.json()) as PromoCodesResponse
-      setPromoCodes(data.codes)
+      const data = (await res.json()) as PromoCodesResponse;
+      setPromoCodes(data.codes);
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     if (!isPending && !session) {
-      router.push("/")
-      return
+      router.push("/");
+      return;
     }
     if (session) {
       Promise.all([fetchUsers(), fetchPromoCodes()]).then(() =>
         setLoading(false),
-      )
+      );
     }
-  }, [session, isPending, router, fetchUsers, fetchPromoCodes])
+  }, [session, isPending, router, fetchUsers, fetchPromoCodes]);
 
   function updateAdjustment(userId: string, delta: number) {
     setAdjustments((prev) => ({
       ...prev,
       [userId]: (prev[userId] ?? 0) + delta,
-    }))
+    }));
   }
 
   async function saveAdjustment(userId: string) {
-    const adjustment = adjustments[userId]
-    if (!adjustment || adjustment === 0) return
+    const adjustment = adjustments[userId];
+    if (!adjustment || adjustment === 0) return;
 
-    setSaving(userId)
+    setSaving(userId);
     const res = await fetch("/api/admin/users", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, creditAdjustment: adjustment }),
-    })
+    });
 
     if (res.ok) {
-      const data = (await res.json()) as PatchResponse
+      const data = (await res.json()) as PatchResponse;
       setUsers((prev) =>
         prev.map((u) =>
           u.id === userId
-            ? { ...u, displayCredits: data.displayCredits, creditBalance: data.displayCredits * 1000 }
+            ? {
+                ...u,
+                displayCredits: data.displayCredits,
+                creditBalance: data.displayCredits * 1000,
+              }
             : u,
         ),
-      )
+      );
       setAdjustments((prev) => {
-        const next = { ...prev }
-        delete next[userId]
-        return next
-      })
+        const next = { ...prev };
+        delete next[userId];
+        return next;
+      });
     }
-    setSaving(null)
+    setSaving(null);
   }
 
   async function createPromoCode() {
-    setPromoError("")
-    const credits = Number.parseFloat(newCredits)
+    setPromoError("");
+    const credits = Number.parseFloat(newCredits);
     if (!newCode.trim() || !credits || credits <= 0) {
-      setPromoError("Code and a positive credit amount are required")
-      return
+      setPromoError("Code and a positive credit amount are required");
+      return;
     }
 
-    setCreatingPromo(true)
+    setCreatingPromo(true);
     const res = await fetch("/api/admin/promo-codes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -146,20 +159,20 @@ export default function AdminPage() {
         maxUses: newMaxUses ? Number.parseInt(newMaxUses, 10) : null,
         expiresAt: newExpiry || null,
       }),
-    })
+    });
 
     if (!res.ok) {
-      const err = (await res.json()) as { error: string }
-      setPromoError(err.error)
+      const err = (await res.json()) as { error: string };
+      setPromoError(err.error);
     } else {
-      const data = (await res.json()) as PromoCreateResponse
-      setPromoCodes((prev) => [data.promoCode, ...prev])
-      setNewCode("")
-      setNewCredits("")
-      setNewMaxUses("")
-      setNewExpiry("")
+      const data = (await res.json()) as PromoCreateResponse;
+      setPromoCodes((prev) => [data.promoCode, ...prev]);
+      setNewCode("");
+      setNewCredits("");
+      setNewMaxUses("");
+      setNewExpiry("");
     }
-    setCreatingPromo(false)
+    setCreatingPromo(false);
   }
 
   async function togglePromoActive(id: string, currentlyActive: boolean) {
@@ -167,12 +180,12 @@ export default function AdminPage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, active: !currentlyActive }),
-    })
+    });
     if (res.ok) {
-      const data = (await res.json()) as PromoUpdateResponse
+      const data = (await res.json()) as PromoUpdateResponse;
       setPromoCodes((prev) =>
         prev.map((c) => (c.id === id ? data.promoCode : c)),
-      )
+      );
     }
   }
 
@@ -181,9 +194,9 @@ export default function AdminPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
-    })
+    });
     if (res.ok) {
-      window.location.href = "/"
+      window.location.href = "/";
     }
   }
 
@@ -192,7 +205,7 @@ export default function AdminPage() {
       <div className="flex min-h-dvh items-center justify-center">
         <Loader2 className="size-6 animate-spin text-muted-foreground" />
       </div>
-    )
+    );
   }
 
   return (
@@ -244,17 +257,21 @@ export default function AdminPage() {
             </TableHeader>
             <TableBody>
               {users.map((u) => {
-                const adj = adjustments[u.id] ?? 0
+                const adj = adjustments[u.id] ?? 0;
                 return (
                   <TableRow key={u.id}>
                     <TableCell>
                       <div>
                         <p className="font-medium">{u.name ?? "—"}</p>
-                        <p className="text-xs text-muted-foreground">{u.email}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {u.email}
+                        </p>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={u.role === "admin" ? "default" : "secondary"}>
+                      <Badge
+                        variant={u.role === "admin" ? "default" : "secondary"}
+                      >
                         {u.role ?? "user"}
                       </Badge>
                     </TableCell>
@@ -286,11 +303,11 @@ export default function AdminPage() {
                           className="w-20 text-center tabular-nums h-7"
                           value={adj}
                           onChange={(e) => {
-                            const val = Number.parseInt(e.target.value, 10)
+                            const val = Number.parseInt(e.target.value, 10);
                             setAdjustments((prev) => ({
                               ...prev,
                               [u.id]: Number.isNaN(val) ? 0 : val,
-                            }))
+                            }));
                           }}
                         />
                         <Button
@@ -319,7 +336,7 @@ export default function AdminPage() {
                       </Button>
                     </TableCell>
                   </TableRow>
-                )
+                );
               })}
             </TableBody>
           </Table>
@@ -379,12 +396,12 @@ export default function AdminPage() {
             {promoError && (
               <p className="text-sm text-destructive">{promoError}</p>
             )}
-            <Button
-              onClick={createPromoCode}
-              disabled={creatingPromo}
-            >
+            <Button onClick={createPromoCode} disabled={creatingPromo}>
               {creatingPromo ? (
-                <Loader2 className="size-4 animate-spin" data-icon="inline-start" />
+                <Loader2
+                  className="size-4 animate-spin"
+                  data-icon="inline-start"
+                />
               ) : (
                 <Plus className="size-4" data-icon="inline-start" />
               )}
@@ -408,7 +425,10 @@ export default function AdminPage() {
               <TableBody>
                 {promoCodes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    <TableCell
+                      colSpan={6}
+                      className="text-center text-muted-foreground py-8"
+                    >
                       No promo codes yet. Create one above.
                     </TableCell>
                   </TableRow>
@@ -442,7 +462,9 @@ export default function AdminPage() {
                           variant="ghost"
                           size="icon"
                           className="size-8"
-                          onClick={() => togglePromoActive(code.id, code.active)}
+                          onClick={() =>
+                            togglePromoActive(code.id, code.active)
+                          }
                           title={code.active ? "Deactivate" : "Activate"}
                         >
                           {code.active ? (
@@ -461,5 +483,5 @@ export default function AdminPage() {
         </div>
       )}
     </div>
-  )
+  );
 }

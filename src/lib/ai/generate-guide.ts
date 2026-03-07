@@ -1,21 +1,22 @@
-import { generateText, Output } from "ai"
-import { openai } from "./provider"
-import { LearningGuideSchema } from "./schemas"
-import type { LearningGuide, LearningProfileAnalysis } from "./schemas"
+import { generateText, Output } from "ai";
+import { openai } from "./provider";
+import type { LearningGuide, LearningProfileAnalysis } from "./schemas";
+import { LearningGuideSchema } from "./schemas";
 
 type GuideInput = {
-  profileAnalysis: LearningProfileAnalysis
-  fieldOfStudy: string
-  primaryGoal: string
-  goalDescription: string
-  deadline: string
-  minutesPerDay: number
-  daysPerWeek: number
-  sessionLength: string
-  priorKnowledgeLevel: string
-  studyStrategies: string[]
-  concepts: string[]
-}
+  profileAnalysis: LearningProfileAnalysis;
+  fieldOfStudy: string;
+  primaryGoal: string;
+  goalDescription: string;
+  deadline: string;
+  minutesPerDay: number;
+  daysPerWeek: number;
+  sessionLength: string;
+  priorKnowledgeLevel: string;
+  studyStrategies: string[];
+  concepts: string[];
+  sourceContent?: string;
+};
 
 export async function generateLearningGuide(
   input: GuideInput,
@@ -24,16 +25,16 @@ export async function generateLearningGuide(
     model: openai("gpt-4o-mini"),
     output: Output.object({ schema: LearningGuideSchema }),
     prompt: buildGuidePrompt(input),
-  })
+  });
   if (!result.output) {
-    throw new Error("Failed to generate learning guide")
+    throw new Error("Failed to generate learning guide");
   }
-  return result.output
+  return result.output;
 }
 
 function buildGuidePrompt(input: GuideInput): string {
-  const totalWeeklyMinutes = input.minutesPerDay * input.daysPerWeek
-  const analysis = input.profileAnalysis
+  const totalWeeklyMinutes = input.minutesPerDay * input.daysPerWeek;
+  const analysis = input.profileAnalysis;
 
   return `You are an evidence-based learning guide generator. Create a structured 7-day learning guide.
 
@@ -77,7 +78,7 @@ function buildGuidePrompt(input: GuideInput): string {
 - Days with no study (if daysPerWeek < 7) should still have dailySummaries with 0 minutes and "Rest day" as focus.
 - Distribute concepts across the week, with harder/newer concepts earlier in the week.
 - Include interleaving in days 4-7 to mix concepts.
-- Each day's total minutes should not exceed ${input.minutesPerDay} (+/- 10%).`
+- Each day's total minutes should not exceed ${input.minutesPerDay} (+/- 10%).${input.sourceContent ? `\n\n## Reference Material\nUse this material as the primary content source for concepts and examples:\n${input.sourceContent}` : ""}`;
 }
 
-export type { GuideInput }
+export type { GuideInput };

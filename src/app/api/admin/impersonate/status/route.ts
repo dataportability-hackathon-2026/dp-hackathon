@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { user } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { auth } from "@/lib/auth";
 import { getImpersonationTarget } from "@/lib/impersonate";
 
 export async function GET() {

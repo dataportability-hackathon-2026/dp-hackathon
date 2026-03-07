@@ -1,7 +1,7 @@
+import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { creditLedger } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
 import { addCredits } from "@/lib/credits";
 import { getEffectiveUserId } from "@/lib/impersonate";
 
@@ -17,10 +17,7 @@ export async function POST() {
     .select({ id: creditLedger.id })
     .from(creditLedger)
     .where(
-      and(
-        eq(creditLedger.userId, userId),
-        eq(creditLedger.type, "free_claim"),
-      ),
+      and(eq(creditLedger.userId, userId), eq(creditLedger.type, "free_claim")),
     )
     .limit(1);
 

@@ -18,7 +18,9 @@ async function run() {
   const hasMaya = await mayaBtn.isVisible({ timeout: 5000 }).catch(() => false);
 
   if (hasMaya) {
-    console.log("2. Clicking Maya quick login (will auto-reset stale accounts)...");
+    console.log(
+      "2. Clicking Maya quick login (will auto-reset stale accounts)...",
+    );
     await mayaBtn.click();
     await page.waitForTimeout(5000);
   } else {
@@ -29,7 +31,11 @@ async function run() {
       await fetch("/api/auth/sign-up/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password: "testpassword123", name: "Test User" }),
+        body: JSON.stringify({
+          email,
+          password: "testpassword123",
+          name: "Test User",
+        }),
       });
     }, testEmail);
     await page.goto(`${BASE}/dashboard`, { waitUntil: "networkidle" });
@@ -90,7 +96,7 @@ async function run() {
       });
       return { status: res.status, body: await res.json() };
     },
-    { convId, msgId1, msgId2 }
+    { convId, msgId1, msgId2 },
   );
   console.log(`   Status: ${saveRes.status}, saved: ${saveRes.body.saved}`);
   if (saveRes.status !== 200 || saveRes.body.saved !== 2) {
@@ -106,7 +112,7 @@ async function run() {
       const res = await fetch(`/api/conversations/${convId}/messages`);
       return { status: res.status, body: await res.json() };
     },
-    { convId }
+    { convId },
   );
   console.log(`   Status: ${loadRes.status}, messages: ${loadRes.body.length}`);
   if (loadRes.status !== 200 || loadRes.body.length !== 2) {
@@ -140,7 +146,7 @@ async function run() {
         }),
       });
     },
-    { convId, msgId1 }
+    { convId, msgId1 },
   );
   // Verify still only 2 messages (not 3)
   const afterDupe = await page.evaluate(
@@ -148,7 +154,7 @@ async function run() {
       const res = await fetch(`/api/conversations/${convId}/messages`);
       return { status: res.status, body: await res.json() };
     },
-    { convId }
+    { convId },
   );
   console.log(`   Messages after dupe attempt: ${afterDupe.body.length}`);
   if (afterDupe.body.length !== 2) {
@@ -163,7 +169,9 @@ async function run() {
     const res = await fetch("/api/conversations");
     return { status: res.status, body: await res.json() };
   });
-  console.log(`   Status: ${listRes.status}, conversations: ${listRes.body.length}`);
+  console.log(
+    `   Status: ${listRes.status}, conversations: ${listRes.body.length}`,
+  );
   if (listRes.status !== 200 || listRes.body.length < 1) {
     console.error("   FAIL: Could not list conversations");
     await browser.close();
@@ -176,7 +184,9 @@ async function run() {
     sessionStorage.setItem("conversationId", "test-123");
     return sessionStorage.getItem("conversationId");
   });
-  console.log(`   sessionStorage: ${sessionTest === "test-123" ? "PASS" : "FAIL"}`);
+  console.log(
+    `   sessionStorage: ${sessionTest === "test-123" ? "PASS" : "FAIL"}`,
+  );
 
   console.log("\n=== ALL TESTS PASSED ===");
   await browser.close();

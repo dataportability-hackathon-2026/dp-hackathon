@@ -1,6 +1,6 @@
+import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { usageLog } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
 import { deductCredits, getBalance } from "./credits";
 
 type RecordUsageParams = {
@@ -49,11 +49,7 @@ export async function checkAffordability(
   };
 }
 
-export async function getUsageHistory(
-  userId: string,
-  limit = 50,
-  offset = 0,
-) {
+export async function getUsageHistory(userId: string, limit = 50, offset = 0) {
   const rows = await db
     .select()
     .from(usageLog)

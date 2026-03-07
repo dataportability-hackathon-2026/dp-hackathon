@@ -1,20 +1,15 @@
-"use client"
+"use client";
 
-import { useEffect, useId, useRef, useState } from "react"
-import dynamic from "next/dynamic"
+import { type Edge, MarkerType, type Node, Position } from "@xyflow/react";
+import dynamic from "next/dynamic";
+import { useEffect, useId, useRef, useState } from "react";
+import "@xyflow/react/dist/style.css";
 import {
-  type Node,
-  type Edge,
-  Position,
-  MarkerType,
-} from "@xyflow/react"
-import "@xyflow/react/dist/style.css"
-import {
-  useReactTable,
-  getCoreRowModel,
-  flexRender,
   type ColumnDef,
-} from "@tanstack/react-table"
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -24,38 +19,44 @@ import {
   Play,
   Volume2,
   XCircle,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useDataStore } from "@/lib/data-store";
 import {
   type Artifact,
   type ArtifactType,
   type AudioArtifact,
+  artifactTypeLabel,
   type DataTableArtifact,
   type DataTableRow,
   type FlashcardArtifact,
   type InfographicArtifact,
+  type ManimArtifact,
   type MindMapArtifact,
   type QuizArtifact,
   type ReportArtifact,
   type SlideArtifact,
-  type ManimArtifact,
   type VideoArtifact,
-  artifactTypeLabel,
-} from "./artifact-store"
-import { useDataStore } from "@/lib/data-store"
-import { DevArtifactToolbar } from "./dev-artifact-toolbar"
+} from "./artifact-store";
+import { DevArtifactToolbar } from "./dev-artifact-toolbar";
 
 // Lazy load heavy 3D/map components — these pull in three.js, deck.gl, maplibre
 const SpatialCard = dynamic(
   () => import("./spatial-card").then((m) => ({ default: m.SpatialCard })),
   { loading: () => <HeavyArtifactFallback label="3D scene" />, ssr: false },
-)
+);
 const GeoCard = dynamic(
   () => import("./geo-card").then((m) => ({ default: m.GeoCard })),
   { loading: () => <HeavyArtifactFallback label="map" />, ssr: false },
-)
+);
 
 function HeavyArtifactFallback({ label }: { label: string }) {
   return (
@@ -64,7 +65,7 @@ function HeavyArtifactFallback({ label }: { label: string }) {
         <p className="text-sm text-muted-foreground">Loading {label}…</p>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // ── Main Canvas ──
@@ -74,28 +75,35 @@ export function ArtifactCanvas({
   scrollToId,
   onClose,
 }: {
-  activeType: ArtifactType
-  scrollToId?: string | null
-  onClose: () => void
+  activeType: ArtifactType;
+  scrollToId?: string | null;
+  onClose: () => void;
 }) {
   const artifacts = useDataStore((s) =>
-    Array.from(s.artifacts.values()).filter((a) => a.type === activeType)
-  )
-  const scrollRef = useRef<HTMLDivElement>(null)
+    Array.from(s.artifacts.values()).filter((a) => a.type === activeType),
+  );
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scrollToId && scrollRef.current) {
-      const el = scrollRef.current.querySelector(`[data-artifact-id="${scrollToId}"]`)
+      const el = scrollRef.current.querySelector(
+        `[data-artifact-id="${scrollToId}"]`,
+      );
       if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" })
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
-  }, [scrollToId])
+  }, [scrollToId]);
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-10 shrink-0 items-center gap-3 border-b px-4">
-        <Button variant="ghost" size="icon-xs" onClick={onClose} aria-label="Back">
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          onClick={onClose}
+          aria-label="Back"
+        >
           <ArrowLeft className="size-4" />
         </Button>
         <span className="text-sm font-semibold">
@@ -135,7 +143,7 @@ export function ArtifactCanvas({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // ── Router ──
@@ -143,70 +151,70 @@ export function ArtifactCanvas({
 function ArtifactRenderer({ artifact }: { artifact: Artifact }) {
   switch (artifact.type) {
     case "video":
-      return <VideoCard artifact={artifact} />
+      return <VideoCard artifact={artifact} />;
     case "audio":
-      return <AudioCard artifact={artifact} />
+      return <AudioCard artifact={artifact} />;
     case "mindmap":
-      return <MindMapCard artifact={artifact} />
+      return <MindMapCard artifact={artifact} />;
     case "quiz":
-      return <QuizCard artifact={artifact} />
+      return <QuizCard artifact={artifact} />;
     case "datatable":
-      return <DataTableCard artifact={artifact} />
+      return <DataTableCard artifact={artifact} />;
     case "flashcards":
-      return <FlashcardCard artifact={artifact} />
+      return <FlashcardCard artifact={artifact} />;
     case "report":
-      return <ReportCard artifact={artifact} />
+      return <ReportCard artifact={artifact} />;
     case "infographic":
-      return <InfographicCard artifact={artifact} />
+      return <InfographicCard artifact={artifact} />;
     case "slidedeck":
-      return <SlideCard artifact={artifact} />
+      return <SlideCard artifact={artifact} />;
     case "spatial":
-      return <SpatialCard artifact={artifact} />
+      return <SpatialCard artifact={artifact} />;
     case "manim":
-      return <ManimCard artifact={artifact} />
+      return <ManimCard artifact={artifact} />;
     case "geo":
-      return <GeoCard artifact={artifact} />
+      return <GeoCard artifact={artifact} />;
   }
 }
 
 // ── Video ──
 
 function VideoCard({ artifact }: { artifact: VideoArtifact }) {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [playing, setPlaying] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
-    const container = containerRef.current
-    const video = videoRef.current
-    if (!container || !video) return
+    const container = containerRef.current;
+    const video = videoRef.current;
+    if (!container || !video) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          video.play().catch(() => {})
-          setPlaying(true)
+          video.play().catch(() => {});
+          setPlaying(true);
         } else {
-          video.pause()
-          setPlaying(false)
+          video.pause();
+          setPlaying(false);
         }
       },
       { threshold: 0.5 },
-    )
+    );
 
-    observer.observe(container)
-    return () => observer.disconnect()
-  }, [])
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
 
   const toggle = () => {
-    if (!videoRef.current) return
+    if (!videoRef.current) return;
     if (playing) {
-      videoRef.current.pause()
+      videoRef.current.pause();
     } else {
-      videoRef.current.play()
+      videoRef.current.play();
     }
-    setPlaying(!playing)
-  }
+    setPlaying(!playing);
+  };
 
   return (
     <Card>
@@ -215,7 +223,10 @@ function VideoCard({ artifact }: { artifact: VideoArtifact }) {
         <CardDescription>{artifact.description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div ref={containerRef} className="relative overflow-hidden rounded-lg bg-black">
+        <div
+          ref={containerRef}
+          className="relative overflow-hidden rounded-lg bg-black"
+        >
           <video
             ref={videoRef}
             src={artifact.videoUrl}
@@ -233,7 +244,11 @@ function VideoCard({ artifact }: { artifact: VideoArtifact }) {
               onClick={toggle}
               aria-label={playing ? "Pause" : "Play"}
             >
-              {playing ? <Pause className="size-6" /> : <Play className="size-6" />}
+              {playing ? (
+                <Pause className="size-6" />
+              ) : (
+                <Play className="size-6" />
+              )}
             </Button>
           </div>
         </div>
@@ -243,7 +258,7 @@ function VideoCard({ artifact }: { artifact: VideoArtifact }) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // ── Audio ──
@@ -273,35 +288,35 @@ function AudioCard({ artifact }: { artifact: AudioArtifact }) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // ── Mind Map (React Flow) ──
 
 function buildFlowGraph(artifact: MindMapArtifact) {
-  const nodes: Node[] = []
-  const edges: Edge[] = []
-  const childrenMap: Record<string, string[]> = {}
-  const rootIds: string[] = []
+  const nodes: Node[] = [];
+  const edges: Edge[] = [];
+  const childrenMap: Record<string, string[]> = {};
+  const rootIds: string[] = [];
 
   for (const n of artifact.nodes) {
     if (n.parentId) {
-      if (!childrenMap[n.parentId]) childrenMap[n.parentId] = []
-      childrenMap[n.parentId].push(n.id)
+      if (!childrenMap[n.parentId]) childrenMap[n.parentId] = [];
+      childrenMap[n.parentId].push(n.id);
     } else {
-      rootIds.push(n.id)
+      rootIds.push(n.id);
     }
   }
 
   // Simple tree layout
-  const xGap = 200
-  const yGap = 80
-  let yCounter = 0
+  const xGap = 200;
+  const yGap = 80;
+  let yCounter = 0;
 
   function layout(nodeId: string, depth: number) {
-    const nodeData = artifact.nodes.find((n) => n.id === nodeId)
-    if (!nodeData) return
-    const children = childrenMap[nodeId] || []
+    const nodeData = artifact.nodes.find((n) => n.id === nodeId);
+    if (!nodeData) return;
+    const children = childrenMap[nodeId] || [];
 
     if (children.length === 0) {
       nodes.push({
@@ -319,22 +334,22 @@ function buildFlowGraph(artifact: MindMapArtifact) {
           fontSize: "13px",
           fontWeight: depth === 0 ? "600" : "500",
         },
-      })
-      yCounter++
+      });
+      yCounter++;
     } else {
-      const startY = yCounter
+      const startY = yCounter;
       for (const childId of children) {
-        layout(childId, depth + 1)
+        layout(childId, depth + 1);
         edges.push({
           id: `e-${nodeId}-${childId}`,
           source: nodeId,
           target: childId,
           markerEnd: { type: MarkerType.ArrowClosed },
           style: { stroke: "#94a3b8" },
-        })
+        });
       }
-      const endY = yCounter - 1
-      const midY = ((startY + endY) / 2) * yGap
+      const endY = yCounter - 1;
+      const midY = ((startY + endY) / 2) * yGap;
       nodes.push({
         id: nodeId,
         data: { label: nodeData.label },
@@ -350,32 +365,32 @@ function buildFlowGraph(artifact: MindMapArtifact) {
           fontSize: "13px",
           fontWeight: depth === 0 ? "600" : "500",
         },
-      })
+      });
     }
   }
 
   for (const rid of rootIds) {
-    layout(rid, 0)
+    layout(rid, 0);
   }
 
-  return { nodes, edges }
+  return { nodes, edges };
 }
 
 const LazyReactFlow = dynamic(
   () => import("@xyflow/react").then((m) => ({ default: m.ReactFlow })),
   { ssr: false },
-)
+);
 const LazyBackground = dynamic(
   () => import("@xyflow/react").then((m) => ({ default: m.Background })),
   { ssr: false },
-)
+);
 const LazyControls = dynamic(
   () => import("@xyflow/react").then((m) => ({ default: m.Controls })),
   { ssr: false },
-)
+);
 
 function MindMapCard({ artifact }: { artifact: MindMapArtifact }) {
-  const { nodes, edges } = buildFlowGraph(artifact)
+  const { nodes, edges } = buildFlowGraph(artifact);
 
   return (
     <Card>
@@ -384,7 +399,10 @@ function MindMapCard({ artifact }: { artifact: MindMapArtifact }) {
         <CardDescription>{artifact.description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-[400px] rounded-lg border" data-testid={`mindmap-${artifact.id}`}>
+        <div
+          className="h-[400px] rounded-lg border"
+          data-testid={`mindmap-${artifact.id}`}
+        >
           <LazyReactFlow
             nodes={nodes}
             edges={edges}
@@ -400,24 +418,24 @@ function MindMapCard({ artifact }: { artifact: MindMapArtifact }) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // ── Quiz ──
 
 function QuizCard({ artifact }: { artifact: QuizArtifact }) {
-  const [answers, setAnswers] = useState<Record<string, number>>({})
-  const [showResults, setShowResults] = useState(false)
-  const listId = useId()
+  const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [showResults, setShowResults] = useState(false);
+  const listId = useId();
 
   const handleAnswer = (questionId: string, optionIndex: number) => {
-    if (showResults) return
-    setAnswers((prev) => ({ ...prev, [questionId]: optionIndex }))
-  }
+    if (showResults) return;
+    setAnswers((prev) => ({ ...prev, [questionId]: optionIndex }));
+  };
 
   const score = artifact.questions.reduce((acc, q) => {
-    return acc + (answers[q.id] === q.correctIndex ? 1 : 0)
-  }, 0)
+    return acc + (answers[q.id] === q.correctIndex ? 1 : 0);
+  }, 0);
 
   return (
     <Card>
@@ -428,7 +446,13 @@ function QuizCard({ artifact }: { artifact: QuizArtifact }) {
             <CardDescription>{artifact.description}</CardDescription>
           </div>
           {showResults && (
-            <Badge variant={score >= artifact.questions.length * 0.7 ? "default" : "secondary"}>
+            <Badge
+              variant={
+                score >= artifact.questions.length * 0.7
+                  ? "default"
+                  : "secondary"
+              }
+            >
               {score}/{artifact.questions.length}
             </Badge>
           )}
@@ -442,17 +466,18 @@ function QuizCard({ artifact }: { artifact: QuizArtifact }) {
             </p>
             <div className="grid gap-1.5">
               {q.options.map((opt, oi) => {
-                const selected = answers[q.id] === oi
-                const isCorrect = oi === q.correctIndex
-                let optClass = "border-border hover:bg-muted"
+                const selected = answers[q.id] === oi;
+                const isCorrect = oi === q.correctIndex;
+                let optClass = "border-border hover:bg-muted";
                 if (showResults && selected && isCorrect) {
-                  optClass = "border-green-500 bg-green-50 dark:bg-green-950"
+                  optClass = "border-green-500 bg-green-50 dark:bg-green-950";
                 } else if (showResults && selected && !isCorrect) {
-                  optClass = "border-red-500 bg-red-50 dark:bg-red-950"
+                  optClass = "border-red-500 bg-red-50 dark:bg-red-950";
                 } else if (showResults && isCorrect) {
-                  optClass = "border-green-300 bg-green-50/50 dark:bg-green-950/50"
+                  optClass =
+                    "border-green-300 bg-green-50/50 dark:bg-green-950/50";
                 } else if (selected) {
-                  optClass = "border-primary bg-primary/5"
+                  optClass = "border-primary bg-primary/5";
                 }
                 return (
                   <button
@@ -472,7 +497,7 @@ function QuizCard({ artifact }: { artifact: QuizArtifact }) {
                       <XCircle className="ml-auto size-4 text-red-600" />
                     )}
                   </button>
-                )
+                );
               })}
             </div>
             {showResults && answers[q.id] !== undefined && (
@@ -490,11 +515,13 @@ function QuizCard({ artifact }: { artifact: QuizArtifact }) {
             Object.keys(answers).length < artifact.questions.length
           }
         >
-          {showResults ? `Score: ${score}/${artifact.questions.length}` : "Submit Answers"}
+          {showResults
+            ? `Score: ${score}/${artifact.questions.length}`
+            : "Submit Answers"}
         </Button>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // ── Data Table ──
@@ -503,13 +530,13 @@ function DataTableCard({ artifact }: { artifact: DataTableArtifact }) {
   const columns: ColumnDef<DataTableRow>[] = artifact.columns.map((col) => ({
     accessorKey: col.key,
     header: col.label,
-  }))
+  }));
 
   const table = useReactTable({
     data: artifact.rows,
     columns,
     getCoreRowModel: getCoreRowModel(),
-  })
+  });
 
   return (
     <Card>
@@ -528,7 +555,10 @@ function DataTableCard({ artifact }: { artifact: DataTableArtifact }) {
                       key={header.id}
                       className="px-3 py-2 text-left text-xs font-medium text-muted-foreground"
                     >
-                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
                     </th>
                   ))}
                 </tr>
@@ -539,7 +569,10 @@ function DataTableCard({ artifact }: { artifact: DataTableArtifact }) {
                 <tr key={row.id} className="border-b last:border-0">
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id} className="px-3 py-2 tabular-nums">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
                     </td>
                   ))}
                 </tr>
@@ -552,16 +585,16 @@ function DataTableCard({ artifact }: { artifact: DataTableArtifact }) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // ── Flashcards ──
 
 function FlashcardCard({ artifact }: { artifact: FlashcardArtifact }) {
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [flipped, setFlipped] = useState(false)
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [flipped, setFlipped] = useState(false);
 
-  const card = artifact.cards[currentIndex]
+  const card = artifact.cards[currentIndex];
 
   return (
     <Card>
@@ -582,7 +615,9 @@ function FlashcardCard({ artifact }: { artifact: FlashcardArtifact }) {
           className="flex min-h-[160px] w-full items-center justify-center rounded-xl border-2 border-dashed p-6 text-center transition-all hover:border-primary/50"
           onClick={() => setFlipped(!flipped)}
         >
-          <p className={`text-sm ${flipped ? "font-normal text-muted-foreground" : "font-medium"}`}>
+          <p
+            className={`text-sm ${flipped ? "font-normal text-muted-foreground" : "font-medium"}`}
+          >
             {flipped ? card.back : card.front}
           </p>
         </button>
@@ -594,7 +629,10 @@ function FlashcardCard({ artifact }: { artifact: FlashcardArtifact }) {
             variant="outline"
             size="sm"
             disabled={currentIndex === 0}
-            onClick={() => { setCurrentIndex(currentIndex - 1); setFlipped(false) }}
+            onClick={() => {
+              setCurrentIndex(currentIndex - 1);
+              setFlipped(false);
+            }}
           >
             <ChevronLeft className="size-4" data-icon="inline-start" />
             Prev
@@ -603,7 +641,10 @@ function FlashcardCard({ artifact }: { artifact: FlashcardArtifact }) {
             variant="outline"
             size="sm"
             disabled={currentIndex === artifact.cards.length - 1}
-            onClick={() => { setCurrentIndex(currentIndex + 1); setFlipped(false) }}
+            onClick={() => {
+              setCurrentIndex(currentIndex + 1);
+              setFlipped(false);
+            }}
           >
             Next
             <ChevronRight className="size-4" data-icon="inline-end" />
@@ -611,7 +652,7 @@ function FlashcardCard({ artifact }: { artifact: FlashcardArtifact }) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // ── Report ──
@@ -637,13 +678,13 @@ function ReportCard({ artifact }: { artifact: ReportArtifact }) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // ── Infographic ──
 
 function InfographicCard({ artifact }: { artifact: InfographicArtifact }) {
-  const statId = useId()
+  const statId = useId();
 
   return (
     <Card>
@@ -669,14 +710,14 @@ function InfographicCard({ artifact }: { artifact: InfographicArtifact }) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // ── Slide Deck ──
 
 function SlideCard({ artifact }: { artifact: SlideArtifact }) {
-  const [currentSlide, setCurrentSlide] = useState(0)
-  const slide = artifact.slides[currentSlide]
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const slide = artifact.slides[currentSlide];
 
   return (
     <Card>
@@ -738,13 +779,13 @@ function SlideCard({ artifact }: { artifact: SlideArtifact }) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // ── Manim ──
 
 function ManimCard({ artifact }: { artifact: ManimArtifact }) {
-  const [showCode, setShowCode] = useState(true)
+  const [showCode, setShowCode] = useState(true);
 
   return (
     <Card>
@@ -779,5 +820,5 @@ function ManimCard({ artifact }: { artifact: ManimArtifact }) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

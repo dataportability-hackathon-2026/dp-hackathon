@@ -1,9 +1,8 @@
-import { cli, voice } from "@livekit/agents"
-import { ServerOptions } from "@livekit/agents"
-import * as openai from "@livekit/agents-plugin-openai"
+import { cli, ServerOptions, voice } from "@livekit/agents";
+import * as openai from "@livekit/agents-plugin-openai";
 
-const AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1"
-const AI_GATEWAY_API_KEY = process.env.AI_GATEWAY_API_KEY ?? ""
+const AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1";
+const AI_GATEWAY_API_KEY = process.env.AI_GATEWAY_API_KEY ?? "";
 
 export default class LearningAgent extends voice.Agent {
   constructor() {
@@ -28,19 +27,19 @@ export default class LearningAgent extends voice.Agent {
         apiKey: AI_GATEWAY_API_KEY,
         baseURL: AI_GATEWAY_BASE_URL,
       }),
-    })
+    });
   }
 
   override async onEnter() {
     this.session.say(
       "Hi! I'm your learning assistant. What would you like to study today?",
-      { allowInterruptions: true }
-    )
+      { allowInterruptions: true },
+    );
   }
 }
 
 cli.runApp(
   new ServerOptions({
     agent: import.meta.filename,
-  })
-)
+  }),
+);

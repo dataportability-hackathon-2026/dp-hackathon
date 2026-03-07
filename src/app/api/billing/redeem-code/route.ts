@@ -1,9 +1,9 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { and, eq, sql } from "drizzle-orm";
 import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { promoCode, promoCodeRedemption } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { auth } from "@/lib/auth";
 import { addCredits } from "@/lib/credits";
 
 type RedeemBody = {
@@ -34,10 +34,7 @@ export async function POST(request: NextRequest) {
     .limit(1);
 
   if (!promo) {
-    return NextResponse.json(
-      { error: "Invalid promo code" },
-      { status: 404 },
-    );
+    return NextResponse.json({ error: "Invalid promo code" }, { status: 404 });
   }
 
   if (!promo.active) {

@@ -1,5 +1,5 @@
-import type { LearningProfileInput } from "../src/lib/ai/generate-profile"
-import type { LearningProfileAnalysis } from "../src/lib/ai/schemas"
+import type { LearningProfileInput } from "../src/lib/ai/generate-profile";
+import type { LearningProfileAnalysis } from "../src/lib/ai/schemas";
 
 // ── Test Learner Profiles ──
 
@@ -42,7 +42,7 @@ export const BEGINNER_LEARNER: LearningProfileInput = {
   learningSuperpowers: "I'm good at memorizing formulas",
   areasToImprove: "Applying concepts to new problems",
   anythingElse: "I get anxious during exams",
-}
+};
 
 export const ADVANCED_LEARNER: LearningProfileInput = {
   displayName: "Jordan",
@@ -95,7 +95,7 @@ export const ADVANCED_LEARNER: LearningProfileInput = {
   learningSuperpowers: "Can code implementations from papers",
   areasToImprove: "Mathematical proofs and Bayesian reasoning",
   anythingElse: "",
-}
+};
 
 export const CAREER_CHANGER: LearningProfileInput = {
   displayName: "Sam",
@@ -139,7 +139,7 @@ export const CAREER_CHANGER: LearningProfileInput = {
     "Statistical modeling, machine learning algorithms, independent problem-solving",
   anythingElse:
     "Working full-time so energy levels vary. Best learning happens on weekends.",
-}
+};
 
 // ── Mock Profile Analyses (for guide eval inputs) ──
 
@@ -157,8 +157,7 @@ export const BEGINNER_ANALYSIS: LearningProfileAnalysis = {
       severity: "high",
       description:
         "75% confidence with beginner knowledge and 0/3 CRT suggests significant over-confidence",
-      mitigation:
-        "Insert prediction-reflection loops before each practice set",
+      mitigation: "Insert prediction-reflection loops before each practice set",
     },
     {
       area: "Study strategies",
@@ -173,8 +172,7 @@ export const BEGINNER_ANALYSIS: LearningProfileAnalysis = {
       severity: "medium",
       description:
         "Reports frequent procrastination with multiple distraction sources",
-      mitigation:
-        "Use Pomodoro structure with clear micro-goals per session",
+      mitigation: "Use Pomodoro structure with clear micro-goals per session",
     },
   ],
   recommendedStrategies: [
@@ -186,12 +184,14 @@ export const BEGINNER_ANALYSIS: LearningProfileAnalysis = {
     },
     {
       strategy: "Spaced repetition flashcards",
-      rationale: "Leverage memorization strength while building deeper understanding",
+      rationale:
+        "Leverage memorization strength while building deeper understanding",
       priority: "secondary",
     },
     {
       strategy: "Prediction-reflection calibration",
-      rationale: "Address over-confidence by requiring confidence ratings before attempts",
+      rationale:
+        "Address over-confidence by requiring confidence ratings before attempts",
       priority: "primary",
     },
   ],
@@ -205,7 +205,7 @@ export const BEGINNER_ANALYSIS: LearningProfileAnalysis = {
     feedbackFrequency: "after-each-block",
     motivationalFocus: "competence",
   },
-}
+};
 
 export const ADVANCED_ANALYSIS: LearningProfileAnalysis = {
   summary:
@@ -228,19 +228,23 @@ export const ADVANCED_ANALYSIS: LearningProfileAnalysis = {
     {
       area: "Research rabbit holes",
       severity: "low",
-      description: "Self-reported distraction from deep-diving tangential topics",
-      mitigation: "Time-box exploration sessions and use concept maps to maintain focus",
+      description:
+        "Self-reported distraction from deep-diving tangential topics",
+      mitigation:
+        "Time-box exploration sessions and use concept maps to maintain focus",
     },
   ],
   recommendedStrategies: [
     {
       strategy: "Interleaved problem sets across ML domains",
-      rationale: "Strengthen connections between gradient methods and probabilistic models",
+      rationale:
+        "Strengthen connections between gradient methods and probabilistic models",
       priority: "primary",
     },
     {
       strategy: "Elaborative interrogation on Bayesian methods",
-      rationale: "Address identified weak spot through deep questioning and proof practice",
+      rationale:
+        "Address identified weak spot through deep questioning and proof practice",
       priority: "primary",
     },
     {
@@ -259,7 +263,7 @@ export const ADVANCED_ANALYSIS: LearningProfileAnalysis = {
     feedbackFrequency: "end-of-week",
     motivationalFocus: "relatedness",
   },
-}
+};
 
 // ── Concept Lists ──
 
@@ -271,7 +275,7 @@ export const LINEAR_ALGEBRA_CONCEPTS = [
   "Diagonalization",
   "Linear Transformations",
   "Determinants",
-]
+];
 
 export const ML_CONCEPTS = [
   "Gradient Descent",
@@ -280,7 +284,7 @@ export const ML_CONCEPTS = [
   "Probabilistic Graphical Models",
   "Bayesian Inference",
   "Neural Architecture Search",
-]
+];
 
 export const DATA_SCIENCE_CONCEPTS = [
   "Exploratory Data Analysis",
@@ -289,4 +293,4 @@ export const DATA_SCIENCE_CONCEPTS = [
   "Classification",
   "Feature Engineering",
   "Data Visualization",
-]
+];

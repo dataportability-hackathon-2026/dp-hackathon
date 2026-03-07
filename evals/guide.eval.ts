@@ -1,25 +1,25 @@
-import { evalite } from "evalite"
-import { generateLearningGuide } from "../src/lib/ai/generate-guide"
-import type { GuideInput } from "../src/lib/ai/generate-guide"
-import type { LearningGuide } from "../src/lib/ai/schemas"
+import { evalite } from "evalite";
+import type { GuideInput } from "../src/lib/ai/generate-guide";
+import { generateLearningGuide } from "../src/lib/ai/generate-guide";
+import type { LearningGuide } from "../src/lib/ai/schemas";
 import {
-  BEGINNER_ANALYSIS,
   ADVANCED_ANALYSIS,
+  BEGINNER_ANALYSIS,
   LINEAR_ALGEBRA_CONCEPTS,
   ML_CONCEPTS,
-} from "./fixtures"
+} from "./fixtures";
 import {
-  guideTimeBudgetCompliance,
-  guideSevenDayCoverage,
   guideBlockTypeDiversity,
-  guideCorePracticePresence,
   guideConceptCoverage,
-} from "./scorers"
+  guideCorePracticePresence,
+  guideSevenDayCoverage,
+  guideTimeBudgetCompliance,
+} from "./scorers";
 
 type GuideEvalInput = GuideInput & {
-  totalWeeklyMinutes: number
-  concepts: string[]
-}
+  totalWeeklyMinutes: number;
+  concepts: string[];
+};
 
 const beginnerGuideInput: GuideEvalInput = {
   profileAnalysis: BEGINNER_ANALYSIS,
@@ -34,7 +34,7 @@ const beginnerGuideInput: GuideEvalInput = {
   studyStrategies: ["active-recall", "spaced-repetition", "worked-examples"],
   concepts: LINEAR_ALGEBRA_CONCEPTS,
   totalWeeklyMinutes: 45 * 5,
-}
+};
 
 const advancedGuideInput: GuideEvalInput = {
   profileAnalysis: ADVANCED_ANALYSIS,
@@ -46,10 +46,15 @@ const advancedGuideInput: GuideEvalInput = {
   daysPerWeek: 6,
   sessionLength: "deep-work-90",
   priorKnowledgeLevel: "advanced",
-  studyStrategies: ["active-recall", "spaced-repetition", "elaboration", "interleaving"],
+  studyStrategies: [
+    "active-recall",
+    "spaced-repetition",
+    "elaboration",
+    "interleaving",
+  ],
   concepts: ML_CONCEPTS,
   totalWeeklyMinutes: 90 * 6,
-}
+};
 
 evalite<GuideEvalInput, LearningGuide>("Learning Guide Generation", {
   data: () => [
@@ -57,7 +62,7 @@ evalite<GuideEvalInput, LearningGuide>("Learning Guide Generation", {
     { input: advancedGuideInput, expected: undefined },
   ],
   task: async (input) => {
-    return generateLearningGuide(input)
+    return generateLearningGuide(input);
   },
   scorers: [
     guideTimeBudgetCompliance,
@@ -66,4 +71,4 @@ evalite<GuideEvalInput, LearningGuide>("Learning Guide Generation", {
     guideCorePracticePresence,
     guideConceptCoverage,
   ],
-})
+});

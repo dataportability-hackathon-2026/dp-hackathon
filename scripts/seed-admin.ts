@@ -1,6 +1,6 @@
+import { eq } from "drizzle-orm";
 import { db } from "../src/db";
 import { user } from "../src/db/schema";
-import { eq } from "drizzle-orm";
 
 async function seedAdmin() {
   // Set admin role for admin user
@@ -13,14 +13,13 @@ async function seedAdmin() {
   if (result.length > 0) {
     console.log("Updated admin user:", result[0]);
   } else {
-    console.log("Admin user not found - they will get admin role on next sign up via auth-gate");
+    console.log(
+      "Admin user not found - they will get admin role on next sign up via auth-gate",
+    );
   }
 
   // Ensure all other users have 'user' role set
-  await db
-    .update(user)
-    .set({ role: "user" })
-    .where(eq(user.role, "user"));
+  await db.update(user).set({ role: "user" }).where(eq(user.role, "user"));
 
   console.log("Done");
   process.exit(0);

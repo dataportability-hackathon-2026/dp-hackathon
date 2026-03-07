@@ -1,7 +1,7 @@
+import { desc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { conversation } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
 import { getEffectiveUserId } from "@/lib/impersonate";
 
 /** GET /api/conversations — list user's conversations */

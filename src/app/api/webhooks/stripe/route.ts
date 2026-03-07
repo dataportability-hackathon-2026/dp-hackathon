@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { stripe } from "@/lib/stripe";
 import { completePurchase } from "@/lib/credits";
+import { stripe } from "@/lib/stripe";
 
 export async function POST(request: Request) {
   const body = await request.text();
@@ -23,14 +23,15 @@ export async function POST(request: Request) {
     );
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "Webhook signature verification failed";
+      err instanceof Error
+        ? err.message
+        : "Webhook signature verification failed";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
   switch (event.type) {
     case "checkout.session.completed": {
-      const checkoutSession = event.data
-        .object as Stripe.Checkout.Session;
+      const checkoutSession = event.data.object as Stripe.Checkout.Session;
       await completePurchase(checkoutSession.id);
       break;
     }

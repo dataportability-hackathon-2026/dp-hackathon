@@ -1,16 +1,14 @@
-import { evalite } from "evalite"
-import "./setup"
+import { evalite } from "evalite";
+import "./setup";
+import { artifactTools } from "../src/lib/ai/artifact-tools";
+import { guideTools } from "../src/lib/ai/guide-tools";
+import { profileTools } from "../src/lib/ai/profile-tools";
 import {
-  BEGINNER_LEARNER,
-  ADVANCED_LEARNER,
   BEGINNER_ANALYSIS,
-  ADVANCED_ANALYSIS,
+  BEGINNER_LEARNER,
   LINEAR_ALGEBRA_CONCEPTS,
   ML_CONCEPTS,
-} from "./fixtures"
-import { profileTools } from "../src/lib/ai/profile-tools"
-import { guideTools } from "../src/lib/ai/guide-tools"
-import { artifactTools } from "../src/lib/ai/artifact-tools"
+} from "./fixtures";
 
 // ── Helper scorer: checks that output is non-null and has expected shape ──
 
@@ -18,14 +16,14 @@ function structureScorer(requiredKeys: string[]) {
   return {
     name: "structure_check",
     scorer: ({ output }: { output: unknown }) => {
-      if (!output || typeof output !== "object") return 0
-      const data = (output as Record<string, unknown>).data
-      if (!data || typeof data !== "object") return 0
-      const dataObj = data as Record<string, unknown>
-      const found = requiredKeys.filter((k) => k in dataObj).length
-      return found / requiredKeys.length
+      if (!output || typeof output !== "object") return 0;
+      const data = (output as Record<string, unknown>).data;
+      if (!data || typeof data !== "object") return 0;
+      const dataObj = data as Record<string, unknown>;
+      const found = requiredKeys.filter((k) => k in dataObj).length;
+      return found / requiredKeys.length;
     },
-  }
+  };
 }
 
 function citationScorer() {
@@ -34,11 +32,11 @@ function citationScorer() {
     scorer: ({ output }: { output: unknown }) => {
       // Verify the output was generated (non-null) — the citation grounding
       // is in the prompt, not the output. This just confirms the tool ran.
-      if (!output || typeof output !== "object") return 0
-      const result = output as Record<string, unknown>
-      return result.type ? 1 : 0
+      if (!output || typeof output !== "object") return 0;
+      const result = output as Record<string, unknown>;
+      return result.type ? 1 : 0;
     },
-  }
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -82,7 +80,7 @@ evalite("Profile: assess_learning_profile (beginner)", {
     return profileTools.assess_learning_profile.execute(input, {
       toolCallId: "test-profile-beginner",
       messages: [],
-    })
+    });
   },
   scorers: [
     structureScorer([
@@ -96,7 +94,7 @@ evalite("Profile: assess_learning_profile (beginner)", {
     citationScorer(),
   ],
   timeout: 30_000,
-})
+});
 
 evalite("Profile: assess_calibration", {
   data: () => [
@@ -120,21 +118,25 @@ evalite("Profile: assess_calibration", {
     return profileTools.assess_calibration.execute(input, {
       toolCallId: "test-calibration",
       messages: [],
-    })
+    });
   },
   scorers: [
-    structureScorer(["calibrationAccuracy", "evidenceBasis", "confidenceInAssessment"]),
+    structureScorer([
+      "calibrationAccuracy",
+      "evidenceBasis",
+      "confidenceInAssessment",
+    ]),
     citationScorer(),
     {
       name: "detects_overconfidence",
       scorer: ({ output }: { output: unknown }) => {
-        const result = output as { data?: { calibrationAccuracy?: string } }
-        return result?.data?.calibrationAccuracy === "over-confident" ? 1 : 0
+        const result = output as { data?: { calibrationAccuracy?: string } };
+        return result?.data?.calibrationAccuracy === "over-confident" ? 1 : 0;
       },
     },
   ],
   timeout: 30_000,
-})
+});
 
 evalite("Profile: assess_dropout_risk (high risk)", {
   data: () => [
@@ -158,23 +160,29 @@ evalite("Profile: assess_dropout_risk (high risk)", {
     return profileTools.assess_dropout_risk.execute(input, {
       toolCallId: "test-dropout",
       messages: [],
-    })
+    });
   },
   scorers: [
-    structureScorer(["riskLevel", "signals", "protectiveFactors", "sdtIntervention"]),
+    structureScorer([
+      "riskLevel",
+      "signals",
+      "protectiveFactors",
+      "sdtIntervention",
+    ]),
     citationScorer(),
     {
       name: "detects_high_risk",
       scorer: ({ output }: { output: unknown }) => {
-        const result = output as { data?: { riskLevel?: string } }
-        return result?.data?.riskLevel === "high" || result?.data?.riskLevel === "critical"
+        const result = output as { data?: { riskLevel?: string } };
+        return result?.data?.riskLevel === "high" ||
+          result?.data?.riskLevel === "critical"
           ? 1
-          : 0
+          : 0;
       },
     },
   ],
   timeout: 30_000,
-})
+});
 
 // ═══════════════════════════════════════════════════════════════
 // GUIDE TOOLS
@@ -214,7 +222,7 @@ evalite("Guide: generate_learning_guide (beginner)", {
     return guideTools.generate_learning_guide.execute(input, {
       toolCallId: "test-guide-beginner",
       messages: [],
-    })
+    });
   },
   scorers: [
     structureScorer(["title", "goalSummary", "blocks", "dailySummaries"]),
@@ -222,20 +230,20 @@ evalite("Guide: generate_learning_guide (beginner)", {
     {
       name: "has_7_day_summaries",
       scorer: ({ output }: { output: unknown }) => {
-        const result = output as { data?: { dailySummaries?: unknown[] } }
-        return result?.data?.dailySummaries?.length === 7 ? 1 : 0
+        const result = output as { data?: { dailySummaries?: unknown[] } };
+        return result?.data?.dailySummaries?.length === 7 ? 1 : 0;
       },
     },
     {
       name: "has_minimum_blocks",
       scorer: ({ output }: { output: unknown }) => {
-        const result = output as { data?: { blocks?: unknown[] } }
-        return (result?.data?.blocks?.length ?? 0) >= 7 ? 1 : 0
+        const result = output as { data?: { blocks?: unknown[] } };
+        return (result?.data?.blocks?.length ?? 0) >= 7 ? 1 : 0;
       },
     },
   ],
   timeout: 60_000,
-})
+});
 
 evalite("Guide: recommend_study_strategies (low-utility user)", {
   data: () => [
@@ -255,7 +263,7 @@ evalite("Guide: recommend_study_strategies (low-utility user)", {
     return guideTools.recommend_study_strategies.execute(input, {
       toolCallId: "test-strategies",
       messages: [],
-    })
+    });
   },
   scorers: [
     structureScorer([
@@ -268,14 +276,14 @@ evalite("Guide: recommend_study_strategies (low-utility user)", {
       name: "flags_low_utility",
       scorer: ({ output }: { output: unknown }) => {
         const result = output as {
-          data?: { strategiesToPhaseOut?: unknown[] }
-        }
-        return (result?.data?.strategiesToPhaseOut?.length ?? 0) > 0 ? 1 : 0
+          data?: { strategiesToPhaseOut?: unknown[] };
+        };
+        return (result?.data?.strategiesToPhaseOut?.length ?? 0) > 0 ? 1 : 0;
       },
     },
   ],
   timeout: 30_000,
-})
+});
 
 // ═══════════════════════════════════════════════════════════════
 // ARTIFACT TOOLS
@@ -290,7 +298,7 @@ const BEGINNER_ARTIFACT_INPUT = {
   cognitiveLoadRisk: "high" as const,
   metacognitiveAwareness: "low" as const,
   coachingTone: "encouraging" as const,
-}
+};
 
 const ADVANCED_ARTIFACT_INPUT = {
   subject: "Machine Learning",
@@ -301,7 +309,7 @@ const ADVANCED_ARTIFACT_INPUT = {
   cognitiveLoadRisk: "low" as const,
   metacognitiveAwareness: "high" as const,
   coachingTone: "direct" as const,
-}
+};
 
 evalite("Artifact: create_adaptive_quiz (beginner, over-confident)", {
   data: () => [{ input: BEGINNER_ARTIFACT_INPUT, expected: "quiz" }],
@@ -309,7 +317,7 @@ evalite("Artifact: create_adaptive_quiz (beginner, over-confident)", {
     return artifactTools.create_adaptive_quiz.execute(input, {
       toolCallId: "test-quiz-beginner",
       messages: [],
-    })
+    });
   },
   scorers: [
     structureScorer(["title", "questions"]),
@@ -317,14 +325,14 @@ evalite("Artifact: create_adaptive_quiz (beginner, over-confident)", {
     {
       name: "has_3_to_15_questions",
       scorer: ({ output }: { output: unknown }) => {
-        const result = output as { data?: { questions?: unknown[] } }
-        const count = result?.data?.questions?.length ?? 0
-        return count >= 3 && count <= 15 ? 1 : 0
+        const result = output as { data?: { questions?: unknown[] } };
+        const count = result?.data?.questions?.length ?? 0;
+        return count >= 3 && count <= 15 ? 1 : 0;
       },
     },
   ],
   timeout: 30_000,
-})
+});
 
 evalite("Artifact: create_adaptive_flashcards (advanced)", {
   data: () => [{ input: ADVANCED_ARTIFACT_INPUT, expected: "flashcards" }],
@@ -332,7 +340,7 @@ evalite("Artifact: create_adaptive_flashcards (advanced)", {
     return artifactTools.create_adaptive_flashcards.execute(input, {
       toolCallId: "test-flashcards-advanced",
       messages: [],
-    })
+    });
   },
   scorers: [
     structureScorer(["title", "cards"]),
@@ -340,14 +348,14 @@ evalite("Artifact: create_adaptive_flashcards (advanced)", {
     {
       name: "has_3_to_20_cards",
       scorer: ({ output }: { output: unknown }) => {
-        const result = output as { data?: { cards?: unknown[] } }
-        const count = result?.data?.cards?.length ?? 0
-        return count >= 3 && count <= 20 ? 1 : 0
+        const result = output as { data?: { cards?: unknown[] } };
+        const count = result?.data?.cards?.length ?? 0;
+        return count >= 3 && count <= 20 ? 1 : 0;
       },
     },
   ],
   timeout: 30_000,
-})
+});
 
 evalite("Artifact: create_worked_example (beginner)", {
   data: () => [
@@ -364,7 +372,7 @@ evalite("Artifact: create_worked_example (beginner)", {
     return artifactTools.create_worked_example.execute(input, {
       toolCallId: "test-worked-example",
       messages: [],
-    })
+    });
   },
   scorers: [
     structureScorer(["title", "steps", "fadeLevel", "selfExplanationPrompts"]),
@@ -372,21 +380,23 @@ evalite("Artifact: create_worked_example (beginner)", {
     {
       name: "full_scaffolding_for_beginner",
       scorer: ({ output }: { output: unknown }) => {
-        const result = output as { data?: { fadeLevel?: string } }
-        return result?.data?.fadeLevel === "full" ? 1 : 0
+        const result = output as { data?: { fadeLevel?: string } };
+        return result?.data?.fadeLevel === "full" ? 1 : 0;
       },
     },
   ],
   timeout: 30_000,
-})
+});
 
 evalite("Artifact: create_prediction_reflection (over-confident)", {
-  data: () => [{ input: BEGINNER_ARTIFACT_INPUT, expected: "prediction_reflection" }],
+  data: () => [
+    { input: BEGINNER_ARTIFACT_INPUT, expected: "prediction_reflection" },
+  ],
   task: async (input) => {
     return artifactTools.create_prediction_reflection.execute(input, {
       toolCallId: "test-prediction-reflection",
       messages: [],
-    })
+    });
   },
   scorers: [
     structureScorer(["title", "items"]),
@@ -394,22 +404,24 @@ evalite("Artifact: create_prediction_reflection (over-confident)", {
     {
       name: "has_3_to_8_items",
       scorer: ({ output }: { output: unknown }) => {
-        const result = output as { data?: { items?: unknown[] } }
-        const count = result?.data?.items?.length ?? 0
-        return count >= 3 && count <= 8 ? 1 : 0
+        const result = output as { data?: { items?: unknown[] } };
+        const count = result?.data?.items?.length ?? 0;
+        return count >= 3 && count <= 8 ? 1 : 0;
       },
     },
   ],
   timeout: 30_000,
-})
+});
 
 evalite("Artifact: create_interleaved_problem_set (advanced)", {
-  data: () => [{ input: ADVANCED_ARTIFACT_INPUT, expected: "interleaved_problem_set" }],
+  data: () => [
+    { input: ADVANCED_ARTIFACT_INPUT, expected: "interleaved_problem_set" },
+  ],
   task: async (input) => {
     return artifactTools.create_interleaved_problem_set.execute(input, {
       toolCallId: "test-interleaved",
       messages: [],
-    })
+    });
   },
   scorers: [
     structureScorer(["title", "problems", "conceptOrder"]),
@@ -417,39 +429,42 @@ evalite("Artifact: create_interleaved_problem_set (advanced)", {
     {
       name: "has_4_to_12_problems",
       scorer: ({ output }: { output: unknown }) => {
-        const result = output as { data?: { problems?: unknown[] } }
-        const count = result?.data?.problems?.length ?? 0
-        return count >= 4 && count <= 12 ? 1 : 0
+        const result = output as { data?: { problems?: unknown[] } };
+        const count = result?.data?.problems?.length ?? 0;
+        return count >= 4 && count <= 12 ? 1 : 0;
       },
     },
   ],
   timeout: 30_000,
-})
+});
 
-evalite("Artifact: create_interleaved_problem_set (single concept - edge case)", {
-  data: () => [
-    {
-      input: {
-        ...BEGINNER_ARTIFACT_INPUT,
-        concepts: ["Matrix Operations"],
+evalite(
+  "Artifact: create_interleaved_problem_set (single concept - edge case)",
+  {
+    data: () => [
+      {
+        input: {
+          ...BEGINNER_ARTIFACT_INPUT,
+          concepts: ["Matrix Operations"],
+        },
+        expected: "interleaved_problem_set_error",
       },
-      expected: "interleaved_problem_set_error",
+    ],
+    task: async (input) => {
+      return artifactTools.create_interleaved_problem_set.execute(input, {
+        toolCallId: "test-interleaved-edge",
+        messages: [],
+      });
     },
-  ],
-  task: async (input) => {
-    return artifactTools.create_interleaved_problem_set.execute(input, {
-      toolCallId: "test-interleaved-edge",
-      messages: [],
-    })
+    scorers: [
+      {
+        name: "rejects_single_concept",
+        scorer: ({ output }: { output: unknown }) => {
+          const result = output as { error?: string };
+          return result?.error ? 1 : 0;
+        },
+      },
+    ],
+    timeout: 5_000,
   },
-  scorers: [
-    {
-      name: "rejects_single_concept",
-      scorer: ({ output }: { output: unknown }) => {
-        const result = output as { error?: string }
-        return result?.error ? 1 : 0
-      },
-    },
-  ],
-  timeout: 5_000,
-})
+);

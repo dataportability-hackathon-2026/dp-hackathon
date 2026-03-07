@@ -1,36 +1,37 @@
 "use client";
 
-import { useState, useId } from "react";
-import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
 import {
-  Brain,
-  ChevronDown,
-  Menu,
-  X,
   ArrowRight,
-  Stethoscope,
-  Code2,
-  Scale,
-  GraduationCap,
-  TrendingUp,
-  Palette,
-  ClipboardCheck,
-  Briefcase,
   BookOpen,
-  Microscope,
-  Languages,
-  Monitor,
-  PenTool,
-  Users,
-  UserCheck,
-  Heart,
-  Gavel,
-  RefreshCw,
+  Brain,
+  Briefcase,
+  CheckSquare,
+  ChevronDown,
+  ClipboardCheck,
+  ClipboardList,
+  Code2,
   FileText,
   FlaskConical,
-  CheckSquare,
-  ClipboardList,
+  Gavel,
+  GraduationCap,
+  Heart,
+  Languages,
+  Menu,
+  Microscope,
+  Monitor,
+  Palette,
+  PenTool,
+  RefreshCw,
+  Scale,
+  Stethoscope,
+  TrendingUp,
+  UserCheck,
+  Users,
+  X,
 } from "lucide-react";
+import Link from "next/link";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   NavigationMenu,
@@ -40,16 +41,15 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
-import { siteConfig } from "@/lib/white-label";
 import {
-  useCasePages,
+  blogPosts,
   industryPages,
   personaPages,
-  blogPosts,
   resources,
+  useCasePages,
 } from "@/lib/content";
 import { cn } from "@/lib/utils";
-import type { LucideIcon } from "lucide-react";
+import { siteConfig } from "@/lib/white-label";
 
 const INDUSTRY_ICONS: Record<string, LucideIcon> = {
   healthcare: Stethoscope,

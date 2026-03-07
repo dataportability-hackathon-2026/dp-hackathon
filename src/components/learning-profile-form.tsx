@@ -1,6 +1,5 @@
-"use client"
+"use client";
 
-import { useId, useState } from "react"
 import {
   BookOpen,
   Brain,
@@ -9,96 +8,91 @@ import {
   ChevronRight,
   Clock,
   GraduationCap,
-  Heart,
   Lightbulb,
   RefreshCw,
   Save,
-  Sparkles,
   Target,
-  ThumbsUp,
   X,
-  Zap,
-} from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+} from "lucide-react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Progress, ProgressLabel } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
-import { Slider } from "@/components/ui/slider"
-import { Textarea } from "@/components/ui/textarea"
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress, ProgressLabel } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
 
 // ── Types ──
 
 export type LearningProfileData = {
   // Screen 1: About you
-  displayName: string
-  educationLevel: string
-  fieldOfStudy: string
+  displayName: string;
+  educationLevel: string;
+  fieldOfStudy: string;
 
   // Screen 2: Learning goals
-  primaryGoal: string
-  goalDescription: string
-  deadline: string
-  urgency: string
+  primaryGoal: string;
+  goalDescription: string;
+  deadline: string;
+  urgency: string;
 
   // Screen 3: Study habits
-  minutesPerDay: number
-  daysPerWeek: number
-  preferredTimeOfDay: string
-  sessionLength: string
+  minutesPerDay: number;
+  daysPerWeek: number;
+  preferredTimeOfDay: string;
+  sessionLength: string;
 
   // Screen 4: Cognitive reflection
-  crtAnswer1: string
-  crtAnswer2: string
-  crtAnswer3: string
+  crtAnswer1: string;
+  crtAnswer2: string;
+  crtAnswer3: string;
 
   // Screen 5: Metacognitive awareness
-  metacogPlanningFrequency: string
-  metacogMonitoring: string
-  metacogSelfEvaluation: string
+  metacogPlanningFrequency: string;
+  metacogMonitoring: string;
+  metacogSelfEvaluation: string;
 
   // Screen 6: Study strategies
-  studyStrategies: string[]
-  primaryStrategy: string
+  studyStrategies: string[];
+  primaryStrategy: string;
 
   // Screen 7: Motivation & drive
-  motivationAutonomy: number
-  motivationCompetence: number
-  motivationRelatedness: number
+  motivationAutonomy: number;
+  motivationCompetence: number;
+  motivationRelatedness: number;
 
   // Screen 8: Confidence calibration
-  calibrationConfidence: number
-  calibrationExplanation: string
+  calibrationConfidence: number;
+  calibrationExplanation: string;
 
   // Screen 9: Challenges & obstacles
-  biggestChallenge: string
-  procrastinationFrequency: string
-  distractionSources: string[]
+  biggestChallenge: string;
+  procrastinationFrequency: string;
+  distractionSources: string[];
 
   // Screen 10: Learning preferences
-  preferredFormats: string[]
-  feedbackStyle: string
-  coachingTone: string
+  preferredFormats: string[];
+  feedbackStyle: string;
+  coachingTone: string;
 
   // Screen 11: Prior knowledge
-  priorKnowledgeLevel: string
-  priorKnowledgeDetails: string
-  relatedSubjects: string[]
+  priorKnowledgeLevel: string;
+  priorKnowledgeDetails: string;
+  relatedSubjects: string[];
 
   // Screen 12: Final reflection
-  learningSuperpowers: string
-  areasToImprove: string
-  anythingElse: string
-}
+  learningSuperpowers: string;
+  areasToImprove: string;
+  anythingElse: string;
+};
 
 export const DEFAULT_PROFILE: LearningProfileData = {
   displayName: "",
@@ -137,7 +131,7 @@ export const DEFAULT_PROFILE: LearningProfileData = {
   learningSuperpowers: "",
   areasToImprove: "",
   anythingElse: "",
-}
+};
 
 export const MOCK_COMPLETED_PROFILE: LearningProfileData = {
   displayName: "Maya Chen",
@@ -163,33 +157,39 @@ export const MOCK_COMPLETED_PROFILE: LearningProfileData = {
   motivationCompetence: 62,
   motivationRelatedness: 45,
   calibrationConfidence: 80,
-  calibrationExplanation: "I usually feel fairly confident about my understanding after studying, but sometimes I find that I've overestimated how well I know the material when the actual test comes.",
-  biggestChallenge: "I sometimes overestimate how well I know the material, which leads me to move on before I've truly mastered it.",
+  calibrationExplanation:
+    "I usually feel fairly confident about my understanding after studying, but sometimes I find that I've overestimated how well I know the material when the actual test comes.",
+  biggestChallenge:
+    "I sometimes overestimate how well I know the material, which leads me to move on before I've truly mastered it.",
   procrastinationFrequency: "sometimes",
   distractionSources: ["phone", "social-media", "noise"],
   preferredFormats: ["visual-diagrams", "worked-examples", "short-practice"],
   feedbackStyle: "direct",
   coachingTone: "concise",
   priorKnowledgeLevel: "intermediate",
-  priorKnowledgeDetails: "I did well in precalculus and early calculus. I understand basic matrix operations but struggle with eigenvalues and abstract proofs.",
+  priorKnowledgeDetails:
+    "I did well in precalculus and early calculus. I understand basic matrix operations but struggle with eigenvalues and abstract proofs.",
   relatedSubjects: ["calculus", "discrete-math"],
-  learningSuperpowers: "I'm good at pattern recognition and I genuinely enjoy solving problems once I understand the approach.",
-  areasToImprove: "I need to get better at checking my understanding before moving on, and I should practice more with proofs and abstract reasoning.",
-  anythingElse: "I learn best when I can see concrete examples before abstract definitions.",
-}
+  learningSuperpowers:
+    "I'm good at pattern recognition and I genuinely enjoy solving problems once I understand the approach.",
+  areasToImprove:
+    "I need to get better at checking my understanding before moving on, and I should practice more with proofs and abstract reasoning.",
+  anythingElse:
+    "I learn best when I can see concrete examples before abstract definitions.",
+};
 
 // ── Helpers ──
 
-const TOTAL_SCREENS = 12
+const TOTAL_SCREENS = 12;
 
 function OptionButton({
   selected,
   onClick,
   children,
 }: {
-  selected: boolean
-  onClick: () => void
-  children: React.ReactNode
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
 }) {
   return (
     <button
@@ -203,7 +203,7 @@ function OptionButton({
     >
       {children}
     </button>
-  )
+  );
 }
 
 function ToggleChip({
@@ -211,9 +211,9 @@ function ToggleChip({
   onClick,
   children,
 }: {
-  selected: boolean
-  onClick: () => void
-  children: React.ReactNode
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
 }) {
   return (
     <button
@@ -227,7 +227,7 @@ function ToggleChip({
     >
       {children}
     </button>
-  )
+  );
 }
 
 function CaseStudyTip({ children }: { children: React.ReactNode }) {
@@ -235,10 +235,12 @@ function CaseStudyTip({ children }: { children: React.ReactNode }) {
     <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950">
       <div className="flex gap-2">
         <Lightbulb className="mt-0.5 size-4 shrink-0 text-blue-600 dark:text-blue-400" />
-        <div className="text-xs text-blue-800 dark:text-blue-300">{children}</div>
+        <div className="text-xs text-blue-800 dark:text-blue-300">
+          {children}
+        </div>
       </div>
     </div>
-  )
+  );
 }
 
 // ── Screen Components ──
@@ -247,8 +249,8 @@ function Screen1({
   data,
   onChange,
 }: {
-  data: LearningProfileData
-  onChange: (d: Partial<LearningProfileData>) => void
+  data: LearningProfileData;
+  onChange: (d: Partial<LearningProfileData>) => void;
 }) {
   return (
     <div className="space-y-6">
@@ -306,27 +308,28 @@ function Screen1({
       </div>
 
       <CaseStudyTip>
-        <strong>Why we ask:</strong> Maya, an undergrad CS student, got a personalized plan
-        that adapted pacing to her course schedule and exam dates. Knowing your context
-        helps us do the same for you.
+        <strong>Why we ask:</strong> Maya, an undergrad CS student, got a
+        personalized plan that adapted pacing to her course schedule and exam
+        dates. Knowing your context helps us do the same for you.
       </CaseStudyTip>
     </div>
-  )
+  );
 }
 
 function Screen2({
   data,
   onChange,
 }: {
-  data: LearningProfileData
-  onChange: (d: Partial<LearningProfileData>) => void
+  data: LearningProfileData;
+  onChange: (d: Partial<LearningProfileData>) => void;
 }) {
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold">Learning Goals</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          What are you working towards? This helps us build a plan that matches your priorities.
+          What are you working towards? This helps us build a plan that matches
+          your priorities.
         </p>
       </div>
 
@@ -340,7 +343,7 @@ function Screen2({
               { value: "fluency", label: "Build Deep Fluency", icon: Brain },
               { value: "teach", label: "Learn to Teach It", icon: BookOpen },
             ].map((opt) => {
-              const Icon = opt.icon
+              const Icon = opt.icon;
               return (
                 <OptionButton
                   key={opt.value}
@@ -350,7 +353,7 @@ function Screen2({
                   <Icon className="size-4 shrink-0" />
                   {opt.label}
                 </OptionButton>
-              )
+              );
             })}
           </div>
         </div>
@@ -397,38 +400,44 @@ function Screen2({
       </div>
 
       <CaseStudyTip>
-        <strong>Case study:</strong> A student targeting an exam 3 weeks out got a plan
-        with increasing intensity and strategic review sessions. A "fluency" learner got a
-        more relaxed, depth-first approach with interleaved practice.
+        <strong>Case study:</strong> A student targeting an exam 3 weeks out got
+        a plan with increasing intensity and strategic review sessions. A
+        "fluency" learner got a more relaxed, depth-first approach with
+        interleaved practice.
       </CaseStudyTip>
     </div>
-  )
+  );
 }
 
 function Screen3({
   data,
   onChange,
 }: {
-  data: LearningProfileData
-  onChange: (d: Partial<LearningProfileData>) => void
+  data: LearningProfileData;
+  onChange: (d: Partial<LearningProfileData>) => void;
 }) {
-  const handleSlider = (field: keyof LearningProfileData) => (value: number | readonly number[]) => {
-    const v = Array.isArray(value) ? value[0] : value
-    onChange({ [field]: v })
-  }
+  const handleSlider =
+    (field: keyof LearningProfileData) =>
+    (value: number | readonly number[]) => {
+      const v = Array.isArray(value) ? value[0] : value;
+      onChange({ [field]: v });
+    };
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold">Study Habits</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Help us understand your schedule and preferences so we can build realistic study blocks.
+          Help us understand your schedule and preferences so we can build
+          realistic study blocks.
         </p>
       </div>
 
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label>How many minutes per day can you study? {data.minutesPerDay} min</Label>
+          <Label>
+            How many minutes per day can you study? {data.minutesPerDay} min
+          </Label>
           <Slider
             value={[data.minutesPerDay]}
             onValueChange={handleSlider("minutesPerDay")}
@@ -437,7 +446,8 @@ function Screen3({
             step={5}
           />
           <p className="text-xs text-muted-foreground">
-            Most learners see the best results with 25-60 minutes of focused study.
+            Most learners see the best results with 25-60 minutes of focused
+            study.
           </p>
         </div>
 
@@ -495,28 +505,29 @@ function Screen3({
       </div>
 
       <CaseStudyTip>
-        <strong>Research insight:</strong> Distributed practice (shorter sessions across more days)
-        outperforms massed practice for long-term retention. We'll optimize your schedule
-        based on the science.
+        <strong>Research insight:</strong> Distributed practice (shorter
+        sessions across more days) outperforms massed practice for long-term
+        retention. We'll optimize your schedule based on the science.
       </CaseStudyTip>
     </div>
-  )
+  );
 }
 
 function Screen4({
   data,
   onChange,
 }: {
-  data: LearningProfileData
-  onChange: (d: Partial<LearningProfileData>) => void
+  data: LearningProfileData;
+  onChange: (d: Partial<LearningProfileData>) => void;
 }) {
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold">Cognitive Reflection</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          These short puzzles help us understand how you approach tricky problems.
-          There's no penalty for wrong answers -- we're measuring your thinking style, not intelligence.
+          These short puzzles help us understand how you approach tricky
+          problems. There's no penalty for wrong answers -- we're measuring your
+          thinking style, not intelligence.
         </p>
       </div>
 
@@ -525,8 +536,8 @@ function Screen4({
           <CardHeader>
             <CardTitle className="text-base">Puzzle 1</CardTitle>
             <CardDescription>
-              A bat and a ball cost $1.10 in total. The bat costs $1.00 more than the ball.
-              How much does the ball cost?
+              A bat and a ball cost $1.10 in total. The bat costs $1.00 more
+              than the ball. How much does the ball cost?
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -542,8 +553,8 @@ function Screen4({
           <CardHeader>
             <CardTitle className="text-base">Puzzle 2</CardTitle>
             <CardDescription>
-              If it takes 5 machines 5 minutes to make 5 widgets, how long would it take
-              100 machines to make 100 widgets?
+              If it takes 5 machines 5 minutes to make 5 widgets, how long would
+              it take 100 machines to make 100 widgets?
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -559,9 +570,10 @@ function Screen4({
           <CardHeader>
             <CardTitle className="text-base">Puzzle 3</CardTitle>
             <CardDescription>
-              In a lake, there is a patch of lily pads. Every day, the patch doubles in size.
-              If it takes 48 days for the patch to cover the entire lake, how long would it
-              take for the patch to cover half of the lake?
+              In a lake, there is a patch of lily pads. Every day, the patch
+              doubles in size. If it takes 48 days for the patch to cover the
+              entire lake, how long would it take for the patch to cover half of
+              the lake?
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -575,37 +587,41 @@ function Screen4({
       </div>
 
       <CaseStudyTip>
-        <strong>What this tells us:</strong> These are from the Cognitive Reflection Test (CRT).
-        Students who pause and override their initial "gut" response tend to benefit from different
-        study strategies than those who go with intuition. We use this to calibrate how we present
-        new material to you.
+        <strong>What this tells us:</strong> These are from the Cognitive
+        Reflection Test (CRT). Students who pause and override their initial
+        "gut" response tend to benefit from different study strategies than
+        those who go with intuition. We use this to calibrate how we present new
+        material to you.
       </CaseStudyTip>
     </div>
-  )
+  );
 }
 
 function Screen5({
   data,
   onChange,
 }: {
-  data: LearningProfileData
-  onChange: (d: Partial<LearningProfileData>) => void
+  data: LearningProfileData;
+  onChange: (d: Partial<LearningProfileData>) => void;
 }) {
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold">Metacognitive Awareness</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          How well do you monitor and regulate your own learning? Be honest -- this helps us
-          build the right support scaffolds for you.
+          How well do you monitor and regulate your own learning? Be honest --
+          this helps us build the right support scaffolds for you.
         </p>
       </div>
 
       <div className="space-y-6">
         <div className="space-y-2">
-          <Label>Before studying, how often do you plan what you'll cover?</Label>
+          <Label>
+            Before studying, how often do you plan what you'll cover?
+          </Label>
           <p className="text-xs text-muted-foreground">
-            e.g. "Today I'll review chapter 3, do 10 practice problems, then self-test"
+            e.g. "Today I'll review chapter 3, do 10 practice problems, then
+            self-test"
           </p>
           <div className="flex flex-wrap gap-2">
             {[
@@ -618,7 +634,9 @@ function Screen5({
               <OptionButton
                 key={opt.value}
                 selected={data.metacogPlanningFrequency === opt.value}
-                onClick={() => onChange({ metacogPlanningFrequency: opt.value })}
+                onClick={() =>
+                  onChange({ metacogPlanningFrequency: opt.value })
+                }
               >
                 {opt.label}
               </OptionButton>
@@ -627,7 +645,9 @@ function Screen5({
         </div>
 
         <div className="space-y-2">
-          <Label>During studying, do you check whether you actually understand?</Label>
+          <Label>
+            During studying, do you check whether you actually understand?
+          </Label>
           <p className="text-xs text-muted-foreground">
             e.g. pausing to ask yourself "Can I explain this without looking?"
           </p>
@@ -651,9 +671,12 @@ function Screen5({
         </div>
 
         <div className="space-y-2">
-          <Label>After studying, do you evaluate what worked and what didn't?</Label>
+          <Label>
+            After studying, do you evaluate what worked and what didn't?
+          </Label>
           <p className="text-xs text-muted-foreground">
-            e.g. "Active recall worked well today, but I need more practice on proofs"
+            e.g. "Active recall worked well today, but I need more practice on
+            proofs"
           </p>
           <div className="flex flex-wrap gap-2">
             {[
@@ -676,39 +699,72 @@ function Screen5({
       </div>
 
       <CaseStudyTip>
-        <strong>Why it matters:</strong> Students with strong metacognitive skills learn 20-40%
-        faster. If you're still developing these habits, we'll weave in reflection prompts and
-        self-check routines throughout your guide automatically.
+        <strong>Why it matters:</strong> Students with strong metacognitive
+        skills learn 20-40% faster. If you're still developing these habits,
+        we'll weave in reflection prompts and self-check routines throughout
+        your guide automatically.
       </CaseStudyTip>
     </div>
-  )
+  );
 }
 
 function Screen6({
   data,
   onChange,
 }: {
-  data: LearningProfileData
-  onChange: (d: Partial<LearningProfileData>) => void
+  data: LearningProfileData;
+  onChange: (d: Partial<LearningProfileData>) => void;
 }) {
   const strategies = [
-    { value: "active-recall", label: "Active Recall", desc: "Testing yourself without looking at notes" },
-    { value: "spaced-repetition", label: "Spaced Repetition", desc: "Reviewing at increasing intervals" },
-    { value: "worked-examples", label: "Worked Examples", desc: "Studying solved problems step-by-step" },
-    { value: "elaboration", label: "Elaboration", desc: "Explaining concepts in your own words" },
-    { value: "interleaving", label: "Interleaving", desc: "Mixing different types of problems" },
-    { value: "summarization", label: "Summarization", desc: "Writing summaries of what you learned" },
-    { value: "highlighting", label: "Highlighting / Rereading", desc: "Marking up text and re-reading it" },
-    { value: "mind-mapping", label: "Mind Mapping", desc: "Creating visual concept maps" },
-  ]
+    {
+      value: "active-recall",
+      label: "Active Recall",
+      desc: "Testing yourself without looking at notes",
+    },
+    {
+      value: "spaced-repetition",
+      label: "Spaced Repetition",
+      desc: "Reviewing at increasing intervals",
+    },
+    {
+      value: "worked-examples",
+      label: "Worked Examples",
+      desc: "Studying solved problems step-by-step",
+    },
+    {
+      value: "elaboration",
+      label: "Elaboration",
+      desc: "Explaining concepts in your own words",
+    },
+    {
+      value: "interleaving",
+      label: "Interleaving",
+      desc: "Mixing different types of problems",
+    },
+    {
+      value: "summarization",
+      label: "Summarization",
+      desc: "Writing summaries of what you learned",
+    },
+    {
+      value: "highlighting",
+      label: "Highlighting / Rereading",
+      desc: "Marking up text and re-reading it",
+    },
+    {
+      value: "mind-mapping",
+      label: "Mind Mapping",
+      desc: "Creating visual concept maps",
+    },
+  ];
 
   const toggleStrategy = (value: string) => {
-    const current = data.studyStrategies
+    const current = data.studyStrategies;
     const next = current.includes(value)
       ? current.filter((s) => s !== value)
-      : [...current, value]
-    onChange({ studyStrategies: next })
-  }
+      : [...current, value];
+    onChange({ studyStrategies: next });
+  };
 
   return (
     <div className="space-y-6">
@@ -747,7 +803,7 @@ function Screen6({
           <Label>Which is your go-to strategy?</Label>
           <div className="flex flex-wrap gap-2">
             {data.studyStrategies.map((s) => {
-              const strat = strategies.find((st) => st.value === s)
+              const strat = strategies.find((st) => st.value === s);
               return (
                 <OptionButton
                   key={s}
@@ -756,40 +812,44 @@ function Screen6({
                 >
                   {strat?.label ?? s}
                 </OptionButton>
-              )
+              );
             })}
           </div>
         </div>
       )}
 
       <CaseStudyTip>
-        <strong>Evidence-based tip:</strong> Active recall and spaced repetition are among the
-        most effective strategies (Dunlosky et al., 2013). If you're mostly using highlighting,
-        we'll gently introduce more effective techniques into your study plan.
+        <strong>Evidence-based tip:</strong> Active recall and spaced repetition
+        are among the most effective strategies (Dunlosky et al., 2013). If
+        you're mostly using highlighting, we'll gently introduce more effective
+        techniques into your study plan.
       </CaseStudyTip>
     </div>
-  )
+  );
 }
 
 function Screen7({
   data,
   onChange,
 }: {
-  data: LearningProfileData
-  onChange: (d: Partial<LearningProfileData>) => void
+  data: LearningProfileData;
+  onChange: (d: Partial<LearningProfileData>) => void;
 }) {
-  const handleSlider = (field: keyof LearningProfileData) => (value: number | readonly number[]) => {
-    const v = Array.isArray(value) ? value[0] : value
-    onChange({ [field]: v })
-  }
+  const handleSlider =
+    (field: keyof LearningProfileData) =>
+    (value: number | readonly number[]) => {
+      const v = Array.isArray(value) ? value[0] : value;
+      onChange({ [field]: v });
+    };
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold">Motivation & Drive</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Understanding what drives you helps us create a learning experience that keeps you engaged.
-          Based on Self-Determination Theory (Deci & Ryan), we measure three core needs.
+          Understanding what drives you helps us create a learning experience
+          that keeps you engaged. Based on Self-Determination Theory (Deci &
+          Ryan), we measure three core needs.
         </p>
       </div>
 
@@ -797,10 +857,13 @@ function Screen7({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label>Autonomy</Label>
-            <span className="text-sm tabular-nums text-muted-foreground">{data.motivationAutonomy}%</span>
+            <span className="text-sm tabular-nums text-muted-foreground">
+              {data.motivationAutonomy}%
+            </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            How important is it that you choose <em>what</em> and <em>how</em> you study?
+            How important is it that you choose <em>what</em> and <em>how</em>{" "}
+            you study?
           </p>
           <Slider
             value={[data.motivationAutonomy]}
@@ -818,10 +881,13 @@ function Screen7({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label>Competence</Label>
-            <span className="text-sm tabular-nums text-muted-foreground">{data.motivationCompetence}%</span>
+            <span className="text-sm tabular-nums text-muted-foreground">
+              {data.motivationCompetence}%
+            </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            How much do you need to feel like you're making progress and building mastery?
+            How much do you need to feel like you're making progress and
+            building mastery?
           </p>
           <Slider
             value={[data.motivationCompetence]}
@@ -839,7 +905,9 @@ function Screen7({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label>Relatedness</Label>
-            <span className="text-sm tabular-nums text-muted-foreground">{data.motivationRelatedness}%</span>
+            <span className="text-sm tabular-nums text-muted-foreground">
+              {data.motivationRelatedness}%
+            </span>
           </div>
           <p className="text-xs text-muted-foreground">
             How much does studying with or for others motivate you?
@@ -859,25 +927,26 @@ function Screen7({
       </div>
 
       <CaseStudyTip>
-        <strong>Case study:</strong> A learner with high autonomy and low relatedness got an
-        independent, self-paced plan with flexible ordering. A high-relatedness learner got
-        prompts to share progress and discuss with study partners.
+        <strong>Case study:</strong> A learner with high autonomy and low
+        relatedness got an independent, self-paced plan with flexible ordering.
+        A high-relatedness learner got prompts to share progress and discuss
+        with study partners.
       </CaseStudyTip>
     </div>
-  )
+  );
 }
 
 function Screen8({
   data,
   onChange,
 }: {
-  data: LearningProfileData
-  onChange: (d: Partial<LearningProfileData>) => void
+  data: LearningProfileData;
+  onChange: (d: Partial<LearningProfileData>) => void;
 }) {
   const handleSlider = (value: number | readonly number[]) => {
-    const v = Array.isArray(value) ? value[0] : value
-    onChange({ calibrationConfidence: v })
-  }
+    const v = Array.isArray(value) ? value[0] : value;
+    onChange({ calibrationConfidence: v });
+  };
 
   return (
     <div className="space-y-6">
@@ -885,7 +954,8 @@ function Screen8({
         <h2 className="text-xl font-semibold">Confidence Calibration</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           One of the most important learning skills is knowing what you know --
-          and what you don't. This helps us understand your calibration patterns.
+          and what you don't. This helps us understand your calibration
+          patterns.
         </p>
       </div>
 
@@ -894,16 +964,18 @@ function Screen8({
           <CardHeader>
             <CardTitle className="text-base">Quick scenario</CardTitle>
             <CardDescription>
-              Imagine you just studied a chapter for 45 minutes and feel like you understood it.
-              If someone gave you a 10-question quiz right now, how confident are you that
-              you'd score 80% or higher?
+              Imagine you just studied a chapter for 45 minutes and feel like
+              you understood it. If someone gave you a 10-question quiz right
+              now, how confident are you that you'd score 80% or higher?
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Your confidence level</Label>
-                <span className="text-sm font-medium tabular-nums">{data.calibrationConfidence}%</span>
+                <span className="text-sm font-medium tabular-nums">
+                  {data.calibrationConfidence}%
+                </span>
               </div>
               <Slider
                 value={[data.calibrationConfidence]}
@@ -925,26 +997,29 @@ function Screen8({
           <Textarea
             placeholder="e.g. I usually feel confident after studying but sometimes find I overestimate..."
             value={data.calibrationExplanation}
-            onChange={(e) => onChange({ calibrationExplanation: e.target.value })}
+            onChange={(e) =>
+              onChange({ calibrationExplanation: e.target.value })
+            }
           />
         </div>
       </div>
 
       <CaseStudyTip>
-        <strong>Research insight:</strong> Many learners are "overconfident" -- they predict 80%
-        but score 55%. If we detect this pattern, we'll add prediction-reflection loops and
-        spaced self-testing to help you calibrate better.
+        <strong>Research insight:</strong> Many learners are "overconfident" --
+        they predict 80% but score 55%. If we detect this pattern, we'll add
+        prediction-reflection loops and spaced self-testing to help you
+        calibrate better.
       </CaseStudyTip>
     </div>
-  )
+  );
 }
 
 function Screen9({
   data,
   onChange,
 }: {
-  data: LearningProfileData
-  onChange: (d: Partial<LearningProfileData>) => void
+  data: LearningProfileData;
+  onChange: (d: Partial<LearningProfileData>) => void;
 }) {
   const distractions = [
     { value: "phone", label: "Phone notifications" },
@@ -955,23 +1030,23 @@ function Screen9({
     { value: "anxiety", label: "Stress / anxiety" },
     { value: "boredom", label: "Boredom / disengagement" },
     { value: "other", label: "Something else" },
-  ]
+  ];
 
   const toggleDistraction = (value: string) => {
-    const current = data.distractionSources
+    const current = data.distractionSources;
     const next = current.includes(value)
       ? current.filter((s) => s !== value)
-      : [...current, value]
-    onChange({ distractionSources: next })
-  }
+      : [...current, value];
+    onChange({ distractionSources: next });
+  };
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold">Challenges & Obstacles</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Everyone faces barriers to learning. Being honest about yours helps us build in the
-          right support at the right time.
+          Everyone faces barriers to learning. Being honest about yours helps us
+          build in the right support at the right time.
         </p>
       </div>
 
@@ -998,7 +1073,9 @@ function Screen9({
               <OptionButton
                 key={opt.value}
                 selected={data.procrastinationFrequency === opt.value}
-                onClick={() => onChange({ procrastinationFrequency: opt.value })}
+                onClick={() =>
+                  onChange({ procrastinationFrequency: opt.value })
+                }
               >
                 {opt.label}
               </OptionButton>
@@ -1007,7 +1084,9 @@ function Screen9({
         </div>
 
         <div className="space-y-2">
-          <Label>What distracts you most during study? Select all that apply.</Label>
+          <Label>
+            What distracts you most during study? Select all that apply.
+          </Label>
           <div className="flex flex-wrap gap-2">
             {distractions.map((d) => (
               <ToggleChip
@@ -1023,21 +1102,21 @@ function Screen9({
       </div>
 
       <CaseStudyTip>
-        <strong>How we help:</strong> A student who reported frequent procrastination got
-        micro-commitment prompts ("Just do 5 minutes") and progress celebrations built
-        into their plan. Students who struggle with phone distractions get timed focus blocks
-        with clear start/stop signals.
+        <strong>How we help:</strong> A student who reported frequent
+        procrastination got micro-commitment prompts ("Just do 5 minutes") and
+        progress celebrations built into their plan. Students who struggle with
+        phone distractions get timed focus blocks with clear start/stop signals.
       </CaseStudyTip>
     </div>
-  )
+  );
 }
 
 function Screen10({
   data,
   onChange,
 }: {
-  data: LearningProfileData
-  onChange: (d: Partial<LearningProfileData>) => void
+  data: LearningProfileData;
+  onChange: (d: Partial<LearningProfileData>) => void;
 }) {
   const formats = [
     { value: "visual-diagrams", label: "Visual diagrams" },
@@ -1048,15 +1127,15 @@ function Screen10({
     { value: "interactive", label: "Interactive exercises" },
     { value: "flashcards", label: "Flashcards" },
     { value: "discussion", label: "Discussion-based" },
-  ]
+  ];
 
   const toggleFormat = (value: string) => {
-    const current = data.preferredFormats
+    const current = data.preferredFormats;
     const next = current.includes(value)
       ? current.filter((s) => s !== value)
-      : [...current, value]
-    onChange({ preferredFormats: next })
-  }
+      : [...current, value];
+    onChange({ preferredFormats: next });
+  };
 
   return (
     <div className="space-y-6">
@@ -1126,20 +1205,21 @@ function Screen10({
       </div>
 
       <CaseStudyTip>
-        <strong>Personalization in action:</strong> A learner who preferred visual diagrams and
-        concise coaching got streamlined concept maps and bullet-point feedback. A conversational
-        learner got more narrative-style explanations with analogies.
+        <strong>Personalization in action:</strong> A learner who preferred
+        visual diagrams and concise coaching got streamlined concept maps and
+        bullet-point feedback. A conversational learner got more narrative-style
+        explanations with analogies.
       </CaseStudyTip>
     </div>
-  )
+  );
 }
 
 function Screen11({
   data,
   onChange,
 }: {
-  data: LearningProfileData
-  onChange: (d: Partial<LearningProfileData>) => void
+  data: LearningProfileData;
+  onChange: (d: Partial<LearningProfileData>) => void;
 }) {
   const subjects = [
     { value: "calculus", label: "Calculus" },
@@ -1152,15 +1232,15 @@ function Screen11({
     { value: "writing", label: "Writing" },
     { value: "languages", label: "Foreign Languages" },
     { value: "other", label: "Other" },
-  ]
+  ];
 
   const toggleSubject = (value: string) => {
-    const current = data.relatedSubjects
+    const current = data.relatedSubjects;
     const next = current.includes(value)
       ? current.filter((s) => s !== value)
-      : [...current, value]
-    onChange({ relatedSubjects: next })
-  }
+      : [...current, value];
+    onChange({ relatedSubjects: next });
+  };
 
   return (
     <div className="space-y-6">
@@ -1174,13 +1254,31 @@ function Screen11({
 
       <div className="space-y-6">
         <div className="space-y-2">
-          <Label>How would you rate your current knowledge of this subject?</Label>
+          <Label>
+            How would you rate your current knowledge of this subject?
+          </Label>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { value: "beginner", label: "Complete Beginner", desc: "Brand new to this" },
-              { value: "novice", label: "Novice", desc: "Some exposure but shaky" },
-              { value: "intermediate", label: "Intermediate", desc: "Know the basics, gaps in advanced topics" },
-              { value: "advanced", label: "Advanced", desc: "Strong foundation, refining skills" },
+              {
+                value: "beginner",
+                label: "Complete Beginner",
+                desc: "Brand new to this",
+              },
+              {
+                value: "novice",
+                label: "Novice",
+                desc: "Some exposure but shaky",
+              },
+              {
+                value: "intermediate",
+                label: "Intermediate",
+                desc: "Know the basics, gaps in advanced topics",
+              },
+              {
+                value: "advanced",
+                label: "Advanced",
+                desc: "Strong foundation, refining skills",
+              },
             ].map((opt) => (
               <OptionButton
                 key={opt.value}
@@ -1189,7 +1287,9 @@ function Screen11({
               >
                 <div>
                   <div className="font-medium">{opt.label}</div>
-                  <div className="text-xs text-muted-foreground">{opt.desc}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {opt.desc}
+                  </div>
                 </div>
               </OptionButton>
             ))}
@@ -1197,11 +1297,15 @@ function Screen11({
         </div>
 
         <div className="space-y-2">
-          <Label>Tell us more about what you know (and what trips you up)</Label>
+          <Label>
+            Tell us more about what you know (and what trips you up)
+          </Label>
           <Textarea
             placeholder="e.g. I did well in precalculus but struggle with eigenvalues and abstract proofs..."
             value={data.priorKnowledgeDetails}
-            onChange={(e) => onChange({ priorKnowledgeDetails: e.target.value })}
+            onChange={(e) =>
+              onChange({ priorKnowledgeDetails: e.target.value })
+            }
           />
         </div>
 
@@ -1222,28 +1326,28 @@ function Screen11({
       </div>
 
       <CaseStudyTip>
-        <strong>Smart connections:</strong> When a calculus student said they also knew
-        programming, we used code examples to illustrate abstract math concepts. Your
-        existing knowledge becomes a bridge to new learning.
+        <strong>Smart connections:</strong> When a calculus student said they
+        also knew programming, we used code examples to illustrate abstract math
+        concepts. Your existing knowledge becomes a bridge to new learning.
       </CaseStudyTip>
     </div>
-  )
+  );
 }
 
 function Screen12({
   data,
   onChange,
 }: {
-  data: LearningProfileData
-  onChange: (d: Partial<LearningProfileData>) => void
+  data: LearningProfileData;
+  onChange: (d: Partial<LearningProfileData>) => void;
 }) {
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-semibold">Final Reflection</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Last step! In your own words, help us understand what makes you tick as a learner.
-          There are no right answers -- just be yourself.
+          Last step! In your own words, help us understand what makes you tick
+          as a learner. There are no right answers -- just be yourself.
         </p>
       </div>
 
@@ -1261,7 +1365,9 @@ function Screen12({
         </div>
 
         <div className="space-y-2">
-          <Label>What would you most like to improve about how you learn?</Label>
+          <Label>
+            What would you most like to improve about how you learn?
+          </Label>
           <Textarea
             placeholder="e.g. I need to be better at checking my understanding before moving on..."
             value={data.areasToImprove}
@@ -1280,13 +1386,14 @@ function Screen12({
       </div>
 
       <CaseStudyTip>
-        <strong>What happens next:</strong> We'll combine your answers across all 12 screens
-        to build a comprehensive learning profile. This profile powers everything -- from how
-        we pace your guide, to what coaching tone we use, to when we add reflection prompts.
-        You can retake this assessment anytime from your profile.
+        <strong>What happens next:</strong> We'll combine your answers across
+        all 12 screens to build a comprehensive learning profile. This profile
+        powers everything -- from how we pace your guide, to what coaching tone
+        we use, to when we add reflection prompts. You can retake this
+        assessment anytime from your profile.
       </CaseStudyTip>
     </div>
-  )
+  );
 }
 
 // ── Saved Confirmation ──
@@ -1295,8 +1402,8 @@ function SavedConfirmation({
   onRegenerateGuide,
   onDismiss,
 }: {
-  onRegenerateGuide: () => void
-  onDismiss: () => void
+  onRegenerateGuide: () => void;
+  onDismiss: () => void;
 }) {
   return (
     <div className="flex flex-1 items-center justify-center p-8">
@@ -1307,8 +1414,8 @@ function SavedConfirmation({
         <div>
           <h2 className="text-xl font-semibold">Profile Saved!</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Your learning profile has been updated. The system will use this to personalize
-            your experience, coaching style, and study plan.
+            Your learning profile has been updated. The system will use this to
+            personalize your experience, coaching style, and study plan.
           </p>
         </div>
         <div className="flex flex-col gap-3">
@@ -1316,13 +1423,18 @@ function SavedConfirmation({
             <RefreshCw className="size-4" data-icon="inline-start" />
             Regenerate Guide with New Profile
           </Button>
-          <Button size="lg" variant="outline" onClick={onDismiss} className="w-full">
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={onDismiss}
+            className="w-full"
+          >
             Continue to Dashboard
           </Button>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // ── Main Form Component ──
@@ -1332,36 +1444,124 @@ export function LearningProfileForm({
   onSave,
   onCancel,
 }: {
-  initialData?: LearningProfileData
-  onSave: (data: LearningProfileData) => void
-  onCancel: () => void
+  initialData?: LearningProfileData;
+  onSave: (data: LearningProfileData) => void;
+  onCancel: () => void;
 }) {
-  const [screen, setScreen] = useState(0)
-  const [data, setData] = useState<LearningProfileData>(initialData ?? DEFAULT_PROFILE)
-  const [saved, setSaved] = useState(false)
-  const formId = useId()
+  const [screen, setScreen] = useState(0);
+  const [data, setData] = useState<LearningProfileData>(
+    initialData ?? DEFAULT_PROFILE,
+  );
+  const [saved, setSaved] = useState(false);
+  const [assessmentId, setAssessmentId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const formId = useId();
+
+  // Create assessment on mount
+  useEffect(() => {
+    async function initAssessment() {
+      try {
+        // Check for existing in-progress assessment
+        const listRes = await fetch("/api/assessments?limit=1");
+        if (listRes.ok) {
+          const list = await listRes.json();
+          const inProgress = list.find(
+            (a: { status: string }) => a.status === "in_progress",
+          );
+          if (inProgress) {
+            setAssessmentId(inProgress.id);
+            if (inProgress.responses) {
+              setData((prev) => ({ ...prev, ...inProgress.responses }));
+            }
+            if (
+              typeof inProgress.currentStep === "number" &&
+              inProgress.currentStep > 0
+            ) {
+              setScreen(inProgress.currentStep);
+            }
+            return;
+          }
+        }
+
+        // Create new assessment
+        const res = await fetch("/api/assessments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "full_onboarding" }),
+        });
+        if (res.ok) {
+          const created = await res.json();
+          setAssessmentId(created.id);
+        }
+      } catch {
+        // Silently fail — form still works without persistence
+      }
+    }
+    void initAssessment();
+  }, []);
+
+  // Auto-save on step navigation (debounced)
+  const saveProgress = useCallback(
+    (step: number, currentData: typeof data) => {
+      if (!assessmentId) return;
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = setTimeout(async () => {
+        setSaving(true);
+        try {
+          await fetch(`/api/assessments/${assessmentId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ currentStep: step, responses: currentData }),
+          });
+        } catch {
+          // Silently fail
+        } finally {
+          setSaving(false);
+        }
+      }, 500);
+    },
+    [assessmentId],
+  );
 
   const update = (partial: Partial<LearningProfileData>) => {
-    setData((prev) => ({ ...prev, ...partial }))
-  }
+    setData((prev) => ({ ...prev, ...partial }));
+  };
 
-  const handleSave = () => {
-    onSave(data)
-    setSaved(true)
-  }
+  const handleSave = async () => {
+    if (assessmentId) {
+      try {
+        const res = await fetch(`/api/assessments/${assessmentId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "completed", responses: data }),
+        });
+        if (res.ok) {
+          const completed = await res.json();
+          // Hydrate the data store with the completed assessment
+          const { dataStore } = await import("@/lib/data-store");
+          dataStore.hydrateFromAssessment(completed);
+        }
+      } catch {
+        // Still call onSave even if DB save fails
+      }
+    }
+    onSave(data);
+    setSaved(true);
+  };
 
   if (saved) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col bg-background">
         <SavedConfirmation
           onRegenerateGuide={() => {
-            onSave(data)
-            onCancel()
+            onSave(data);
+            onCancel();
           }}
           onDismiss={onCancel}
         />
       </div>
-    )
+    );
   }
 
   const screens = [
@@ -1377,7 +1577,7 @@ export function LearningProfileForm({
     <Screen10 key="s10" data={data} onChange={update} />,
     <Screen11 key="s11" data={data} onChange={update} />,
     <Screen12 key="s12" data={data} onChange={update} />,
-  ]
+  ];
 
   const screenLabels = [
     "About You",
@@ -1392,7 +1592,7 @@ export function LearningProfileForm({
     "Preferences",
     "Prior Knowledge",
     "Final Reflection",
-  ]
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
@@ -1400,11 +1600,18 @@ export function LearningProfileForm({
       <div className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
         <div className="flex items-center gap-2 px-1 py-1">
           <Brain className="size-5 text-primary" />
-          <span className="text-sm font-semibold">Learning Profile Assessment</span>
+          <span className="text-sm font-semibold">
+            Learning Profile Assessment
+          </span>
         </div>
         <span className="text-sm text-muted-foreground">
           Screen {screen + 1} of {TOTAL_SCREENS}: {screenLabels[screen]}
         </span>
+        {saving && (
+          <span className="text-xs text-muted-foreground animate-pulse">
+            Saving...
+          </span>
+        )}
         <button
           type="button"
           onClick={onCancel}
@@ -1428,13 +1635,16 @@ export function LearningProfileForm({
               <button
                 key={`${formId}-dot-${i}`}
                 type="button"
-                onClick={() => setScreen(i)}
+                onClick={() => {
+                  setScreen(i);
+                  saveProgress(i, data);
+                }}
                 className={`size-2 rounded-full transition-colors ${
                   i === screen
                     ? "bg-primary"
                     : i < screen
-                    ? "bg-primary/40"
-                    : "bg-muted-foreground/20"
+                      ? "bg-primary/40"
+                      : "bg-muted-foreground/20"
                 }`}
               />
             ))}
@@ -1450,19 +1660,32 @@ export function LearningProfileForm({
       {/* Footer */}
       <div className="shrink-0 border-t px-6 py-4">
         <div className="mx-auto flex max-w-2xl items-center justify-between">
-          <Button
-            variant="outline"
-            onClick={() => setScreen(Math.max(0, screen - 1))}
-            disabled={screen === 0}
-          >
-            <ChevronLeft className="size-4" data-icon="inline-start" />
-            Back
-          </Button>
+          {screen > 0 ? (
+            <Button
+              variant="outline"
+              onClick={() => {
+                const prev = screen - 1;
+                setScreen(prev);
+                saveProgress(prev, data);
+              }}
+            >
+              <ChevronLeft className="size-4" data-icon="inline-start" />
+              Back
+            </Button>
+          ) : (
+            <div />
+          )}
           <span className="text-xs text-muted-foreground">
             {screen + 1} / {TOTAL_SCREENS}
           </span>
           {screen < TOTAL_SCREENS - 1 ? (
-            <Button onClick={() => setScreen(screen + 1)}>
+            <Button
+              onClick={() => {
+                const next = screen + 1;
+                setScreen(next);
+                saveProgress(next, data);
+              }}
+            >
               Next
               <ChevronRight className="size-4" data-icon="inline-end" />
             </Button>
@@ -1475,5 +1698,5 @@ export function LearningProfileForm({
         </div>
       </div>
     </div>
-  )
+  );
 }
