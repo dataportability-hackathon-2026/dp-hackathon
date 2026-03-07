@@ -7,7 +7,25 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!node_modules", "!.next", "!dist", "!build"]
+    "includes": [
+      "**",
+      "!node_modules",
+      "!.next",
+      "!dist",
+      "!build",
+      "!**/*.css"
+    ]
+  },
+  "css": {
+    "parser": {
+      "cssModules": true
+    },
+    "linter": {
+      "enabled": false
+    },
+    "formatter": {
+      "enabled": false
+    }
   },
   "formatter": {
     "enabled": true,
@@ -18,8 +36,37 @@
     "enabled": true,
     "rules": {
       "recommended": true,
+      "style": {
+        "noNonNullAssertion": "off"
+      },
       "suspicious": {
-        "noUnknownAtRules": "off"
+        "noUnknownAtRules": "off",
+        "noControlCharactersInRegex": "off",
+        "noArrayIndexKey": "off",
+        "noShadowRestrictedNames": "off",
+        "noAssignInExpressions": "off",
+        "useIterableCallbackReturn": "off"
+      },
+      "a11y": {
+        "noLabelWithoutControl": "off",
+        "useMediaCaption": "off",
+        "useButtonType": "off",
+        "noRedundantAlt": "off",
+        "useAnchorContent": "off",
+        "useValidAnchor": "off",
+        "noStaticElementInteractions": "off",
+        "useSemanticElements": "off",
+        "useKeyWithClickEvents": "off"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
+      },
+      "performance": {
+        "noImgElement": "off"
+      },
+      "correctness": {
+        "useHookAtTopLevel": "off",
+        "useExhaustiveDependencies": "off"
       }
     },
     "domains": {

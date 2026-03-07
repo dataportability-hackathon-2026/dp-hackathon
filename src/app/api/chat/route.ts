@@ -1,23 +1,28 @@
-import { stepCountIs, streamText, convertToModelMessages } from "ai";
+import { convertToModelMessages, stepCountIs, streamText } from "ai";
 import { getCitationGuardrails } from "@/lib/ai/citations";
 import { openai } from "@/lib/ai/provider";
-import { tools } from "@/lib/ai/tools";
 import { stateTools } from "@/lib/ai/state-tools";
+import { tools } from "@/lib/ai/tools";
 
 export async function POST(req: Request) {
-  const { messages, priorContext } = await req.json()
+  const { messages, priorContext } = await req.json();
 
   // If there is prior conversation context (e.g. from a voice session),
   // inject it into the system prompt so the text agent understands the full history
   // without mixing message formats.
-  const priorContextSummary = Array.isArray(priorContext) && priorContext.length > 0
-    ? `\n\n## Prior conversation context (from voice session)\n${priorContext
-        .map((m: { role: string; content: string }) => `${m.role}: ${m.content}`)
-        .join("\n")}\n\n---\nThe above is context from a prior voice session. Continue the conversation naturally.`
-    : ""
+  const priorContextSummary =
+    Array.isArray(priorContext) && priorContext.length > 0
+      ? `\n\n## Prior conversation context (from voice session)\n${priorContext
+          .map(
+            (m: { role: string; content: string }) => `${m.role}: ${m.content}`,
+          )
+          .join(
+            "\n",
+          )}\n\n---\nThe above is context from a prior voice session. Continue the conversation naturally.`
+      : "";
 
   // Convert UIMessages from useChat to ModelMessages for streamText
-  const allMessages = await convertToModelMessages(messages)
+  const allMessages = await convertToModelMessages(messages);
 
   const result = streamText({
     model: openai("gpt-4o-mini"),

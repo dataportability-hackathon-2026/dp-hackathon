@@ -1,7 +1,5 @@
-"use client"
+"use client";
 
-import { useMemo, useState, useId } from "react"
-import Link from "next/link"
 import {
   Brain,
   Calendar,
@@ -13,33 +11,36 @@ import {
   Search,
   TrendingUp,
   User,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
+} from "lucide-react";
+import Link from "next/link";
+import { useId, useMemo, useState } from "react";
+import { CreditBadge } from "@/components/billing/credit-badge";
+import { ProfileSheetContent } from "@/components/profile-sheet-content";
+import { SpotlightCard } from "@/components/reactbits/spotlight-card";
+import { ConnectDialog } from "@/components/single-page-app";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { siteConfig } from "@/lib/white-label"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet"
-import { TOPICS, slugify, type MockTopic } from "@/lib/topics"
-import { cn } from "@/lib/utils"
-import { ProfileSheetContent } from "@/components/profile-sheet-content"
-import { ConnectDialog } from "@/components/single-page-app"
-import { CreditBadge } from "@/components/billing/credit-badge"
-import { SpotlightCard } from "@/components/reactbits/spotlight-card"
+} from "@/components/ui/select";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { type MockTopic, slugify, TOPICS } from "@/lib/topics";
+import { cn } from "@/lib/utils";
+import { siteConfig } from "@/lib/white-label";
 
-type ViewMode = "bento" | "list"
-type SortOption = "name" | "mastery" | "deadline" | "recently-updated" | "files"
+type ViewMode = "bento" | "list";
+type SortOption =
+  | "name"
+  | "mastery"
+  | "deadline"
+  | "recently-updated"
+  | "files";
 
 const SORT_ITEMS = [
   { label: "Recently Updated", value: "recently-updated" },
@@ -47,111 +48,114 @@ const SORT_ITEMS = [
   { label: "Mastery", value: "mastery" },
   { label: "Name (A-Z)", value: "name" },
   { label: "Most Sources", value: "files" },
-] as const
+] as const;
 
 // Repeating span pattern for a dense 3-col grid with height variants.
 const SPAN_PATTERN = [
-  { span: "md:col-span-2", height: "md:min-h-[16rem]" },  // wide + tall
-  { span: "md:col-span-1", height: "md:min-h-[12rem]" },  // standard
-  { span: "md:col-span-1", height: "md:min-h-[14rem]" },  // medium
-  { span: "md:col-span-1", height: "md:min-h-[10rem]" },  // compact
-  { span: "md:col-span-2", height: "md:min-h-[12rem]" },  // wide + short
-  { span: "md:col-span-1", height: "md:min-h-[16rem]" },  // tall
-  { span: "md:col-span-2", height: "md:min-h-[14rem]" },  // wide + medium
-  { span: "md:col-span-1", height: "md:min-h-[12rem]" },  // standard
-  { span: "md:col-span-1", height: "md:min-h-[10rem]" },  // compact
-  { span: "md:col-span-2", height: "md:min-h-[16rem]" },  // wide + tall
-  { span: "md:col-span-1", height: "md:min-h-[14rem]" },  // medium
-  { span: "md:col-span-1", height: "md:min-h-[12rem]" },  // standard
-] as const
+  { span: "md:col-span-2", height: "md:min-h-[16rem]" }, // wide + tall
+  { span: "md:col-span-1", height: "md:min-h-[12rem]" }, // standard
+  { span: "md:col-span-1", height: "md:min-h-[14rem]" }, // medium
+  { span: "md:col-span-1", height: "md:min-h-[10rem]" }, // compact
+  { span: "md:col-span-2", height: "md:min-h-[12rem]" }, // wide + short
+  { span: "md:col-span-1", height: "md:min-h-[16rem]" }, // tall
+  { span: "md:col-span-2", height: "md:min-h-[14rem]" }, // wide + medium
+  { span: "md:col-span-1", height: "md:min-h-[12rem]" }, // standard
+  { span: "md:col-span-1", height: "md:min-h-[10rem]" }, // compact
+  { span: "md:col-span-2", height: "md:min-h-[16rem]" }, // wide + tall
+  { span: "md:col-span-1", height: "md:min-h-[14rem]" }, // medium
+  { span: "md:col-span-1", height: "md:min-h-[12rem]" }, // standard
+] as const;
 
 function formatPercent(n: number): string {
-  return `${Math.round(n * 100)}%`
+  return `${Math.round(n * 100)}%`;
 }
 
 function getAverageMastery(topic: MockTopic): number {
-  if (topic.masteryData.length === 0) return 0
-  return topic.masteryData.reduce((sum, m) => sum + m.posteriorMean, 0) / topic.masteryData.length
+  if (topic.masteryData.length === 0) return 0;
+  return (
+    topic.masteryData.reduce((sum, m) => sum + m.posteriorMean, 0) /
+    topic.masteryData.length
+  );
 }
 
 function getEarliestDeadline(topic: MockTopic): string {
   const deadlines = topic.projects
     .map((p) => p.deadline)
     .filter((d) => d !== "")
-    .sort()
-  return deadlines[0] ?? ""
+    .sort();
+  return deadlines[0] ?? "";
 }
 
 function getLatestActivity(topic: MockTopic): string {
-  const timestamps = topic.chatHistory.map((m) => m.timestamp)
-  if (timestamps.length === 0) return ""
-  return timestamps.sort().reverse()[0]
+  const timestamps = topic.chatHistory.map((m) => m.timestamp);
+  if (timestamps.length === 0) return "";
+  return timestamps.sort().reverse()[0];
 }
 
 function seededShuffle<T>(arr: T[], seed: number): T[] {
-  const shuffled = [...arr]
-  let s = seed
+  const shuffled = [...arr];
+  let s = seed;
   for (let i = shuffled.length - 1; i > 0; i--) {
-    s = (s * 16807 + 0) % 2147483647
-    const j = s % (i + 1)
-    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    s = (s * 16807 + 0) % 2147483647;
+    const j = s % (i + 1);
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-  return shuffled
+  return shuffled;
 }
 
 function sortTopics(topics: MockTopic[], sortBy: SortOption): MockTopic[] {
-  const sorted = [...topics]
+  const sorted = [...topics];
   switch (sortBy) {
     case "name":
-      return sorted.sort((a, b) => a.name.localeCompare(b.name))
+      return sorted.sort((a, b) => a.name.localeCompare(b.name));
     case "mastery":
-      return sorted.sort((a, b) => getAverageMastery(b) - getAverageMastery(a))
+      return sorted.sort((a, b) => getAverageMastery(b) - getAverageMastery(a));
     case "deadline": {
       return sorted.sort((a, b) => {
-        const da = getEarliestDeadline(a)
-        const db = getEarliestDeadline(b)
-        if (!da && !db) return 0
-        if (!da) return 1
-        if (!db) return -1
-        return da.localeCompare(db)
-      })
+        const da = getEarliestDeadline(a);
+        const db = getEarliestDeadline(b);
+        if (!da && !db) return 0;
+        if (!da) return 1;
+        if (!db) return -1;
+        return da.localeCompare(db);
+      });
     }
     case "recently-updated":
       return sorted.sort((a, b) => {
-        const ta = getLatestActivity(a)
-        const tb = getLatestActivity(b)
-        if (!ta && !tb) return 0
-        if (!ta) return 1
-        if (!tb) return -1
-        return tb.localeCompare(ta)
-      })
+        const ta = getLatestActivity(a);
+        const tb = getLatestActivity(b);
+        if (!ta && !tb) return 0;
+        if (!ta) return 1;
+        if (!tb) return -1;
+        return tb.localeCompare(ta);
+      });
     case "files":
-      return sorted.sort((a, b) => b.fileCount - a.fileCount)
+      return sorted.sort((a, b) => b.fileCount - a.fileCount);
     default:
-      return sorted
+      return sorted;
   }
 }
 
 export function TopicNavigationGrid() {
-  const [search, setSearch] = useState("")
-  const [sortBy, setSortBy] = useState<SortOption>("recently-updated")
-  const [viewMode, setViewMode] = useState<ViewMode>("bento")
-  const searchId = useId()
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("recently-updated");
+  const [viewMode, setViewMode] = useState<ViewMode>("bento");
+  const searchId = useId();
 
   const filteredTopics = useMemo(() => {
-    const q = search.toLowerCase().trim()
+    const q = search.toLowerCase().trim();
     const topics = q
       ? TOPICS.filter(
           (t) =>
             t.name.toLowerCase().includes(q) ||
             t.domain.toLowerCase().includes(q) ||
             t.parentGroup.toLowerCase().includes(q) ||
-            t.projects.some((p) => p.name.toLowerCase().includes(q))
+            t.projects.some((p) => p.name.toLowerCase().includes(q)),
         )
-      : seededShuffle(TOPICS, 42)
+      : seededShuffle(TOPICS, 42);
 
-    return sortTopics(topics, sortBy)
-  }, [search, sortBy])
+    return sortTopics(topics, sortBy);
+  }, [search, sortBy]);
 
   return (
     <div className="min-h-dvh bg-background">
@@ -203,8 +207,14 @@ export function TopicNavigationGrid() {
               <Plus className="size-4" />
               Create New Topic
             </Button>
-            <span className="text-xs text-muted-foreground whitespace-nowrap">Sort by</span>
-            <Select items={SORT_ITEMS} value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              Sort by
+            </span>
+            <Select
+              items={SORT_ITEMS}
+              value={sortBy}
+              onValueChange={(v) => setSortBy(v as SortOption)}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue />
               </SelectTrigger>
@@ -247,8 +257,8 @@ export function TopicNavigationGrid() {
         ) : viewMode === "bento" ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:[grid-auto-flow:dense]">
             {filteredTopics.map((topic, i) => {
-              const pattern = SPAN_PATTERN[i % SPAN_PATTERN.length]
-              const isWide = pattern.span.includes("col-span-2")
+              const pattern = SPAN_PATTERN[i % SPAN_PATTERN.length];
+              const isWide = pattern.span.includes("col-span-2");
               return (
                 <TopicBentoCard
                   key={topic.id}
@@ -256,7 +266,7 @@ export function TopicNavigationGrid() {
                   spanClass={`${pattern.span} ${pattern.height}`}
                   large={isWide}
                 />
-              )
+              );
             })}
           </div>
         ) : (
@@ -268,7 +278,7 @@ export function TopicNavigationGrid() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 function TopicBentoCard({
@@ -276,22 +286,19 @@ function TopicBentoCard({
   spanClass,
   large,
 }: {
-  topic: MockTopic
-  spanClass: string
-  large: boolean
+  topic: MockTopic;
+  spanClass: string;
+  large: boolean;
 }) {
-  const totalMastery = getAverageMastery(topic)
-  const topicSlug = slugify(topic.name)
-  const firstProjectSlug = slugify(topic.projects[0]?.name ?? "")
-  const deadline = getEarliestDeadline(topic)
+  const totalMastery = getAverageMastery(topic);
+  const topicSlug = slugify(topic.name);
+  const firstProjectSlug = slugify(topic.projects[0]?.name ?? "");
+  const deadline = getEarliestDeadline(topic);
 
   return (
     <Link
       href={`/dashboard/${topicSlug}/${firstProjectSlug}`}
-      className={cn(
-        "group block",
-        spanClass
-      )}
+      className={cn("group block", spanClass)}
     >
       <SpotlightCard
         className={cn(
@@ -305,9 +312,7 @@ function TopicBentoCard({
       >
         <div className="flex-1 p-5">
           <div>
-            <h3 className="text-2xl font-semibold truncate">
-              {topic.name}
-            </h3>
+            <h3 className="text-2xl font-semibold truncate">{topic.name}</h3>
             <p className="text-sm text-muted-foreground">{topic.domain}</p>
           </div>
 
@@ -341,7 +346,10 @@ function TopicBentoCard({
             {deadline && (
               <span className="flex items-center gap-1">
                 <Calendar className="size-3" />
-                {new Date(deadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                {new Date(deadline).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })}
               </span>
             )}
           </div>
@@ -354,14 +362,14 @@ function TopicBentoCard({
         </div>
       </SpotlightCard>
     </Link>
-  )
+  );
 }
 
 function TopicListRow({ topic }: { topic: MockTopic }) {
-  const totalMastery = getAverageMastery(topic)
-  const topicSlug = slugify(topic.name)
-  const firstProjectSlug = slugify(topic.projects[0]?.name ?? "")
-  const deadline = getEarliestDeadline(topic)
+  const totalMastery = getAverageMastery(topic);
+  const topicSlug = slugify(topic.name);
+  const firstProjectSlug = slugify(topic.projects[0]?.name ?? "");
+  const deadline = getEarliestDeadline(topic);
 
   return (
     <Link
@@ -371,7 +379,7 @@ function TopicListRow({ topic }: { topic: MockTopic }) {
         "bg-background",
         "[box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05)]",
         "dark:[border:1px_solid_rgba(255,255,255,.1)]",
-        "transition-all hover:shadow-md"
+        "transition-all hover:shadow-md",
       )}
     >
       <div className="min-w-0 flex-1">
@@ -395,7 +403,10 @@ function TopicListRow({ topic }: { topic: MockTopic }) {
         {deadline && (
           <span className="flex items-center gap-1">
             <Calendar className="size-3" />
-            {new Date(deadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            {new Date(deadline).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            })}
           </span>
         )}
       </div>
@@ -409,5 +420,5 @@ function TopicListRow({ topic }: { topic: MockTopic }) {
         </div>
       </div>
     </Link>
-  )
+  );
 }

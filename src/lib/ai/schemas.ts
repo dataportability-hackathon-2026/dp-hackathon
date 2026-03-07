@@ -1,4 +1,4 @@
-import { z } from "zod"
+import { z } from "zod";
 
 // ── Learning Profile Analysis Schema ──
 
@@ -49,11 +49,11 @@ export const LearningProfileAnalysisSchema = z.object({
       .enum(["autonomy", "competence", "relatedness"])
       .describe("Primary SDT need to address"),
   }),
-})
+});
 
 export type LearningProfileAnalysis = z.infer<
   typeof LearningProfileAnalysisSchema
->
+>;
 
 // ── 7-Day Learning Guide Schema ──
 
@@ -93,7 +93,7 @@ export const GuideBlockSchema = z.object({
     )
     .min(1)
     .describe("Learning techniques used"),
-})
+});
 
 export const LearningGuideSchema = z.object({
   title: z.string().describe("Guide title"),
@@ -119,9 +119,9 @@ export const LearningGuideSchema = z.object({
     )
     .length(7)
     .describe("One summary per day"),
-})
+});
 
-export type LearningGuide = z.infer<typeof LearningGuideSchema>
+export type LearningGuide = z.infer<typeof LearningGuideSchema>;
 
 // ── Artifact Schemas ──
 
@@ -135,16 +135,14 @@ export const QuizArtifactSchema = z.object({
         question: z.string(),
         options: z.array(z.string()).length(4),
         correctIndex: z.number().int().min(0).max(3),
-        explanation: z
-          .string()
-          .describe("Why the correct answer is correct"),
+        explanation: z.string().describe("Why the correct answer is correct"),
       }),
     )
     .min(3)
     .max(15),
-})
+});
 
-export type QuizArtifactData = z.infer<typeof QuizArtifactSchema>
+export type QuizArtifactData = z.infer<typeof QuizArtifactSchema>;
 
 export const FlashcardArtifactSchema = z.object({
   title: z.string(),
@@ -159,9 +157,9 @@ export const FlashcardArtifactSchema = z.object({
     )
     .min(3)
     .max(20),
-})
+});
 
-export type FlashcardArtifactData = z.infer<typeof FlashcardArtifactSchema>
+export type FlashcardArtifactData = z.infer<typeof FlashcardArtifactSchema>;
 
 export const MindMapArtifactSchema = z.object({
   title: z.string(),
@@ -171,14 +169,17 @@ export const MindMapArtifactSchema = z.object({
       z.object({
         id: z.string(),
         label: z.string(),
-        parentId: z.string().nullable().describe("Root node has no parentId, use null"),
+        parentId: z
+          .string()
+          .nullable()
+          .describe("Root node has no parentId, use null"),
       }),
     )
     .min(5)
     .max(30),
-})
+});
 
-export type MindMapArtifactData = z.infer<typeof MindMapArtifactSchema>
+export type MindMapArtifactData = z.infer<typeof MindMapArtifactSchema>;
 
 export const SlideArtifactSchema = z.object({
   title: z.string(),
@@ -196,9 +197,9 @@ export const SlideArtifactSchema = z.object({
     )
     .min(3)
     .max(12),
-})
+});
 
-export type SlideArtifactData = z.infer<typeof SlideArtifactSchema>
+export type SlideArtifactData = z.infer<typeof SlideArtifactSchema>;
 
 export const SpatialArtifactSchema = z.object({
   title: z.string(),
@@ -223,7 +224,10 @@ export const SpatialArtifactSchema = z.object({
         z: z.number().describe("Z position coordinate"),
         color: z.string().describe("Hex color code"),
         scale: z.number().nullable().describe("Scale factor, null for default"),
-        rotate: z.boolean().nullable().describe("Whether to rotate, null for default"),
+        rotate: z
+          .boolean()
+          .nullable()
+          .describe("Whether to rotate, null for default"),
       }),
     )
     .min(2)
@@ -238,7 +242,10 @@ export const SpatialArtifactSchema = z.object({
     )
     .nullable()
     .describe("Connections between objects, or null if none"),
-  autoRotate: z.boolean().nullable().describe("Auto-rotate the scene, null for default"),
-})
+  autoRotate: z
+    .boolean()
+    .nullable()
+    .describe("Auto-rotate the scene, null for default"),
+});
 
-export type SpatialArtifactData = z.infer<typeof SpatialArtifactSchema>
+export type SpatialArtifactData = z.infer<typeof SpatialArtifactSchema>;

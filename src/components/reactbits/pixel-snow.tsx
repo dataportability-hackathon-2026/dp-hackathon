@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 type PixelSnowProps = {
   className?: string;
@@ -41,7 +41,8 @@ export function PixelSnow({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const dpr = typeof window !== "undefined" ? Math.min(window.devicePixelRatio, 2) : 1;
+    const dpr =
+      typeof window !== "undefined" ? Math.min(window.devicePixelRatio, 2) : 1;
     const resize = () => {
       const w = canvas.clientWidth;
       const h = canvas.clientHeight;

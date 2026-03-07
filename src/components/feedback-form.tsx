@@ -1,11 +1,8 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { MessageSquare, Loader2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
+import { Loader2, MessageSquare } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -14,52 +11,55 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
-type FeedbackCategory = "bug" | "feature" | "general"
+type FeedbackCategory = "bug" | "feature" | "general";
 
 export function FeedbackForm() {
-  const [open, setOpen] = useState(false)
-  const [sending, setSending] = useState(false)
-  const [sent, setSent] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [open, setOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [category, setCategory] = useState<FeedbackCategory>("general")
-  const [message, setMessage] = useState("")
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [category, setCategory] = useState<FeedbackCategory>("general");
+  const [message, setMessage] = useState("");
 
   function resetForm() {
-    setName("")
-    setEmail("")
-    setCategory("general")
-    setMessage("")
-    setSent(false)
-    setError(null)
+    setName("");
+    setEmail("");
+    setCategory("general");
+    setMessage("");
+    setSent(false);
+    setError(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setSending(true)
-    setError(null)
+    e.preventDefault();
+    setSending(true);
+    setError(null);
 
     try {
       const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, category, message }),
-      })
+      });
 
       if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || "Failed to send feedback")
+        const data = await res.json();
+        throw new Error(data.error || "Failed to send feedback");
       }
 
-      setSent(true)
+      setSent(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong")
+      setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
-      setSending(false)
+      setSending(false);
     }
   }
 
@@ -67,15 +67,11 @@ export function FeedbackForm() {
     <Dialog
       open={open}
       onOpenChange={(isOpen) => {
-        setOpen(isOpen)
-        if (!isOpen) resetForm()
+        setOpen(isOpen);
+        if (!isOpen) resetForm();
       }}
     >
-      <DialogTrigger
-        render={
-          <Button variant="outline" size="sm" />
-        }
-      >
+      <DialogTrigger render={<Button variant="outline" size="sm" />}>
         <MessageSquare className="size-4" data-icon="inline-start" />
         Feedback
       </DialogTrigger>
@@ -157,14 +153,17 @@ export function FeedbackForm() {
                 />
               </div>
 
-              {error && (
-                <p className="text-sm text-destructive">{error}</p>
-              )}
+              {error && <p className="text-sm text-destructive">{error}</p>}
             </div>
 
             <DialogFooter>
               <Button type="submit" disabled={sending}>
-                {sending && <Loader2 className="size-4 animate-spin" data-icon="inline-start" />}
+                {sending && (
+                  <Loader2
+                    className="size-4 animate-spin"
+                    data-icon="inline-start"
+                  />
+                )}
                 {sending ? "Sending..." : "Send Feedback"}
               </Button>
             </DialogFooter>
@@ -172,5 +171,5 @@ export function FeedbackForm() {
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }

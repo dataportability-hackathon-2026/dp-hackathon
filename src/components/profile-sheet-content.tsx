@@ -1,13 +1,11 @@
-"use client"
+"use client";
 
-import { useId, useState } from "react"
-import { authClient } from "@/lib/auth-client"
 import {
   Bell,
   Check,
   ChevronRight,
-  Clock,
   ClipboardList,
+  Clock,
   Lock,
   LogOut,
   Mail,
@@ -15,18 +13,21 @@ import {
   Settings,
   Shield,
   User,
-} from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+} from "lucide-react";
+import { useId, useState } from "react";
+import { BillingDialog } from "@/components/billing/billing-dialog";
+import { UsageDialog } from "@/components/billing/usage-dialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -35,18 +36,17 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Progress, ProgressLabel } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
-import { SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { UsageDialog } from "@/components/billing/usage-dialog"
-import { BillingDialog } from "@/components/billing/billing-dialog"
-import { useDataStore, type MotivationProfile } from "@/lib/data-store"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress, ProgressLabel } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { authClient } from "@/lib/auth-client";
+import { type MotivationProfile, useDataStore } from "@/lib/data-store";
 
 function formatPercent(n: number): string {
-  return `${Math.round(n * 100)}%`
+  return `${Math.round(n * 100)}%`;
 }
 
 const LEARNING_PREFERENCES = [
@@ -54,25 +54,49 @@ const LEARNING_PREFERENCES = [
   { pref: "Short practice sessions (25-30 min)" },
   { pref: "Worked examples before free practice" },
   { pref: "Prefers direct, concise coaching tone" },
-] as const
+] as const;
 
-const MOTIVATION_ITEMS: Array<{ key: keyof MotivationProfile; label: string; desc: string }> = [
-  { key: "autonomy", label: "Autonomy", desc: "Need for choice and self-direction" },
-  { key: "competence", label: "Competence", desc: "Need to feel capable and effective" },
-  { key: "relatedness", label: "Relatedness", desc: "Need for connection and belonging" },
-]
+const MOTIVATION_ITEMS: Array<{
+  key: keyof MotivationProfile;
+  label: string;
+  desc: string;
+}> = [
+  {
+    key: "autonomy",
+    label: "Autonomy",
+    desc: "Need for choice and self-direction",
+  },
+  {
+    key: "competence",
+    label: "Competence",
+    desc: "Need to feel capable and effective",
+  },
+  {
+    key: "relatedness",
+    label: "Relatedness",
+    desc: "Need for connection and belonging",
+  },
+];
 
-function OverviewTab({ onRetakeAssessment }: { onRetakeAssessment?: () => void }) {
-  const listId = useId()
-  const profileStrengths = useDataStore((s) => s.profileStrengths)
-  const motivationProfile = useDataStore((s) => s.motivationProfile)
-  const calibrationTendency = useDataStore((s) => s.calibrationTendency)
-  const systemAdaptations = useDataStore((s) => s.systemAdaptations)
+function OverviewTab({
+  onRetakeAssessment,
+}: {
+  onRetakeAssessment?: () => void;
+}) {
+  const listId = useId();
+  const profileStrengths = useDataStore((s) => s.profileStrengths);
+  const motivationProfile = useDataStore((s) => s.motivationProfile);
+  const calibrationTendency = useDataStore((s) => s.calibrationTendency);
+  const systemAdaptations = useDataStore((s) => s.systemAdaptations);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       {onRetakeAssessment && (
-        <Button variant="outline" className="w-full" onClick={onRetakeAssessment}>
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={onRetakeAssessment}
+        >
           <ClipboardList className="size-4" data-icon="inline-start" />
           Retake Assessment
         </Button>
@@ -158,9 +182,12 @@ function OverviewTab({ onRetakeAssessment }: { onRetakeAssessment?: () => void }
               </span>
             </div>
             <div>
-              <p className="text-sm font-medium">{calibrationTendency.tendency}</p>
+              <p className="text-sm font-medium">
+                {calibrationTendency.tendency}
+              </p>
               <p className="text-xs text-muted-foreground">
-                You predict {formatPercent(calibrationTendency.avgConfidence)} confidence but score{" "}
+                You predict {formatPercent(calibrationTendency.avgConfidence)}{" "}
+                confidence but score{" "}
                 {formatPercent(calibrationTendency.avgAccuracy)} on average
               </p>
             </div>
@@ -171,9 +198,7 @@ function OverviewTab({ onRetakeAssessment }: { onRetakeAssessment?: () => void }
       <Card>
         <CardHeader>
           <CardTitle>Learning Preferences</CardTitle>
-          <CardDescription>
-            From screens 10-11 of your profile
-          </CardDescription>
+          <CardDescription>From screens 10-11 of your profile</CardDescription>
         </CardHeader>
         <CardContent>
           <ul className="space-y-2">
@@ -204,28 +229,26 @@ function OverviewTab({ onRetakeAssessment }: { onRetakeAssessment?: () => void }
               className="rounded-lg border p-3"
             >
               <p className="text-sm font-medium">{a.rule}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {a.reason}
-              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{a.reason}</p>
             </div>
           ))}
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
 
 function SettingsDialog() {
-  const { data: session } = authClient.useSession()
-  const [displayName, setDisplayName] = useState(session?.user?.name ?? "")
-  const [email, setEmail] = useState(session?.user?.email ?? "")
-  const [timezone, setTimezone] = useState("America/New_York")
-  const [saved, setSaved] = useState(false)
+  const { data: session } = authClient.useSession();
+  const [displayName, setDisplayName] = useState(session?.user?.name ?? "");
+  const [email, setEmail] = useState(session?.user?.email ?? "");
+  const [timezone, setTimezone] = useState("America/New_York");
+  const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
-  }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
 
   return (
     <Dialog>
@@ -243,13 +266,13 @@ function SettingsDialog() {
       <DialogContent className="flex max-h-[80dvh] flex-col sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
-          <DialogDescription>
-            Manage your account preferences
-          </DialogDescription>
+          <DialogDescription>Manage your account preferences</DialogDescription>
         </DialogHeader>
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto -mx-6 px-6">
           <div className="space-y-3">
-            <p className="text-xs font-medium text-muted-foreground uppercase">Profile</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase">
+              Profile
+            </p>
             <div className="space-y-2">
               <Label htmlFor="settings-name">Display Name</Label>
               <Input
@@ -281,7 +304,9 @@ function SettingsDialog() {
           <Separator />
 
           <div className="space-y-3">
-            <p className="text-xs font-medium text-muted-foreground uppercase">Preferences</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase">
+              Preferences
+            </p>
             <div className="space-y-2">
               <Label htmlFor="settings-timezone">Timezone</Label>
               <Input
@@ -327,7 +352,9 @@ function SettingsDialog() {
           <Separator />
 
           <div className="space-y-3">
-            <p className="text-xs font-medium text-muted-foreground uppercase">Security</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase">
+              Security
+            </p>
             <Button variant="outline" size="sm" className="w-full">
               <Lock className="size-3.5" data-icon="inline-start" />
               Change Password
@@ -341,18 +368,25 @@ function SettingsDialog() {
           <Separator />
 
           <div className="space-y-3">
-            <p className="text-xs font-medium text-destructive uppercase">Danger Zone</p>
+            <p className="text-xs font-medium text-destructive uppercase">
+              Danger Zone
+            </p>
             <div className="rounded-lg border border-destructive/30 p-3">
               <p className="text-sm font-medium">Delete Account</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Permanently delete your account and all associated data. This action cannot be undone.
+                Permanently delete your account and all associated data. This
+                action cannot be undone.
               </p>
               <Button
                 variant="destructive"
                 size="sm"
                 className="mt-3"
                 onClick={() => {
-                  if (window.confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+                  if (
+                    window.confirm(
+                      "Are you sure you want to delete your account? This action cannot be undone.",
+                    )
+                  ) {
                     // TODO: implement account deletion
                   }
                 }}
@@ -377,7 +411,7 @@ function SettingsDialog() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 function AccountSection() {
@@ -394,26 +428,32 @@ function AccountSection() {
           void authClient.signOut({
             fetchOptions: {
               onSuccess: () => {
-                window.location.href = "/"
+                window.location.href = "/";
               },
             },
-          })
+          });
         }}
       >
         <LogOut className="size-4" />
         Log out
       </button>
     </div>
-  )
+  );
 }
 
-export function ProfileSheetContent({ onRetakeAssessment }: { onRetakeAssessment?: () => void }) {
-  const { data: session } = authClient.useSession()
+export function ProfileSheetContent({
+  onRetakeAssessment,
+}: {
+  onRetakeAssessment?: () => void;
+}) {
+  const { data: session } = authClient.useSession();
   return (
     <>
       <SheetHeader className="flex-row items-center gap-3">
         <Avatar>
-          <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+          <AvatarFallback>
+            <User className="h-4 w-4" />
+          </AvatarFallback>
         </Avatar>
         <SheetTitle>{session?.user?.name ?? "Account"}</SheetTitle>
       </SheetHeader>
@@ -423,5 +463,5 @@ export function ProfileSheetContent({ onRetakeAssessment }: { onRetakeAssessment
       <Separator />
       <AccountSection />
     </>
-  )
+  );
 }

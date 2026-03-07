@@ -1,12 +1,12 @@
-import { put, del, list, type ListBlobResult } from '@vercel/blob';
+import { del, type ListBlobResult, list, put } from "@vercel/blob";
 
 export async function uploadArtifact(
   file: File | Blob,
   filename: string,
-  folder?: string
+  folder?: string,
 ): Promise<string> {
   const pathname = folder ? `${folder}/${filename}` : filename;
-  const blob = await put(pathname, file, { access: 'public' });
+  const blob = await put(pathname, file, { access: "public" });
   return blob.url;
 }
 

@@ -1,5 +1,4 @@
-import { cli, voice, llm, defineAgent } from "@livekit/agents";
-import { ServerOptions } from "@livekit/agents";
+import { cli, defineAgent, llm, ServerOptions, voice } from "@livekit/agents";
 import * as openai from "@livekit/agents-plugin-openai";
 import { z } from "zod";
 
@@ -102,9 +101,7 @@ const createLearningGuide = llm.tool({
     priorKnowledgeLevel: z
       .enum(["beginner", "intermediate", "advanced"])
       .describe("Current knowledge level"),
-    studyStrategies: z
-      .array(z.string())
-      .describe("Preferred study strategies"),
+    studyStrategies: z.array(z.string()).describe("Preferred study strategies"),
     concepts: z.array(z.string()).describe("Concepts to cover"),
   }),
   execute: async (args) => callAppApi("create_learning_guide", args),
@@ -156,7 +153,7 @@ export default defineAgent({
     });
 
     // Listen for text messages sent from the frontend via data channel
-    ctx.room.on("dataReceived", (payload, participant) => {
+    ctx.room.on("dataReceived", (payload, _participant) => {
       try {
         const decoder = new TextDecoder();
         const data = JSON.parse(decoder.decode(payload));
@@ -187,5 +184,5 @@ export default defineAgent({
 cli.runApp(
   new ServerOptions({
     agent: import.meta.filename,
-  })
+  }),
 );

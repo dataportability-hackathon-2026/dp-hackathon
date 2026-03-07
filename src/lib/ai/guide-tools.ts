@@ -1,16 +1,8 @@
 import { generateText, Output, tool } from "ai";
 import { z } from "zod";
-import {
-  type CitationKey,
-  getCitationBlock,
-  getCitationGuardrails,
-} from "./citations";
+import { getCitationBlock, getCitationGuardrails } from "./citations";
 import { openai } from "./provider";
-import {
-  GuideBlockSchema,
-  LearningGuideSchema,
-  type LearningProfileAnalysis,
-} from "./schemas";
+import { GuideBlockSchema, LearningGuideSchema } from "./schemas";
 
 // ── Guide-specific schemas ──
 

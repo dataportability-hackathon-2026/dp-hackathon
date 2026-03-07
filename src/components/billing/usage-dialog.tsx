@@ -1,6 +1,8 @@
-"use client"
+"use client";
 
-import { useId } from "react"
+import { BarChart3, Loader2, Zap } from "lucide-react";
+import { useId } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -8,70 +10,81 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Card, CardContent } from "@/components/ui/card"
-import { Progress, ProgressLabel } from "@/components/ui/progress"
-import { BarChart3, Loader2, Zap } from "lucide-react"
-import { useCredits } from "@/hooks/use-credits"
-import { useUsage } from "@/hooks/use-usage"
+} from "@/components/ui/dialog";
+import { Progress, ProgressLabel } from "@/components/ui/progress";
+import { useCredits } from "@/hooks/use-credits";
+import { useUsage } from "@/hooks/use-usage";
 
 function formatTokenCount(tokens: number): string {
   if (tokens >= 1_000_000) {
-    return `${(tokens / 1_000_000).toFixed(1)}M`
+    return `${(tokens / 1_000_000).toFixed(1)}M`;
   }
   if (tokens >= 1_000) {
-    return `${(tokens / 1_000).toFixed(1)}K`
+    return `${(tokens / 1_000).toFixed(1)}K`;
   }
-  return String(tokens)
+  return String(tokens);
 }
 
 export function UsageDialog() {
-  const rowId = useId()
-  const { displayCredits, loading: creditsLoading } = useCredits()
-  const { usage, loading: usageLoading, error } = useUsage()
+  const rowId = useId();
+  const { displayCredits, loading: creditsLoading } = useCredits();
+  const { usage, loading: usageLoading, error } = useUsage();
 
-  const totalInputTokens = usage.reduce((sum, entry) => sum + entry.inputTokens, 0)
-  const totalOutputTokens = usage.reduce((sum, entry) => sum + entry.outputTokens, 0)
+  const totalInputTokens = usage.reduce(
+    (sum, entry) => sum + entry.inputTokens,
+    0,
+  );
+  const totalOutputTokens = usage.reduce(
+    (sum, entry) => sum + entry.outputTokens,
+    0,
+  );
   const totalCreditsConsumed = usage.reduce(
     (sum, entry) => sum + entry.creditsConsumed,
-    0
-  )
-  const totalGenerations = usage.length
+    0,
+  );
+  const totalGenerations = usage.length;
 
-  const displayConsumed = totalCreditsConsumed / 1000
-  const creditsTotal = displayConsumed + displayCredits
-  const progressValue = creditsTotal > 0 ? (displayConsumed / creditsTotal) * 100 : 0
+  const displayConsumed = totalCreditsConsumed / 1000;
+  const creditsTotal = displayConsumed + displayCredits;
+  const progressValue =
+    creditsTotal > 0 ? (displayConsumed / creditsTotal) * 100 : 0;
 
-  const loading = creditsLoading || usageLoading
+  const loading = creditsLoading || usageLoading;
 
   // Group usage entries by date for daily breakdown
   const dailyBreakdown = usage.reduce<
     Record<
       string,
       {
-        date: string
-        generations: number
-        inputTokens: number
-        outputTokens: number
-        credits: number
+        date: string;
+        generations: number;
+        inputTokens: number;
+        outputTokens: number;
+        credits: number;
       }
     >
   >((acc, entry) => {
     const date = new Date(entry.createdAt).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
-    })
+    });
     if (!acc[date]) {
-      acc[date] = { date, generations: 0, inputTokens: 0, outputTokens: 0, credits: 0 }
+      acc[date] = {
+        date,
+        generations: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        credits: 0,
+      };
     }
-    acc[date].generations += 1
-    acc[date].inputTokens += entry.inputTokens
-    acc[date].outputTokens += entry.outputTokens
-    acc[date].credits += entry.creditsConsumed
-    return acc
-  }, {})
+    acc[date].generations += 1;
+    acc[date].inputTokens += entry.inputTokens;
+    acc[date].outputTokens += entry.outputTokens;
+    acc[date].credits += entry.creditsConsumed;
+    return acc;
+  }, {});
 
-  const dailyRows = Object.values(dailyBreakdown)
+  const dailyRows = Object.values(dailyBreakdown);
 
   return (
     <Dialog>
@@ -117,7 +130,9 @@ export function UsageDialog() {
                     </span>
                   </div>
                   <Progress value={progressValue}>
-                    <ProgressLabel className="sr-only">Credits used</ProgressLabel>
+                    <ProgressLabel className="sr-only">
+                      Credits used
+                    </ProgressLabel>
                   </Progress>
                   <p className="text-xs text-muted-foreground">
                     {Math.round(displayCredits)} credits remaining
@@ -128,7 +143,9 @@ export function UsageDialog() {
               {/* Summary stats */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-lg border p-3 text-center">
-                  <p className="text-lg font-bold tabular-nums">{totalGenerations}</p>
+                  <p className="text-lg font-bold tabular-nums">
+                    {totalGenerations}
+                  </p>
                   <p className="text-xs text-muted-foreground">Generations</p>
                 </div>
                 <div className="rounded-lg border p-3 text-center">
@@ -164,7 +181,9 @@ export function UsageDialog() {
                         key={`${rowId}-${row.date}`}
                         className="grid grid-cols-5 gap-2 border-b px-3 py-2 text-sm last:border-0"
                       >
-                        <span className="text-muted-foreground">{row.date}</span>
+                        <span className="text-muted-foreground">
+                          {row.date}
+                        </span>
                         <span className="text-right tabular-nums">
                           {row.generations}
                         </span>
@@ -187,5 +206,5 @@ export function UsageDialog() {
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
