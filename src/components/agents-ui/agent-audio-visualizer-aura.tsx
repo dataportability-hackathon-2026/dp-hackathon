@@ -290,6 +290,7 @@ function AuraShader({
     <div ref={ref} className={className} {...props}>
       <ReactShaderToy
         fs={shaderSource}
+        clearColor={[0, 0, 0, 0]}
         devicePixelRatio={globalThis.devicePixelRatio ?? 1}
         uniforms={{
           // Aurora wave speed
@@ -305,7 +306,7 @@ function AuraShader({
           // Turbulence amplitude
           uAmplitude: { type: '1f', value: amplitude },
           // Light intensity (bloom)
-          uBloom: { type: '1f', value: 0.0 },
+          uBloom: { type: '1f', value: 1.0 },
           // Brightness of the aurora (0-1)
           uMix: { type: '1f', value: brightness },
           // Color variation across layers (0-1)

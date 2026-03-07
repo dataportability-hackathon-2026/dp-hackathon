@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, type ReactNode } from "react";
+import { useState, useId, useRef, type ReactNode } from "react";
 import {
   Brain,
   Upload,
@@ -422,6 +422,7 @@ type ContentModal =
   | null;
 
 export function LandingPage() {
+  const listId = useId();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [contentModal, setContentModal] = useState<ContentModal>(null);
   const heroRef = useRef(null);
@@ -579,7 +580,7 @@ export function LandingPage() {
 
             <StaggerChildren className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {features.map((feature, i) => (
-                <StaggerItem key={i}>
+                <StaggerItem key={`${listId}-feat-${feature.title}`}>
                   <motion.button
                     type="button"
                     className="w-full text-left rounded-2xl overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
@@ -620,7 +621,7 @@ export function LandingPage() {
 
             <div className="grid gap-6 lg:gap-8 lg:grid-cols-3">
               {layers.map((layer, i) => (
-                <FadeInOnScroll key={i} delay={i * 0.15}>
+                <FadeInOnScroll key={`${listId}-layer-${layer.title}`} delay={i * 0.15}>
                   <motion.button
                     type="button"
                     className="w-full text-left rounded-2xl overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
@@ -649,8 +650,8 @@ export function LandingPage() {
                 { value: 14, suffix: " wks", label: "Avg. mastery timeline" },
                 { value: 97, suffix: "%", label: "Knowledge coverage" },
                 { value: 35, suffix: "%", label: "Less study time" },
-              ].map((stat, i) => (
-                <StaggerItem key={i}>
+              ].map((stat) => (
+                <StaggerItem key={`${listId}-stat-${stat.label}`}>
                   <div className="text-center">
                     <div className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight font-heading">
                       <CountUp target={stat.value} suffix={stat.suffix} />
@@ -849,9 +850,10 @@ export function LandingPage() {
 
             <StaggerChildren className="space-y-3">
               {faqs.map((faq, i) => (
-                <StaggerItem key={i}>
+                <StaggerItem key={`${listId}-faq-${faq.q}`}>
                   <div className="rounded-xl backdrop-blur-xl bg-white/10 dark:bg-white/5 overflow-hidden">
                     <button
+                      type="button"
                       className="flex w-full items-center justify-between p-5 text-left"
                       onClick={() => setOpenFaq(openFaq === i ? null : i)}
                     >

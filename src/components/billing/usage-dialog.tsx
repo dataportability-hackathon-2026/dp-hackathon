@@ -113,14 +113,14 @@ export function UsageDialog() {
                       <span className="text-sm font-medium">Credits Used</span>
                     </div>
                     <span className="text-sm font-semibold tabular-nums">
-                      {displayConsumed.toFixed(1)} / {creditsTotal.toFixed(1)}
+                      {Math.round(displayConsumed)} / {Math.round(creditsTotal)}
                     </span>
                   </div>
                   <Progress value={progressValue}>
                     <ProgressLabel className="sr-only">Credits used</ProgressLabel>
                   </Progress>
                   <p className="text-xs text-muted-foreground">
-                    {displayCredits.toFixed(1)} credits remaining
+                    {Math.round(displayCredits)} credits remaining
                   </p>
                 </CardContent>
               </Card>
@@ -175,7 +175,7 @@ export function UsageDialog() {
                           {formatTokenCount(row.outputTokens)}
                         </span>
                         <span className="text-right tabular-nums">
-                          {(row.credits / 1000).toFixed(1)}
+                          {Math.round(row.credits / 1000)}
                         </span>
                       </div>
                     ))}

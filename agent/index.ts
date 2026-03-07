@@ -17,6 +17,7 @@ export default class LearningAgent extends voice.Agent {
       stt: new openai.STT({
         apiKey: AI_GATEWAY_API_KEY,
         baseURL: AI_GATEWAY_BASE_URL,
+        language: "en",
       }),
       llm: new openai.LLM({
         model: "openai/gpt-4o-mini",

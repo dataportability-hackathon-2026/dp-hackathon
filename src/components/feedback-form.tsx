@@ -112,6 +112,7 @@ export function FeedbackForm() {
                   placeholder="Your name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  autoComplete="name"
                   required
                 />
               </div>
@@ -124,6 +125,7 @@ export function FeedbackForm() {
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
                   required
                 />
               </div>
@@ -136,7 +138,7 @@ export function FeedbackForm() {
                   onChange={(e) =>
                     setCategory(e.target.value as FeedbackCategory)
                   }
-                  className="border-input bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 h-9 rounded-4xl border px-3 py-1 text-sm outline-none transition-colors focus-visible:ring-[3px]"
+                  className="border-input bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 h-9 rounded-4xl border px-3 py-1 text-sm outline-none transition-colors focus-visible:ring-[3px] focus-visible:outline-none"
                 >
                   <option value="general">General Feedback</option>
                   <option value="bug">Bug Report</option>

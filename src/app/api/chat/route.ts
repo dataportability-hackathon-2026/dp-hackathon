@@ -1,4 +1,4 @@
-import { stepCountIs, streamText } from "ai";
+import { stepCountIs, streamText, convertToModelMessages } from "ai";
 import { getCitationGuardrails } from "@/lib/ai/citations";
 import { openai } from "@/lib/ai/provider";
 import { tools } from "@/lib/ai/tools";
@@ -8,15 +8,16 @@ export async function POST(req: Request) {
   const { messages, priorContext } = await req.json()
 
   // If there is prior conversation context (e.g. from a voice session),
-  // prepend it so the text agent understands the full conversation history.
-  const contextPrefix = Array.isArray(priorContext) && priorContext.length > 0
-    ? priorContext.map((m: { role: string; content: string }) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      }))
-    : []
+  // inject it into the system prompt so the text agent understands the full history
+  // without mixing message formats.
+  const priorContextSummary = Array.isArray(priorContext) && priorContext.length > 0
+    ? `\n\n## Prior conversation context (from voice session)\n${priorContext
+        .map((m: { role: string; content: string }) => `${m.role}: ${m.content}`)
+        .join("\n")}\n\n---\nThe above is context from a prior voice session. Continue the conversation naturally.`
+    : ""
 
-  const allMessages = [...contextPrefix, ...messages]
+  // Convert UIMessages from useChat to ModelMessages for streamText
+  const allMessages = await convertToModelMessages(messages)
 
   const result = streamText({
     model: openai("gpt-4o-mini"),
@@ -69,6 +70,18 @@ When they want to switch topics, use select_topic.
 When they mention completing a study block, use complete_guide_block.
 When they want to see a specific artifact type, use open_artifact.
 
+## Schedule & Workflow Tools
+- generate_all_artifacts: Generate all artifact types (quiz, flashcards, mindmap, slides, spatial) for a topic — runs in the background
+- create_schedule: Set up a recurring reminder, artifact refresh, or progress report
+- update_schedule: Modify an existing schedule (interval, message, max runs)
+- cancel_schedule: Stop a running schedule
+
+When a student asks to be reminded, set up a study schedule, or generate everything at once, use these tools.
+Examples: "remind me every morning at 8am for 3 days" → create_schedule (type: reminder, intervalHours: 24, durationDays: 3)
+"generate all artifacts for eigenvalues" → generate_all_artifacts
+"change my reminder to 9am" → update_schedule
+"cancel my reminders" → cancel_schedule
+
 ${getCitationGuardrails()}
 
 Always explain what you're creating and WHY it helps (cite the evidence basis).
@@ -76,7 +89,7 @@ Keep text responses concise and focused on the learning objective.
 NEVER claim that format preferences improve learning outcomes.
 Present estimates with uncertainty, not false precision.
 
-Note: The conversation may include messages from a prior voice session. Treat these as part of the ongoing conversation and maintain continuity.`,
+Note: The conversation may include messages from a prior voice session. Treat these as part of the ongoing conversation and maintain continuity.${priorContextSummary}`,
     messages: allMessages,
     tools: { ...tools, ...stateTools },
     stopWhen: stepCountIs(5),

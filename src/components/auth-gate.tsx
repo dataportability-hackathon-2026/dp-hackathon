@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Brain, Eye, EyeOff, GraduationCap, Loader2, Palette, Shield, Stethoscope } from "lucide-react"
 import { siteConfig } from "@/lib/white-label"
+import { useRouter } from "next/navigation"
 import { authClient } from "@/lib/auth-client"
 
 const isDev = process.env.NODE_ENV === "development"
@@ -58,6 +59,7 @@ const ADMIN_PERSONA: DemoPersona = {
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = authClient.useSession()
+  const router = useRouter()
   const [isSignUp, setIsSignUp] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
@@ -91,16 +93,49 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     })
 
     if (signInError) {
-      // User doesn't exist yet — create account, then sign in
+      // User doesn't exist yet — create account
       const { error: signUpError } = await authClient.signUp.email({
         email: persona.email,
         password: persona.password,
         name: persona.name,
       })
       if (signUpError) {
-        setError(signUpError.message ?? "Failed to create demo account")
-        setLoading(false)
+        // Account exists with stale password hash (e.g. from old DB).
+        // In dev mode, reset and retry.
+        if (isDev) {
+          const resetRes = await fetch("/api/dev/reset-persona", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: persona.email }),
+          })
+          if (resetRes.ok) {
+            const { error: retryError } = await authClient.signUp.email({
+              email: persona.email,
+              password: persona.password,
+              name: persona.name,
+            })
+            if (retryError) {
+              setError(retryError.message ?? "Failed to create demo account")
+              setLoading(false)
+              return
+            }
+          } else {
+            setError(signUpError.message ?? "Failed to create demo account")
+            setLoading(false)
+            return
+          }
+        } else {
+          setError(signUpError.message ?? "Failed to create demo account")
+          setLoading(false)
+          return
+        }
       }
+    }
+
+    // Set admin role and redirect if this is the admin persona
+    if (persona.email === ADMIN_PERSONA.email) {
+      await fetch("/api/admin/set-role", { method: "POST" })
+      router.push("/admin")
     }
   }
 
@@ -187,6 +222,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>

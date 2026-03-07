@@ -214,6 +214,7 @@ function WaveShader({
     <div ref={ref} className={className} {...props}>
       <ReactShaderToy
         fs={shaderSource}
+        clearColor={[0, 0, 0, 0]}
         devicePixelRatio={globalThis.devicePixelRatio ?? 1}
         uniforms={{
           uSpeed: { type: '1f', value: speed },

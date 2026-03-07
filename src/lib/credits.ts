@@ -51,7 +51,7 @@ export async function deductCredits(
 export async function addCredits(
   userId: string,
   amount: number,
-  type: "purchase" | "refund" | "adjustment",
+  type: "purchase" | "refund" | "adjustment" | "promo",
   description: string,
   referenceId?: string,
 ): Promise<{ success: true; newBalance: number }> {

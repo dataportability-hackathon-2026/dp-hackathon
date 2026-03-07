@@ -43,8 +43,9 @@ import {
   type ManimArtifact,
   type VideoArtifact,
   artifactTypeLabel,
-  getArtifactsByType,
 } from "./artifact-store"
+import { useDataStore } from "@/lib/data-store"
+import { DevArtifactToolbar } from "./dev-artifact-toolbar"
 
 // Lazy load heavy 3D/map components — these pull in three.js, deck.gl, maplibre
 const SpatialCard = dynamic(
@@ -77,7 +78,9 @@ export function ArtifactCanvas({
   scrollToId?: string | null
   onClose: () => void
 }) {
-  const artifacts = getArtifactsByType(activeType)
+  const artifacts = useDataStore((s) =>
+    Array.from(s.artifacts.values()).filter((a) => a.type === activeType)
+  )
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -92,7 +95,7 @@ export function ArtifactCanvas({
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-10 shrink-0 items-center gap-3 border-b px-4">
-        <Button variant="ghost" size="icon-xs" onClick={onClose}>
+        <Button variant="ghost" size="icon-xs" onClick={onClose} aria-label="Back">
           <ArrowLeft className="size-4" />
         </Button>
         <span className="text-sm font-semibold">
@@ -102,6 +105,10 @@ export function ArtifactCanvas({
           {artifacts.length} item{artifacts.length !== 1 ? "s" : ""}
         </Badge>
       </div>
+
+      {process.env.NODE_ENV === "development" && (
+        <DevArtifactToolbar activeType={activeType} />
+      )}
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6">
         <div className="mx-auto max-w-3xl space-y-6">
@@ -224,6 +231,7 @@ function VideoCard({ artifact }: { artifact: VideoArtifact }) {
               size="icon-lg"
               className="bg-black/50 text-white hover:bg-black/70"
               onClick={toggle}
+              aria-label={playing ? "Pause" : "Play"}
             >
               {playing ? <Pause className="size-6" /> : <Play className="size-6" />}
             </Button>
@@ -710,6 +718,7 @@ function SlideCard({ artifact }: { artifact: SlideArtifact }) {
               <button
                 type="button"
                 key={`slide-dot-${i}`}
+                aria-label={`Go to slide ${i + 1}`}
                 className={`size-2 rounded-full transition-colors ${
                   i === currentSlide ? "bg-primary" : "bg-muted-foreground/30"
                 }`}

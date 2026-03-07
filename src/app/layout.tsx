@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { CreditProvider } from "@/components/providers/credit-provider";
 import { SiteConfigProvider } from "@/components/providers/site-config-provider";
+import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { siteConfig } from "@/lib/white-label";
 
 export const viewport: Viewport = {
@@ -48,6 +49,7 @@ export default function RootLayout({
             <SiteConfigProvider>
               <AuthProvider>
                 <CreditProvider>
+                  <ImpersonationBanner />
                   {children}
                 </CreditProvider>
               </AuthProvider>
