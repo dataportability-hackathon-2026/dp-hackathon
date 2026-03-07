@@ -1,21 +1,21 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Loader2, Sparkles } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { dataStore } from "@/lib/data-store"
-import type { ArtifactType, FlashcardArtifact } from "./artifact-store"
+import { Loader2, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { dataStore } from "@/lib/data-store";
+import type { ArtifactType, FlashcardArtifact } from "./artifact-store";
 
 type DevToolConfig = {
-  label: string
-  type: ArtifactType
+  label: string;
+  type: ArtifactType;
   defaultInput: {
-    subject: string
-    concepts: string[]
-    priorKnowledgeLevel: string
-    goalType: string
-  }
-}
+    subject: string;
+    concepts: string[];
+    priorKnowledgeLevel: string;
+    goalType: string;
+  };
+};
 
 const DEV_TOOLS: DevToolConfig[] = [
   {
@@ -28,33 +28,37 @@ const DEV_TOOLS: DevToolConfig[] = [
       goalType: "exam prep",
     },
   },
-]
+];
 
-export function DevArtifactToolbar({ activeType }: { activeType: ArtifactType }) {
-  const [loading, setLoading] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+export function DevArtifactToolbar({
+  activeType,
+}: {
+  activeType: ArtifactType;
+}) {
+  const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const tools = DEV_TOOLS.filter((t) => t.type === activeType)
+  const tools = DEV_TOOLS.filter((t) => t.type === activeType);
 
-  if (tools.length === 0) return null
+  if (tools.length === 0) return null;
 
   async function handleGenerate(tool: DevToolConfig) {
-    setLoading(tool.type)
-    setError(null)
+    setLoading(tool.type);
+    setError(null);
 
     try {
       const res = await fetch("/api/dev/generate-artifact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: tool.type, input: tool.defaultInput }),
-      })
+      });
 
       if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error ?? `HTTP ${res.status}`)
+        const err = await res.json();
+        throw new Error(err.error ?? `HTTP ${res.status}`);
       }
 
-      const result = await res.json()
+      const result = await res.json();
 
       if (tool.type === "flashcards") {
         const artifact: FlashcardArtifact = {
@@ -64,14 +68,14 @@ export function DevArtifactToolbar({ activeType }: { activeType: ArtifactType })
           description: result.data.description,
           cards: result.data.cards,
           createdAt: new Date().toISOString().slice(0, 10),
-        }
-        dataStore.addArtifact(artifact)
+        };
+        dataStore.addArtifact(artifact);
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Generation failed"
-      setError(message)
+      const message = err instanceof Error ? err.message : "Generation failed";
+      setError(message);
     } finally {
-      setLoading(null)
+      setLoading(null);
     }
   }
 
@@ -101,5 +105,5 @@ export function DevArtifactToolbar({ activeType }: { activeType: ArtifactType })
         <span className="text-xs text-red-600 dark:text-red-400">{error}</span>
       )}
     </div>
-  )
+  );
 }

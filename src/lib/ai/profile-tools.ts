@@ -557,7 +557,9 @@ ${getCitationBlock(["ZIMMERMAN_2002", "SCHRAW_1994", "DUNLOSKY_2013", "WEINSTEIN
 
 // ── Prompt builder ──
 
-function buildProfileAnalysisPrompt(input: ProfileAssessmentInput): string {
+export function buildProfileAnalysisPrompt(
+  input: ProfileAssessmentInput,
+): string {
   const metacogScore = {
     rarely: 1,
     sometimes: 2,

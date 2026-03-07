@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { source } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
 import { put } from "@vercel/blob";
+import { and, eq, sql } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
+import { db } from "@/db";
+import { source, topic } from "@/db/schema";
 import { getEffectiveUserId } from "@/lib/impersonate";
 
 // ─── Limits ─────────────────────────────────────────────────────────────────
@@ -16,38 +16,78 @@ const MAX_FILENAME_LENGTH = 255;
 // ─── Blocked extensions — executables and dangerous files ───────────────────
 
 const BLOCKED_EXTENSIONS = new Set([
-  "exe", "msi", "bat", "cmd", "com", "scr", "pif", "vbs", "vbe",
-  "js", "jse", "ws", "wsf", "wsc", "wsh", "ps1", "ps2", "psc1",
-  "psc2", "msh", "msh1", "msh2", "inf", "reg", "dll", "sys",
-  "cpl", "hta", "apk", "app", "dmg", "iso", "bin", "sh", "bash",
-  "lnk", "jar", "war",
+  "exe",
+  "msi",
+  "bat",
+  "cmd",
+  "com",
+  "scr",
+  "pif",
+  "vbs",
+  "vbe",
+  "js",
+  "jse",
+  "ws",
+  "wsf",
+  "wsc",
+  "wsh",
+  "ps1",
+  "ps2",
+  "psc1",
+  "psc2",
+  "msh",
+  "msh1",
+  "msh2",
+  "inf",
+  "reg",
+  "dll",
+  "sys",
+  "cpl",
+  "hta",
+  "apk",
+  "app",
+  "dmg",
+  "iso",
+  "bin",
+  "sh",
+  "bash",
+  "lnk",
+  "jar",
+  "war",
 ]);
 
 // ─── Magic bytes for content-type validation ────────────────────────────────
 
-const MAGIC_BYTES: Array<{ ext: string; bytes: number[] }> = [
-  { ext: "pdf", bytes: [0x25, 0x50, 0x44, 0x46] },           // %PDF
-  { ext: "png", bytes: [0x89, 0x50, 0x4e, 0x47] },           // .PNG
-  { ext: "jpg", bytes: [0xff, 0xd8, 0xff] },                  // JPEG
-  { ext: "gif", bytes: [0x47, 0x49, 0x46] },                  // GIF
-  { ext: "zip", bytes: [0x50, 0x4b, 0x03, 0x04] },           // ZIP (also docx/xlsx/pptx)
-  { ext: "mp3", bytes: [0x49, 0x44, 0x33] },                  // ID3
-  { ext: "mp4", bytes: [0x00, 0x00, 0x00] },                  // ftyp (partial)
-  { ext: "wav", bytes: [0x52, 0x49, 0x46, 0x46] },           // RIFF
+const _MAGIC_BYTES: Array<{ ext: string; bytes: number[] }> = [
+  { ext: "pdf", bytes: [0x25, 0x50, 0x44, 0x46] }, // %PDF
+  { ext: "png", bytes: [0x89, 0x50, 0x4e, 0x47] }, // .PNG
+  { ext: "jpg", bytes: [0xff, 0xd8, 0xff] }, // JPEG
+  { ext: "gif", bytes: [0x47, 0x49, 0x46] }, // GIF
+  { ext: "zip", bytes: [0x50, 0x4b, 0x03, 0x04] }, // ZIP (also docx/xlsx/pptx)
+  { ext: "mp3", bytes: [0x49, 0x44, 0x33] }, // ID3
+  { ext: "mp4", bytes: [0x00, 0x00, 0x00] }, // ftyp (partial)
+  { ext: "wav", bytes: [0x52, 0x49, 0x46, 0x46] }, // RIFF
 ];
 
 // Extensions that are Office Open XML (zip-based) — skip exe-in-zip check
 const ZIP_BASED_EXTENSIONS = new Set([
-  "docx", "xlsx", "pptx", "odt", "ods", "odp", "epub", "ipynb",
+  "docx",
+  "xlsx",
+  "pptx",
+  "odt",
+  "ods",
+  "odp",
+  "epub",
+  "ipynb",
 ]);
 
 // ─── Dangerous content patterns (embedded in files) ─────────────────────────
 
 const DANGEROUS_PATTERNS = [
-  /\x00\x00\x00\x00MZPE/,           // PE executable embedded
-  /<script[\s>]/i,                    // HTML script injection
-  /javascript:/i,                     // JS protocol
-  /\beval\s*\(/,                      // eval() in text files
+  /\x00\x00\x00\x00MZPE/, // PE executable embedded
+  /<script[\s>]/i, // HTML script injection
+  /javascript:/i, // JS protocol
+  /\beval\s*\(/, // eval() in text files
 ];
 
 function extFromName(filename: string): string {
@@ -56,23 +96,42 @@ function extFromName(filename: string): string {
 
 function isMediaFile(filename: string): boolean {
   const ext = extFromName(filename);
-  return ["mp3", "m4a", "wav", "ogg", "flac", "aac", "wma",
-    "mp4", "webm", "mov", "avi", "mkv", "m4v", "wmv"].includes(ext);
+  return [
+    "mp3",
+    "m4a",
+    "wav",
+    "ogg",
+    "flac",
+    "aac",
+    "wma",
+    "mp4",
+    "webm",
+    "mov",
+    "avi",
+    "mkv",
+    "m4v",
+    "wmv",
+  ].includes(ext);
 }
 
 /** Sanitize filename — strip path traversal, null bytes, control chars */
 function sanitizeFilename(name: string): string {
-  return name
-    .replace(/[/\\]/g, "_")        // no path separators
-    .replace(/\.\./g, "_")         // no directory traversal
-    .replace(/[\x00-\x1f]/g, "")   // no control characters
-    .replace(/^\.+/, "")            // no leading dots (hidden files)
-    .slice(0, MAX_FILENAME_LENGTH)
-    .trim() || "unnamed";
+  return (
+    name
+      .replace(/[/\\]/g, "_") // no path separators
+      .replace(/\.\./g, "_") // no directory traversal
+      .replace(/[\x00-\x1f]/g, "") // no control characters
+      .replace(/^\.+/, "") // no leading dots (hidden files)
+      .slice(0, MAX_FILENAME_LENGTH)
+      .trim() || "unnamed"
+  );
 }
 
 /** Check if file content matches a known dangerous executable signature */
-async function scanFileContent(file: File, ext: string): Promise<string | null> {
+async function scanFileContent(
+  file: File,
+  ext: string,
+): Promise<string | null> {
   const slice = await file.slice(0, 8192).arrayBuffer();
   const header = new Uint8Array(slice);
 
@@ -82,7 +141,12 @@ async function scanFileContent(file: File, ext: string): Promise<string | null> 
   }
 
   // Check for ELF executable (Linux)
-  if (header[0] === 0x7f && header[1] === 0x45 && header[2] === 0x4c && header[3] === 0x46) {
+  if (
+    header[0] === 0x7f &&
+    header[1] === 0x45 &&
+    header[2] === 0x4c &&
+    header[3] === 0x46
+  ) {
     return "File contains executable content";
   }
 
@@ -95,7 +159,21 @@ async function scanFileContent(file: File, ext: string): Promise<string | null> 
   }
 
   // For text-like files, scan for dangerous patterns
-  const textExts = new Set(["txt", "md", "csv", "tex", "bib", "r", "rmd", "svg", "html", "xml", "json", "yaml", "yml"]);
+  const textExts = new Set([
+    "txt",
+    "md",
+    "csv",
+    "tex",
+    "bib",
+    "r",
+    "rmd",
+    "svg",
+    "html",
+    "xml",
+    "json",
+    "yaml",
+    "yml",
+  ]);
   if (textExts.has(ext)) {
     const text = new TextDecoder("utf-8", { fatal: false }).decode(header);
     for (const pattern of DANGEROUS_PATTERNS) {
@@ -113,7 +191,15 @@ async function scanFileContent(file: File, ext: string): Promise<string | null> 
   }
 
   // Verify PDF files actually start with %PDF
-  if (ext === "pdf" && !(header[0] === 0x25 && header[1] === 0x50 && header[2] === 0x44 && header[3] === 0x46)) {
+  if (
+    ext === "pdf" &&
+    !(
+      header[0] === 0x25 &&
+      header[1] === 0x50 &&
+      header[2] === 0x44 &&
+      header[3] === 0x46
+    )
+  ) {
     return "File does not match expected PDF format";
   }
 
@@ -139,15 +225,13 @@ export async function GET(req: NextRequest) {
   if (!topicSlug)
     return NextResponse.json(
       { error: "topicSlug is required" },
-      { status: 400 }
+      { status: 400 },
     );
 
   const rows = await db
     .select()
     .from(source)
-    .where(
-      and(eq(source.userId, userId), eq(source.topicSlug, topicSlug))
-    );
+    .where(and(eq(source.userId, userId), eq(source.topicSlug, topicSlug)));
 
   return NextResponse.json({ sources: rows });
 }
@@ -165,7 +249,7 @@ export async function POST(req: NextRequest) {
   if (!topicSlug)
     return NextResponse.json(
       { error: "topicSlug is required" },
-      { status: 400 }
+      { status: 400 },
     );
 
   const files = formData.getAll("files") as File[];
@@ -174,7 +258,7 @@ export async function POST(req: NextRequest) {
   if (files.length > MAX_FILES_PER_REQUEST)
     return NextResponse.json(
       { error: `Too many files (max ${MAX_FILES_PER_REQUEST} per upload)` },
-      { status: 400 }
+      { status: 400 },
     );
 
   // Check user storage quota before uploading
@@ -185,7 +269,7 @@ export async function POST(req: NextRequest) {
     const limitMB = Math.round(MAX_STORAGE_PER_USER / 1024 / 1024);
     return NextResponse.json(
       { error: `Storage quota exceeded (${usedMB} MB used of ${limitMB} MB)` },
-      { status: 413 }
+      { status: 413 },
     );
   }
 
@@ -197,22 +281,34 @@ export async function POST(req: NextRequest) {
 
     // 1. Block dangerous extensions
     if (BLOCKED_EXTENSIONS.has(ext)) {
-      results.push({ id: "", filename: safeName, error: `Blocked file type: .${ext}` });
+      results.push({
+        id: "",
+        filename: safeName,
+        error: `Blocked file type: .${ext}`,
+      });
       continue;
     }
 
     // 2. Check double extensions (e.g. "report.pdf.exe")
     const parts = safeName.split(".");
     if (parts.length > 2) {
-      const hasBlockedInner = parts.slice(1, -1).some((p) => BLOCKED_EXTENSIONS.has(p.toLowerCase()));
+      const hasBlockedInner = parts
+        .slice(1, -1)
+        .some((p) => BLOCKED_EXTENSIONS.has(p.toLowerCase()));
       if (hasBlockedInner) {
-        results.push({ id: "", filename: safeName, error: "Suspicious double extension" });
+        results.push({
+          id: "",
+          filename: safeName,
+          error: "Suspicious double extension",
+        });
         continue;
       }
     }
 
     // 3. Check file size
-    const maxSize = isMediaFile(safeName) ? MAX_FILE_SIZE_MEDIA : MAX_FILE_SIZE_DEFAULT;
+    const maxSize = isMediaFile(safeName)
+      ? MAX_FILE_SIZE_MEDIA
+      : MAX_FILE_SIZE_DEFAULT;
     if (file.size > maxSize) {
       results.push({
         id: "",
@@ -256,5 +352,46 @@ export async function POST(req: NextRequest) {
     results.push({ id: row.id, filename: safeName });
   }
 
-  return NextResponse.json({ results });
+  // Auto-generate title if topic is still "Untitled"
+  let generatedTitle: string | undefined;
+  const successfulUploads = results.filter((r) => r.id);
+  if (successfulUploads.length > 0) {
+    const [topicRow] = await db
+      .select()
+      .from(topic)
+      .where(eq(topic.slug, topicSlug));
+    if (topicRow && topicRow.name === "Untitled") {
+      try {
+        const titleRes = await fetch(
+          new URL(
+            `/api/topics/${topicRow.id}/generate-title`,
+            process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+          ),
+          { method: "POST", headers: { cookie: "" } },
+        );
+        if (titleRes.ok) {
+          const titleData = (await titleRes.json()) as {
+            generatedName: string;
+          };
+          generatedTitle = titleData.generatedName;
+        }
+      } catch {
+        // Non-critical — title generation failure shouldn't break upload
+      }
+    }
+
+    // Update source count on topic
+    if (topicRow) {
+      const [countResult] = await db
+        .select({ total: sql<number>`count(*)` })
+        .from(source)
+        .where(and(eq(source.userId, userId), eq(source.topicSlug, topicSlug)));
+      await db
+        .update(topic)
+        .set({ sourceCount: Number(countResult.total), updatedAt: new Date() })
+        .where(eq(topic.id, topicRow.id));
+    }
+  }
+
+  return NextResponse.json({ results, generatedTitle });
 }

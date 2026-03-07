@@ -1,56 +1,96 @@
-import { sleep } from "workflow"
-import { put } from "@vercel/blob"
-import { db } from "@/db"
-import { workflowRun, generatedArtifact } from "@/db/schema"
-import { eq } from "drizzle-orm"
-import { sendEmail } from "@/lib/email"
+import { put } from "@vercel/blob";
+import { eq } from "drizzle-orm";
+import { sleep } from "workflow";
+import { db } from "@/db";
+import { generatedArtifact, workflowRun } from "@/db/schema";
 import {
-  generateQuiz,
+  type ArtifactInput,
   generateFlashcards,
   generateMindMap,
+  generateQuiz,
   generateSlides,
   generateSpatial,
-  type ArtifactInput,
-} from "@/lib/ai/generate-artifact"
+} from "@/lib/ai/generate-artifact";
+import { sendEmail } from "@/lib/email";
 
-const ARTIFACT_TYPES = ["quiz", "flashcards", "mindmap", "slidedeck", "spatial"] as const
+const VALID_ARTIFACT_TYPES = [
+  "quiz",
+  "flashcards",
+  "mindmap",
+  "slidedeck",
+  "spatial",
+] as const;
 
-type GenerateAllParams = {
-  userId: string
-  workflowRunId: string
-  input: ArtifactInput
-  notifyEmail?: string
+type ValidArtifactType = (typeof VALID_ARTIFACT_TYPES)[number];
+
+/** Per-artifact request with optional overrides on top of shared config. */
+type ArtifactRequest = {
+  type: ValidArtifactType;
+  subject?: string;
+  concepts?: string[];
+  priorKnowledgeLevel?: string;
+  goalType?: string;
+  sourceIds?: string[];
+  sourceContent?: string;
+  instructions?: string;
+};
+
+type GenerateArtifactsParams = {
+  userId: string;
+  workflowRunId: string;
+  /** Shared base config — each artifact inherits unless it overrides. */
+  shared: ArtifactInput;
+  /** List of artifacts to generate. Each can override shared fields. */
+  artifacts: ArtifactRequest[];
+  notifyEmail?: string;
+};
+
+function mergeInput(
+  shared: ArtifactInput,
+  request: ArtifactRequest,
+): ArtifactInput {
+  return {
+    subject: request.subject ?? shared.subject,
+    concepts: request.concepts ?? shared.concepts,
+    priorKnowledgeLevel:
+      request.priorKnowledgeLevel ?? shared.priorKnowledgeLevel,
+    goalType: request.goalType ?? shared.goalType,
+    sourceIds: request.sourceIds ?? shared.sourceIds,
+    sourceContent: request.sourceContent ?? shared.sourceContent,
+    instructions: request.instructions ?? shared.instructions,
+  };
 }
 
-async function recordBatchStart(params: GenerateAllParams) {
-  "use step"
+async function recordBatchStart(params: GenerateArtifactsParams) {
+  "use step";
   await db.insert(workflowRun).values({
     id: params.workflowRunId,
     userId: params.userId,
     workflowType: "batch_artifacts",
     status: "running",
-    input: JSON.stringify(params.input),
-  })
+    input: JSON.stringify({
+      shared: params.shared,
+      artifacts: params.artifacts,
+    }),
+  });
 }
 
 async function generateSingleArtifact(
-  artifactType: string,
+  artifactType: ValidArtifactType,
   input: ArtifactInput,
 ) {
-  "use step"
+  "use step";
   switch (artifactType) {
     case "quiz":
-      return await generateQuiz(input)
+      return await generateQuiz(input);
     case "flashcards":
-      return await generateFlashcards(input)
+      return await generateFlashcards(input);
     case "mindmap":
-      return await generateMindMap(input)
+      return await generateMindMap(input);
     case "slidedeck":
-      return await generateSlides(input)
+      return await generateSlides(input);
     case "spatial":
-      return await generateSpatial(input)
-    default:
-      throw new Error(`Unknown artifact type: ${artifactType}`)
+      return await generateSpatial(input);
   }
 }
 
@@ -58,14 +98,15 @@ async function persistArtifact(
   userId: string,
   workflowRunId: string,
   artifactType: string,
+  index: number,
   data: unknown,
 ) {
-  "use step"
+  "use step";
   const blob = await put(
-    `artifacts/${userId}/${artifactType}-${Date.now()}.json`,
+    `artifacts/${userId}/${artifactType}-${index}-${Date.now()}.json`,
     JSON.stringify(data),
     { access: "public", contentType: "application/json" },
-  )
+  );
 
   await db.insert(generatedArtifact).values({
     userId,
@@ -74,24 +115,31 @@ async function persistArtifact(
     title: `${artifactType} — ${new Date().toLocaleDateString()}`,
     blobUrl: blob.url,
     status: "completed",
-  })
+  });
 
-  return blob.url
+  return blob.url;
 }
 
-async function updateProgress(workflowRunId: string, completed: number, total: number) {
-  "use step"
+async function updateProgress(
+  workflowRunId: string,
+  completed: number,
+  total: number,
+) {
+  "use step";
   await db
     .update(workflowRun)
     .set({
       output: JSON.stringify({ completed, total, status: "in_progress" }),
       updatedAt: new Date(),
     })
-    .where(eq(workflowRun.id, workflowRunId))
+    .where(eq(workflowRun.id, workflowRunId));
 }
 
-async function markBatchCompleted(workflowRunId: string, results: Array<{ type: string; blobUrl: string }>) {
-  "use step"
+async function markBatchCompleted(
+  workflowRunId: string,
+  results: Array<{ type: string; index: number; blobUrl: string }>,
+) {
+  "use step";
   await db
     .update(workflowRun)
     .set({
@@ -99,66 +147,76 @@ async function markBatchCompleted(workflowRunId: string, results: Array<{ type: 
       output: JSON.stringify({ results }),
       updatedAt: new Date(),
     })
-    .where(eq(workflowRun.id, workflowRunId))
+    .where(eq(workflowRun.id, workflowRunId));
 }
 
 async function markBatchFailed(workflowRunId: string, error: string) {
-  "use step"
+  "use step";
   await db
     .update(workflowRun)
     .set({ status: "failed", error, updatedAt: new Date() })
-    .where(eq(workflowRun.id, workflowRunId))
+    .where(eq(workflowRun.id, workflowRunId));
 }
 
 async function sendBatchCompletionEmail(
   email: string,
-  results: Array<{ type: string; blobUrl: string }>,
+  results: Array<{ type: string; index: number; blobUrl: string }>,
 ) {
-  "use step"
+  "use step";
   const artifactList = results
-    .map((r) => `<li><strong>${r.type}</strong></li>`)
-    .join("")
+    .map((r) => `<li><strong>${r.type}</strong> (#${r.index + 1})</li>`)
+    .join("");
 
   await sendEmail({
     to: email,
-    subject: "All artifacts generated — CoreModel",
+    subject: "Your artifacts are ready — CoreModel",
     html: `<p>Your batch artifact generation is complete! Here's what was created:</p>
 <ul>${artifactList}</ul>
 <p>${results.length} artifacts are now available in your CoreModel dashboard.</p>`,
-  })
+  });
 }
 
-export async function generateAllArtifactsWorkflow(params: GenerateAllParams) {
-  "use workflow"
+export async function generateArtifactsWorkflow(
+  params: GenerateArtifactsParams,
+) {
+  "use workflow";
 
-  await recordBatchStart(params)
+  await recordBatchStart(params);
 
-  const results: Array<{ type: string; blobUrl: string }> = []
+  const results: Array<{ type: string; index: number; blobUrl: string }> = [];
 
   try {
-    for (const artifactType of ARTIFACT_TYPES) {
-      const data = await generateSingleArtifact(artifactType, params.input)
+    for (let i = 0; i < params.artifacts.length; i++) {
+      const request = params.artifacts[i];
+      const input = mergeInput(params.shared, request);
+
+      const data = await generateSingleArtifact(request.type, input);
       const blobUrl = await persistArtifact(
         params.userId,
         params.workflowRunId,
-        artifactType,
+        request.type,
+        i,
         data,
-      )
-      results.push({ type: artifactType, blobUrl })
-      await updateProgress(params.workflowRunId, results.length, ARTIFACT_TYPES.length)
-      await sleep("2s")
+      );
+      results.push({ type: request.type, index: i, blobUrl });
+      await updateProgress(
+        params.workflowRunId,
+        results.length,
+        params.artifacts.length,
+      );
+      await sleep("2s");
     }
 
-    await markBatchCompleted(params.workflowRunId, results)
+    await markBatchCompleted(params.workflowRunId, results);
 
     if (params.notifyEmail) {
-      await sendBatchCompletionEmail(params.notifyEmail, results)
+      await sendBatchCompletionEmail(params.notifyEmail, results);
     }
 
-    return { success: true, results }
+    return { success: true, results };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    await markBatchFailed(params.workflowRunId, message)
-    return { success: false, error: message, partialResults: results }
+    const message = err instanceof Error ? err.message : String(err);
+    await markBatchFailed(params.workflowRunId, message);
+    return { success: false, error: message, partialResults: results };
   }
 }

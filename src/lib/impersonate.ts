@@ -1,9 +1,8 @@
-import { cookies } from "next/headers";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { eq } from "drizzle-orm";
+import { cookies, headers } from "next/headers";
 import { db } from "@/db";
 import { user } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { auth } from "@/lib/auth";
 
 const COOKIE_NAME = "impersonate_user_id";
 

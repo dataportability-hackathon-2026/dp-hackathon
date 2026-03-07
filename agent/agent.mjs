@@ -1,5 +1,4 @@
-import { cli, voice, llm, defineAgent } from "@livekit/agents";
-import { ServerOptions } from "@livekit/agents";
+import { cli, defineAgent, llm, ServerOptions, voice } from "@livekit/agents";
 import * as openai from "@livekit/agents-plugin-openai";
 import { z } from "zod";
 
@@ -17,9 +16,32 @@ async function callAppApi(toolName, input) {
       body: JSON.stringify({ tool: toolName, input }),
     });
     if (!res.ok) {
-      return `Failed to create artifact: ${res.status}`;
+      const errorText = await res.text().catch(() => "");
+      return `Sorry, I couldn't do that right now. The server returned an error (${res.status}). ${errorText ? `Details: ${errorText}` : "Please try again."}`;
     }
-    const result = await res.json();
+
+    const text = await res.text();
+    if (!text || text.trim() === "") {
+      return `I sent the request but got an empty response from the server. The ${toolName.replace(/_/g, " ")} may not have been created. Please try again.`;
+    }
+
+    let result;
+    try {
+      result = JSON.parse(text);
+    } catch {
+      return `I got an unexpected response from the server. Please try again.`;
+    }
+
+    if (
+      !result ||
+      (typeof result === "object" && Object.keys(result).length === 0)
+    ) {
+      return `The server returned an empty result. The ${toolName.replace(/_/g, " ")} may not have been created. Please try again.`;
+    }
+
+    if (result.error) {
+      return `Sorry, there was a problem: ${result.error}`;
+    }
 
     // Send artifact data to frontend via data channel
     if (currentRoom?.localParticipant) {
@@ -34,7 +56,9 @@ async function callAppApi(toolName, input) {
       });
     }
 
-    return `I've created a ${result.type} for you. It should appear on your screen now.`;
+    const label =
+      result.type || toolName.replace(/_/g, " ").replace(/^create /, "");
+    return `I've created a ${label} for you. It should appear on your screen now.`;
   } catch (err) {
     return `Sorry, I wasn't able to create that right now. Error: ${err.message}`;
   }
@@ -102,9 +126,7 @@ const createLearningGuide = llm.tool({
     priorKnowledgeLevel: z
       .enum(["beginner", "intermediate", "advanced"])
       .describe("Current knowledge level"),
-    studyStrategies: z
-      .array(z.string())
-      .describe("Preferred study strategies"),
+    studyStrategies: z.array(z.string()).describe("Preferred study strategies"),
     concepts: z.array(z.string()).describe("Concepts to cover"),
   }),
   execute: async (args) => callAppApi("create_learning_guide", args),
@@ -134,6 +156,7 @@ export default defineAgent({
         "You are a friendly and knowledgeable learning assistant called CoreModel. " +
         "You help students understand concepts, quiz them, and provide encouragement. " +
         "Keep responses concise and conversational since this is a voice interaction. " +
+        "IMPORTANT: Always respond in English, regardless of what language you think you hear. " +
         "You have tools to create learning artifacts like quizzes, flashcards, mind maps, " +
         "slides, 3D visualizations, and study guides. Use them proactively when relevant. " +
         "When you create an artifact, tell the learner it will appear on their screen. " +
@@ -156,7 +179,7 @@ export default defineAgent({
     });
 
     // Listen for text messages sent from the frontend via data channel
-    ctx.room.on("dataReceived", (payload, participant) => {
+    ctx.room.on("dataReceived", (payload, _participant) => {
       try {
         const decoder = new TextDecoder();
         const data = JSON.parse(decoder.decode(payload));
@@ -187,5 +210,5 @@ export default defineAgent({
 cli.runApp(
   new ServerOptions({
     agent: import.meta.filename,
-  })
+  }),
 );

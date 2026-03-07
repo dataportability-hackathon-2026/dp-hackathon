@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { and, asc, eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { conversation, message } from "@/db/schema";
-import { eq, and, asc } from "drizzle-orm";
 import { getEffectiveUserId } from "@/lib/impersonate";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -20,10 +20,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     .select()
     .from(conversation)
     .where(
-      and(
-        eq(conversation.id, conversationId),
-        eq(conversation.userId, userId)
-      )
+      and(eq(conversation.id, conversationId), eq(conversation.userId, userId)),
     );
 
   if (!conv) {
@@ -63,10 +60,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     .select()
     .from(conversation)
     .where(
-      and(
-        eq(conversation.id, conversationId),
-        eq(conversation.userId, userId)
-      )
+      and(eq(conversation.id, conversationId), eq(conversation.userId, userId)),
     );
 
   if (!conv) {

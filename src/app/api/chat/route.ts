@@ -1,23 +1,63 @@
-import { stepCountIs, streamText, convertToModelMessages } from "ai";
+import { convertToModelMessages, stepCountIs, streamText } from "ai";
+import { and, desc, eq } from "drizzle-orm";
+import { db } from "@/db";
+import { assessment } from "@/db/schema";
 import { getCitationGuardrails } from "@/lib/ai/citations";
 import { openai } from "@/lib/ai/provider";
-import { tools } from "@/lib/ai/tools";
 import { stateTools } from "@/lib/ai/state-tools";
+import { tools } from "@/lib/ai/tools";
+import { getEffectiveUserId } from "@/lib/impersonate";
 
 export async function POST(req: Request) {
-  const { messages, priorContext } = await req.json()
+  const { messages, priorContext } = await req.json();
 
   // If there is prior conversation context (e.g. from a voice session),
   // inject it into the system prompt so the text agent understands the full history
   // without mixing message formats.
-  const priorContextSummary = Array.isArray(priorContext) && priorContext.length > 0
-    ? `\n\n## Prior conversation context (from voice session)\n${priorContext
-        .map((m: { role: string; content: string }) => `${m.role}: ${m.content}`)
-        .join("\n")}\n\n---\nThe above is context from a prior voice session. Continue the conversation naturally.`
-    : ""
+  const priorContextSummary =
+    Array.isArray(priorContext) && priorContext.length > 0
+      ? `\n\n## Prior conversation context (from voice session)\n${priorContext
+          .map(
+            (m: { role: string; content: string }) => `${m.role}: ${m.content}`,
+          )
+          .join(
+            "\n",
+          )}\n\n---\nThe above is context from a prior voice session. Continue the conversation naturally.`
+      : "";
+
+  // Fetch persisted cognitive profile
+  const userId = await getEffectiveUserId();
+  let profileContext = "";
+  if (userId) {
+    const [latest] = await db
+      .select()
+      .from(assessment)
+      .where(
+        and(eq(assessment.userId, userId), eq(assessment.status, "completed")),
+      )
+      .orderBy(desc(assessment.createdAt))
+      .limit(1);
+
+    if (latest?.fingerprint) {
+      const fp = JSON.parse(latest.fingerprint);
+      profileContext = `
+
+## Current Learner Profile
+${fp.summary}
+
+**Strengths:** ${fp.strengths?.join(", ") ?? "Unknown"}
+**Risks:** ${fp.risks?.map((r: { area: string; severity: string }) => `${r.area} (${r.severity})`).join(", ") ?? "None identified"}
+**Coaching approach:** ${fp.coachingApproach?.tone ?? "balanced"}, feedback ${fp.coachingApproach?.feedbackFrequency ?? "daily"}
+**Motivational focus:** ${fp.coachingApproach?.motivationalFocus ?? "competence"} (SDT)
+**Calibration:** ${fp.cognitiveProfile?.calibrationAccuracy ?? "unknown"}
+**Reflectiveness:** ${fp.cognitiveProfile?.reflectivenessLevel ?? "unknown"}
+
+Use this profile to adapt your responses: match the coaching tone, address risks proactively, and leverage identified strengths.`;
+    }
+  }
 
   // Convert UIMessages from useChat to ModelMessages for streamText
-  const allMessages = await convertToModelMessages(messages)
+  const allMessages = await convertToModelMessages(messages);
 
   const result = streamText({
     model: openai("gpt-4o-mini"),
@@ -89,7 +129,7 @@ Keep text responses concise and focused on the learning objective.
 NEVER claim that format preferences improve learning outcomes.
 Present estimates with uncertainty, not false precision.
 
-Note: The conversation may include messages from a prior voice session. Treat these as part of the ongoing conversation and maintain continuity.${priorContextSummary}`,
+Note: The conversation may include messages from a prior voice session. Treat these as part of the ongoing conversation and maintain continuity.${profileContext}${priorContextSummary}`,
     messages: allMessages,
     tools: { ...tools, ...stateTools },
     stopWhen: stepCountIs(5),

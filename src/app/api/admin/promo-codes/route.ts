@@ -1,9 +1,9 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { desc, eq } from "drizzle-orm";
 import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { user, promoCode } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { promoCode, user } from "@/db/schema";
+import { auth } from "@/lib/auth";
 
 async function requireAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });

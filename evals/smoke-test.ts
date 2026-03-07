@@ -2,36 +2,36 @@
  * Smoke test: exercises one tool from each category against the AI Gateway.
  * Run with: npx tsx evals/smoke-test.ts
  */
-import "./setup"
-import { profileTools } from "../src/lib/ai/profile-tools"
-import { guideTools } from "../src/lib/ai/guide-tools"
-import { artifactTools } from "../src/lib/ai/artifact-tools"
+import "./setup";
+import { artifactTools } from "../src/lib/ai/artifact-tools";
+import { guideTools } from "../src/lib/ai/guide-tools";
+import { profileTools } from "../src/lib/ai/profile-tools";
 
 async function runTest(name: string, fn: () => Promise<unknown>) {
-  const start = Date.now()
+  const start = Date.now();
   try {
-    const result = await fn()
-    const elapsed = Date.now() - start
-    console.log(`PASS [${elapsed}ms] ${name}`)
-    const r = result as Record<string, unknown>
-    console.log(`  type: ${r.type}`)
+    const result = await fn();
+    const elapsed = Date.now() - start;
+    console.log(`PASS [${elapsed}ms] ${name}`);
+    const r = result as Record<string, unknown>;
+    console.log(`  type: ${r.type}`);
     if (r.data && typeof r.data === "object") {
-      const keys = Object.keys(r.data as object)
-      console.log(`  data keys: ${keys.join(", ")}`)
+      const keys = Object.keys(r.data as object);
+      console.log(`  data keys: ${keys.join(", ")}`);
     }
-    return true
+    return true;
   } catch (err) {
-    const elapsed = Date.now() - start
-    console.error(`FAIL [${elapsed}ms] ${name}`)
-    console.error(`  ${err instanceof Error ? err.message : String(err)}`)
-    return false
+    const elapsed = Date.now() - start;
+    console.error(`FAIL [${elapsed}ms] ${name}`);
+    console.error(`  ${err instanceof Error ? err.message : String(err)}`);
+    return false;
   }
 }
 
 async function main() {
-  console.log("=== Academic Citation Tools Smoke Test ===\n")
+  console.log("=== Academic Citation Tools Smoke Test ===\n");
 
-  const results: boolean[] = []
+  const results: boolean[] = [];
 
   // 1. Profile Tool: assess_calibration
   results.push(
@@ -52,7 +52,7 @@ async function main() {
         { toolCallId: "smoke-calibration", messages: [] },
       ),
     ),
-  )
+  );
 
   // 2. Guide Tool: recommend_study_strategies
   results.push(
@@ -69,7 +69,7 @@ async function main() {
         { toolCallId: "smoke-strategies", messages: [] },
       ),
     ),
-  )
+  );
 
   // 3. Artifact Tool: create_adaptive_quiz
   results.push(
@@ -88,26 +88,28 @@ async function main() {
         { toolCallId: "smoke-quiz", messages: [] },
       ),
     ),
-  )
+  );
 
   // 4. Edge case: interleaved with single concept (should return error, not throw)
   results.push(
-    await runTest("Artifact: interleaved_problem_set (single concept edge case)", () =>
-      artifactTools.create_interleaved_problem_set.execute(
-        {
-          subject: "Statistics",
-          concepts: ["Mean"],
-          priorKnowledgeLevel: "beginner" as const,
-          goalType: "exam_prep",
-          calibrationAccuracy: "well-calibrated" as const,
-          cognitiveLoadRisk: "low" as const,
-          metacognitiveAwareness: "medium" as const,
-          coachingTone: "direct" as const,
-        },
-        { toolCallId: "smoke-interleaved-edge", messages: [] },
-      ),
+    await runTest(
+      "Artifact: interleaved_problem_set (single concept edge case)",
+      () =>
+        artifactTools.create_interleaved_problem_set.execute(
+          {
+            subject: "Statistics",
+            concepts: ["Mean"],
+            priorKnowledgeLevel: "beginner" as const,
+            goalType: "exam_prep",
+            calibrationAccuracy: "well-calibrated" as const,
+            cognitiveLoadRisk: "low" as const,
+            metacognitiveAwareness: "medium" as const,
+            coachingTone: "direct" as const,
+          },
+          { toolCallId: "smoke-interleaved-edge", messages: [] },
+        ),
     ),
-  )
+  );
 
   // 5. Artifact Tool: create_worked_example
   results.push(
@@ -128,18 +130,18 @@ async function main() {
         { toolCallId: "smoke-worked-example", messages: [] },
       ),
     ),
-  )
+  );
 
-  console.log("\n=== Results ===")
-  const passed = results.filter(Boolean).length
-  console.log(`${passed}/${results.length} tests passed`)
+  console.log("\n=== Results ===");
+  const passed = results.filter(Boolean).length;
+  console.log(`${passed}/${results.length} tests passed`);
 
   if (passed < results.length) {
-    process.exit(1)
+    process.exit(1);
   }
 }
 
 main().catch((err) => {
-  console.error("Fatal error:", err)
-  process.exit(1)
-})
+  console.error("Fatal error:", err);
+  process.exit(1);
+});

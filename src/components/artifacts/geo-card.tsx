@@ -1,15 +1,22 @@
-"use client"
+"use client";
 
-import { useMemo } from "react"
-import { DeckGL } from "@deck.gl/react"
-import { ArcLayer } from "@deck.gl/layers"
-import { Map } from "react-map-gl/maplibre"
-import "maplibre-gl/dist/maplibre-gl.css"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import type { GeoArtifact, GeoArcData } from "./artifact-store"
-import type { MapViewState, PickingInfo } from "@deck.gl/core"
+import { ArcLayer } from "@deck.gl/layers";
+import { DeckGL } from "@deck.gl/react";
+import { useMemo } from "react";
+import { Map } from "react-map-gl/maplibre";
+import "maplibre-gl/dist/maplibre-gl.css";
+import type { MapViewState, PickingInfo } from "@deck.gl/core";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import type { GeoArcData, GeoArtifact } from "./artifact-store";
 
-const MAP_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json"
+const MAP_STYLE =
+  "https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json";
 
 const ARC_COLORS: [number, number, number][] = [
   [255, 255, 204],
@@ -19,11 +26,11 @@ const ARC_COLORS: [number, number, number][] = [
   [29, 145, 192],
   [34, 94, 168],
   [12, 44, 132],
-]
+];
 
 function getTooltip({ object }: PickingInfo<GeoArcData>) {
-  if (!object) return null
-  return `${object.from.name} → ${object.to.name}\nValue: ${object.value}`
+  if (!object) return null;
+  return `${object.from.name} → ${object.to.name}\nValue: ${object.value}`;
 }
 
 export function GeoCard({ artifact }: { artifact: GeoArtifact }) {
@@ -36,12 +43,12 @@ export function GeoCard({ artifact }: { artifact: GeoArtifact }) {
       bearing: artifact.viewState?.bearing ?? 0,
     }),
     [artifact.viewState],
-  )
+  );
 
   const maxValue = useMemo(
     () => Math.max(...artifact.arcs.map((a) => a.value)),
     [artifact.arcs],
-  )
+  );
 
   const layers = useMemo(
     () => [
@@ -51,14 +58,20 @@ export function GeoCard({ artifact }: { artifact: GeoArtifact }) {
         getSourcePosition: (d) => d.from.coordinates,
         getTargetPosition: (d) => d.to.coordinates,
         getSourceColor: (d) => {
-          const t = d.value / maxValue
-          const idx = Math.min(Math.floor(t * ARC_COLORS.length), ARC_COLORS.length - 1)
-          return [...ARC_COLORS[idx], 200] as [number, number, number, number]
+          const t = d.value / maxValue;
+          const idx = Math.min(
+            Math.floor(t * ARC_COLORS.length),
+            ARC_COLORS.length - 1,
+          );
+          return [...ARC_COLORS[idx], 200] as [number, number, number, number];
         },
         getTargetColor: (d) => {
-          const t = d.value / maxValue
-          const idx = Math.min(Math.floor(t * ARC_COLORS.length), ARC_COLORS.length - 1)
-          return [...ARC_COLORS[idx], 200] as [number, number, number, number]
+          const t = d.value / maxValue;
+          const idx = Math.min(
+            Math.floor(t * ARC_COLORS.length),
+            ARC_COLORS.length - 1,
+          );
+          return [...ARC_COLORS[idx], 200] as [number, number, number, number];
         },
         getWidth: (d) => 1 + (d.value / maxValue) * 4,
         pickable: true,
@@ -66,7 +79,7 @@ export function GeoCard({ artifact }: { artifact: GeoArtifact }) {
       }),
     ],
     [artifact.arcs, artifact.id, maxValue],
-  )
+  );
 
   return (
     <Card>
@@ -95,5 +108,5 @@ export function GeoCard({ artifact }: { artifact: GeoArtifact }) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

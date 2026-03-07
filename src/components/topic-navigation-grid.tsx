@@ -1,157 +1,131 @@
-"use client"
+"use client";
 
-import { useMemo, useState, useId } from "react"
-import Link from "next/link"
 import {
   Brain,
-  Calendar,
+  Copy,
   FileText,
   LayoutGrid,
   List,
-  MessageSquare,
+  Loader2,
+  MoreHorizontal,
+  Pencil,
   Plus,
   Search,
-  TrendingUp,
+  Sparkles,
+  Star,
+  Trash2,
   User,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
+import { CreditBadge } from "@/components/billing/credit-badge";
+import { ProfileSheetContent } from "@/components/profile-sheet-content";
+import { SpotlightCard } from "@/components/reactbits/spotlight-card";
+import { ConnectDialog } from "@/components/single-page-app";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { siteConfig } from "@/lib/white-label"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet"
-import { TOPICS, slugify, type MockTopic } from "@/lib/topics"
-import { cn } from "@/lib/utils"
-import { ProfileSheetContent } from "@/components/profile-sheet-content"
-import { ConnectDialog } from "@/components/single-page-app"
-import { CreditBadge } from "@/components/billing/credit-badge"
-import { SpotlightCard } from "@/components/reactbits/spotlight-card"
+} from "@/components/ui/select";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Switch } from "@/components/ui/switch";
+import { usePreference } from "@/lib/hooks/use-preferences";
+import { useCreateTopic, useTopics } from "@/lib/hooks/use-topics";
+import { FadeIn, StaggerItem, StaggerList } from "@/lib/motion";
+import type { Topic } from "@/lib/types/topic";
+import { cn } from "@/lib/utils";
+import { siteConfig } from "@/lib/white-label";
 
-type ViewMode = "bento" | "list"
-type SortOption = "name" | "mastery" | "deadline" | "recently-updated" | "files"
+type ViewMode = "bento" | "list";
+type SortOption = "name" | "recently-updated" | "sources";
 
 const SORT_ITEMS = [
   { label: "Recently Updated", value: "recently-updated" },
-  { label: "Deadline", value: "deadline" },
-  { label: "Mastery", value: "mastery" },
   { label: "Name (A-Z)", value: "name" },
-  { label: "Most Sources", value: "files" },
-] as const
+  { label: "Most Sources", value: "sources" },
+] as const;
 
-// Repeating span pattern for a dense 3-col grid with height variants.
 const SPAN_PATTERN = [
-  { span: "md:col-span-2", height: "md:min-h-[16rem]" },  // wide + tall
-  { span: "md:col-span-1", height: "md:min-h-[12rem]" },  // standard
-  { span: "md:col-span-1", height: "md:min-h-[14rem]" },  // medium
-  { span: "md:col-span-1", height: "md:min-h-[10rem]" },  // compact
-  { span: "md:col-span-2", height: "md:min-h-[12rem]" },  // wide + short
-  { span: "md:col-span-1", height: "md:min-h-[16rem]" },  // tall
-  { span: "md:col-span-2", height: "md:min-h-[14rem]" },  // wide + medium
-  { span: "md:col-span-1", height: "md:min-h-[12rem]" },  // standard
-  { span: "md:col-span-1", height: "md:min-h-[10rem]" },  // compact
-  { span: "md:col-span-2", height: "md:min-h-[16rem]" },  // wide + tall
-  { span: "md:col-span-1", height: "md:min-h-[14rem]" },  // medium
-  { span: "md:col-span-1", height: "md:min-h-[12rem]" },  // standard
-] as const
+  { span: "md:col-span-2", height: "md:min-h-[16rem]" },
+  { span: "md:col-span-1", height: "md:min-h-[12rem]" },
+  { span: "md:col-span-1", height: "md:min-h-[14rem]" },
+  { span: "md:col-span-1", height: "md:min-h-[10rem]" },
+  { span: "md:col-span-2", height: "md:min-h-[12rem]" },
+  { span: "md:col-span-1", height: "md:min-h-[16rem]" },
+  { span: "md:col-span-2", height: "md:min-h-[14rem]" },
+  { span: "md:col-span-1", height: "md:min-h-[12rem]" },
+  { span: "md:col-span-1", height: "md:min-h-[10rem]" },
+  { span: "md:col-span-2", height: "md:min-h-[16rem]" },
+  { span: "md:col-span-1", height: "md:min-h-[14rem]" },
+  { span: "md:col-span-1", height: "md:min-h-[12rem]" },
+] as const;
 
-function formatPercent(n: number): string {
-  return `${Math.round(n * 100)}%`
-}
-
-function getAverageMastery(topic: MockTopic): number {
-  if (topic.masteryData.length === 0) return 0
-  return topic.masteryData.reduce((sum, m) => sum + m.posteriorMean, 0) / topic.masteryData.length
-}
-
-function getEarliestDeadline(topic: MockTopic): string {
-  const deadlines = topic.projects
-    .map((p) => p.deadline)
-    .filter((d) => d !== "")
-    .sort()
-  return deadlines[0] ?? ""
-}
-
-function getLatestActivity(topic: MockTopic): string {
-  const timestamps = topic.chatHistory.map((m) => m.timestamp)
-  if (timestamps.length === 0) return ""
-  return timestamps.sort().reverse()[0]
-}
-
-function seededShuffle<T>(arr: T[], seed: number): T[] {
-  const shuffled = [...arr]
-  let s = seed
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    s = (s * 16807 + 0) % 2147483647
-    const j = s % (i + 1)
-    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
-  }
-  return shuffled
-}
-
-function sortTopics(topics: MockTopic[], sortBy: SortOption): MockTopic[] {
-  const sorted = [...topics]
+function sortTopics(topics: Topic[], sortBy: SortOption): Topic[] {
+  const sorted = [...topics];
   switch (sortBy) {
     case "name":
-      return sorted.sort((a, b) => a.name.localeCompare(b.name))
-    case "mastery":
-      return sorted.sort((a, b) => getAverageMastery(b) - getAverageMastery(a))
-    case "deadline": {
-      return sorted.sort((a, b) => {
-        const da = getEarliestDeadline(a)
-        const db = getEarliestDeadline(b)
-        if (!da && !db) return 0
-        if (!da) return 1
-        if (!db) return -1
-        return da.localeCompare(db)
-      })
-    }
+      return sorted.sort((a, b) => a.name.localeCompare(b.name));
     case "recently-updated":
-      return sorted.sort((a, b) => {
-        const ta = getLatestActivity(a)
-        const tb = getLatestActivity(b)
-        if (!ta && !tb) return 0
-        if (!ta) return 1
-        if (!tb) return -1
-        return tb.localeCompare(ta)
-      })
-    case "files":
-      return sorted.sort((a, b) => b.fileCount - a.fileCount)
+      return sorted.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    case "sources":
+      return sorted.sort((a, b) => b.sourceCount - a.sourceCount);
     default:
-      return sorted
+      return sorted;
   }
 }
 
 export function TopicNavigationGrid() {
-  const [search, setSearch] = useState("")
-  const [sortBy, setSortBy] = useState<SortOption>("recently-updated")
-  const [viewMode, setViewMode] = useState<ViewMode>("bento")
-  const searchId = useId()
+  const { userTopics, communityTopics, isLoading, mutate } = useTopics();
+  const { createTopic, isCreating } = useCreateTopic();
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("recently-updated");
+  const [viewMode, setViewMode] = useState<ViewMode>("bento");
+  const [showCommunity, setShowCommunity] = usePreference("showCommunity");
+  const searchId = useId();
+  const switchId = useId();
 
-  const filteredTopics = useMemo(() => {
-    const q = search.toLowerCase().trim()
+  const filteredUserTopics = useMemo(() => {
+    const q = search.toLowerCase().trim();
     const topics = q
-      ? TOPICS.filter(
+      ? userTopics.filter(
           (t) =>
             t.name.toLowerCase().includes(q) ||
-            t.domain.toLowerCase().includes(q) ||
-            t.parentGroup.toLowerCase().includes(q) ||
-            t.projects.some((p) => p.name.toLowerCase().includes(q))
+            (t.domain ?? "").toLowerCase().includes(q) ||
+            (t.parentGroup ?? "").toLowerCase().includes(q),
         )
-      : seededShuffle(TOPICS, 42)
+      : userTopics;
+    return sortTopics(topics, sortBy);
+  }, [search, sortBy, userTopics]);
 
-    return sortTopics(topics, sortBy)
-  }, [search, sortBy])
+  const filteredCommunityTopics = useMemo(() => {
+    if (!showCommunity) return [];
+    const q = search.toLowerCase().trim();
+    const topics = q
+      ? communityTopics.filter(
+          (t) =>
+            t.name.toLowerCase().includes(q) ||
+            (t.domain ?? "").toLowerCase().includes(q) ||
+            (t.parentGroup ?? "").toLowerCase().includes(q),
+        )
+      : communityTopics;
+    return sortTopics(topics, sortBy);
+  }, [search, sortBy, communityTopics, showCommunity]);
+
+  const hasUserTopics = userTopics.length > 0;
 
   return (
     <div className="min-h-dvh bg-background">
@@ -187,227 +161,506 @@ export function TopicNavigationGrid() {
       </header>
 
       <div className="mx-auto max-w-[1400px] p-6 sm:p-10">
-        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative max-w-sm flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              id={searchId}
-              placeholder="Search topics, domains, projects..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Button>
-              <Plus className="size-4" />
-              Create New Topic
-            </Button>
-            <span className="text-xs text-muted-foreground whitespace-nowrap">Sort by</span>
-            <Select items={SORT_ITEMS} value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SORT_ITEMS.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="flex items-center rounded-md border">
-              <Button
-                variant={viewMode === "bento" ? "secondary" : "ghost"}
-                size="icon"
-                className="size-8 rounded-r-none"
-                onClick={() => setViewMode("bento")}
-                aria-label="Bento grid view"
-              >
-                <LayoutGrid className="size-4" />
-              </Button>
-              <Button
-                variant={viewMode === "list" ? "secondary" : "ghost"}
-                size="icon"
-                className="size-8 rounded-l-none"
-                onClick={() => setViewMode("list")}
-                aria-label="List view"
-              >
-                <List className="size-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {filteredTopics.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-            <Search className="mb-3 size-8" />
-            <p className="text-sm">No topics match your search</p>
-          </div>
-        ) : viewMode === "bento" ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:[grid-auto-flow:dense]">
-            {filteredTopics.map((topic, i) => {
-              const pattern = SPAN_PATTERN[i % SPAN_PATTERN.length]
-              const isWide = pattern.span.includes("col-span-2")
-              return (
-                <TopicBentoCard
-                  key={topic.id}
-                  topic={topic}
-                  spanClass={`${pattern.span} ${pattern.height}`}
-                  large={isWide}
-                />
-              )
-            })}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="size-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
-            {filteredTopics.map((topic) => (
-              <TopicListRow key={topic.id} topic={topic} />
-            ))}
-          </div>
+          <>
+            {/* Filter row */}
+            <FadeIn className="mb-8">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3 flex-1 max-w-lg">
+                  <div className="relative max-w-sm flex-1">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id={searchId}
+                      placeholder="Search topics, domains..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id={switchId}
+                      checked={showCommunity}
+                      onCheckedChange={setShowCommunity}
+                    />
+                    <Label
+                      htmlFor={switchId}
+                      className="text-xs whitespace-nowrap cursor-pointer"
+                    >
+                      Community
+                    </Label>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {hasUserTopics && (
+                    <Button onClick={() => createTopic()} disabled={isCreating}>
+                      {isCreating ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Plus className="size-4" />
+                      )}
+                      Create New Topic
+                    </Button>
+                  )}
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                    Sort by
+                  </span>
+                  <Select
+                    items={SORT_ITEMS}
+                    value={sortBy}
+                    onValueChange={(v) => setSortBy(v as SortOption)}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SORT_ITEMS.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center rounded-md border">
+                    <Button
+                      variant={viewMode === "bento" ? "secondary" : "ghost"}
+                      size="icon"
+                      className="size-8 rounded-r-none"
+                      onClick={() => setViewMode("bento")}
+                      aria-label="Bento grid view"
+                    >
+                      <LayoutGrid className="size-4" />
+                    </Button>
+                    <Button
+                      variant={viewMode === "list" ? "secondary" : "ghost"}
+                      size="icon"
+                      className="size-8 rounded-l-none"
+                      onClick={() => setViewMode("list")}
+                      aria-label="List view"
+                    >
+                      <List className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </FadeIn>
+
+            {/* Empty state for new users */}
+            {!hasUserTopics && (
+              <FadeIn className="mb-10">
+                <SpotlightCard
+                  className={cn(
+                    "flex flex-col items-center justify-center rounded-xl p-12 text-center",
+                    "bg-background",
+                    "[box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)]",
+                    "dark:[border:1px_solid_rgba(255,255,255,.1)]",
+                  )}
+                  spotlightColor="rgba(139, 92, 246, 0.15)"
+                >
+                  <Sparkles className="mb-4 size-10 text-primary" />
+                  <h2 className="mb-2 text-2xl font-semibold">
+                    Start your learning journey
+                  </h2>
+                  <p className="mb-6 max-w-md text-sm text-muted-foreground">
+                    Create your first topic to organize sources, track progress,
+                    and get AI-powered study guidance.
+                  </p>
+                  <Button
+                    size="lg"
+                    onClick={() => createTopic()}
+                    disabled={isCreating}
+                  >
+                    {isCreating ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Plus className="size-4" />
+                    )}
+                    Create Your First Topic
+                  </Button>
+                </SpotlightCard>
+              </FadeIn>
+            )}
+
+            {/* User topics */}
+            {filteredUserTopics.length > 0 && (
+              <FadeIn delay={0.1}>
+                <TopicGrid
+                  topics={filteredUserTopics}
+                  viewMode={viewMode}
+                  variant="user"
+                  onMutate={mutate}
+                />
+              </FadeIn>
+            )}
+
+            {/* No results for search */}
+            {hasUserTopics &&
+              filteredUserTopics.length === 0 &&
+              filteredCommunityTopics.length === 0 && (
+                <FadeIn>
+                  <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                    <Search className="mb-3 size-8" />
+                    <p className="text-sm">No topics match your search</p>
+                  </div>
+                </FadeIn>
+              )}
+
+            {/* Community topics */}
+            {filteredCommunityTopics.length > 0 && (
+              <FadeIn delay={0.2} className="mt-10">
+                <h3 className="mb-4 text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                  Community Topics
+                </h3>
+                <TopicGrid
+                  topics={filteredCommunityTopics}
+                  viewMode={viewMode}
+                  variant="community"
+                  onMutate={mutate}
+                />
+              </FadeIn>
+            )}
+          </>
         )}
       </div>
     </div>
-  )
+  );
+}
+
+function TopicGrid({
+  topics,
+  viewMode,
+  variant,
+  onMutate,
+}: {
+  topics: Topic[];
+  viewMode: ViewMode;
+  variant: "user" | "community";
+  onMutate: () => void;
+}) {
+  if (viewMode === "bento") {
+    return (
+      <StaggerList className="grid grid-cols-1 gap-4 md:grid-cols-3 md:[grid-auto-flow:dense]">
+        {topics.map((t, i) => {
+          const pattern = SPAN_PATTERN[i % SPAN_PATTERN.length];
+          const isWide = pattern.span.includes("col-span-2");
+          return (
+            <StaggerItem
+              key={t.id}
+              className={`${pattern.span} ${pattern.height}`}
+            >
+              <TopicBentoCard
+                topic={t}
+                spanClass=""
+                large={isWide}
+                variant={variant}
+                onMutate={onMutate}
+              />
+            </StaggerItem>
+          );
+        })}
+      </StaggerList>
+    );
+  }
+
+  return (
+    <StaggerList className="flex flex-col gap-4">
+      {topics.map((t) => (
+        <StaggerItem key={t.id}>
+          <TopicListRow topic={t} variant={variant} onMutate={onMutate} />
+        </StaggerItem>
+      ))}
+    </StaggerList>
+  );
+}
+
+function TopicCardMenu({
+  topic,
+  onMutate,
+}: {
+  topic: Topic;
+  onMutate: () => void;
+}) {
+  const [renaming, setRenaming] = useState(false);
+  const [name, setName] = useState(topic.name);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const toggleFavorite = useCallback(async () => {
+    await fetch(`/api/topics/${topic.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isFavorite: !topic.isFavorite }),
+    });
+    onMutate();
+  }, [topic.id, topic.isFavorite, onMutate]);
+
+  const handleRename = useCallback(async () => {
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === topic.name) {
+      setRenaming(false);
+      return;
+    }
+    await fetch(`/api/topics/${topic.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: trimmed }),
+    });
+    setRenaming(false);
+    onMutate();
+  }, [name, topic.id, topic.name, onMutate]);
+
+  const handleDuplicate = useCallback(async () => {
+    await fetch(`/api/topics/${topic.id}/clone`, { method: "POST" });
+    onMutate();
+  }, [topic.id, onMutate]);
+
+  const handleDelete = useCallback(async () => {
+    await fetch(`/api/topics/${topic.id}`, { method: "DELETE" });
+    onMutate();
+  }, [topic.id, onMutate]);
+
+  if (renaming) {
+    return (
+      <div
+        className="absolute right-3 top-3 z-10"
+        onClick={(e) => e.preventDefault()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <input
+          ref={inputRef}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={() => handleRename()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleRename();
+            if (e.key === "Escape") {
+              setName(topic.name);
+              setRenaming(false);
+            }
+          }}
+          className="h-7 w-40 rounded border bg-background px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="absolute right-3 top-3 z-10"
+      onClick={(e) => e.preventDefault()}
+    >
+      <DropdownMenu>
+        <DropdownMenuTrigger className="rounded-md p-1.5 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-muted">
+          <MoreHorizontal className="size-4 text-muted-foreground" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={toggleFavorite}>
+            <Star
+              className={cn(
+                "mr-2 size-4",
+                topic.isFavorite && "fill-yellow-400 text-yellow-400",
+              )}
+            />
+            {topic.isFavorite ? "Unfavorite" : "Favorite"}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              setRenaming(true);
+              setTimeout(() => inputRef.current?.focus(), 0);
+            }}
+          >
+            <Pencil className="mr-2 size-4" />
+            Rename
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleDuplicate}>
+            <Copy className="mr-2 size-4" />
+            Duplicate
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleDelete} variant="destructive">
+            <Trash2 className="mr-2 size-4" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
 }
 
 function TopicBentoCard({
   topic,
   spanClass,
   large,
+  variant,
+  onMutate,
 }: {
-  topic: MockTopic
-  spanClass: string
-  large: boolean
+  topic: Topic;
+  spanClass: string;
+  large: boolean;
+  variant: "user" | "community";
+  onMutate: () => void;
 }) {
-  const totalMastery = getAverageMastery(topic)
-  const topicSlug = slugify(topic.name)
-  const firstProjectSlug = slugify(topic.projects[0]?.name ?? "")
-  const deadline = getEarliestDeadline(topic)
+  const router = useRouter();
+  const [cloning, setCloning] = useState(false);
+
+  const handleClick = useCallback(
+    async (e: React.MouseEvent) => {
+      if (variant === "community") {
+        e.preventDefault();
+        setCloning(true);
+        try {
+          const res = await fetch(`/api/topics/${topic.id}/clone`, {
+            method: "POST",
+          });
+          const data = (await res.json()) as { topic: Topic };
+          router.push(`/dashboard/${data.topic.slug}`);
+        } finally {
+          setCloning(false);
+        }
+      }
+    },
+    [variant, topic.id, router],
+  );
+
+  const href = variant === "user" ? `/dashboard/${topic.slug}` : "#";
 
   return (
     <Link
-      href={`/dashboard/${topicSlug}/${firstProjectSlug}`}
+      href={href}
+      onClick={handleClick}
       className={cn(
-        "group block",
-        spanClass
+        "group block h-full rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        spanClass,
       )}
     >
       <SpotlightCard
         className={cn(
-          "flex h-full flex-col justify-between rounded-xl",
-          "bg-background",
-          "[box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)]",
-          "dark:[border:1px_solid_rgba(255,255,255,.1)]",
+          "relative flex h-full flex-col justify-between rounded-2xl",
+          "bg-card text-card-foreground ring-1 ring-foreground/10",
           "transition-all hover:shadow-lg hover:scale-[1.01]",
         )}
         spotlightColor="rgba(139, 92, 246, 0.15)"
       >
+        {variant === "user" && (
+          <TopicCardMenu topic={topic} onMutate={onMutate} />
+        )}
+
+        {variant === "community" && (
+          <div className="absolute right-3 top-3 rounded-full bg-muted p-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+            {cloning ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Copy className="size-3.5" />
+            )}
+          </div>
+        )}
+
         <div className="flex-1 p-5">
           <div>
-            <h3 className="text-2xl font-semibold truncate">
-              {topic.name}
-            </h3>
-            <p className="text-sm text-muted-foreground">{topic.domain}</p>
+            <h3 className="text-2xl font-semibold truncate">{topic.name}</h3>
+            {topic.domain && (
+              <p className="text-sm text-muted-foreground">{topic.domain}</p>
+            )}
           </div>
 
-          {large && (
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {topic.projects.map((p) => (
-                <Badge key={p.id} variant="secondary" className="text-xs">
-                  {p.name}
-                </Badge>
-              ))}
+          {large && topic.parentGroup && (
+            <div className="mt-4">
+              <span className="text-xs text-muted-foreground">
+                {topic.parentGroup}
+              </span>
             </div>
           )}
         </div>
 
-        <div className="border-t border-border/40 px-5 py-3">
-          <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1">
-                <FileText className="size-3" />
-                {topic.fileCount}
-              </span>
-              <span className="flex items-center gap-1">
-                <MessageSquare className="size-3" />
-                {topic.chatHistory.length}
-              </span>
-              <span className="flex items-center gap-1">
-                <TrendingUp className="size-3" />
-                {formatPercent(totalMastery)}
-              </span>
-            </div>
-            {deadline && (
-              <span className="flex items-center gap-1">
-                <Calendar className="size-3" />
-                {new Date(deadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-              </span>
-            )}
-          </div>
-          <div className="mt-2 h-1.5 w-full rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary/60 transition-all"
-              style={{ width: `${Math.round(totalMastery * 100)}%` }}
-            />
+        <div className="px-5 py-3">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <FileText className="size-3" />
+              {topic.sourceCount} sources
+            </span>
           </div>
         </div>
       </SpotlightCard>
     </Link>
-  )
+  );
 }
 
-function TopicListRow({ topic }: { topic: MockTopic }) {
-  const totalMastery = getAverageMastery(topic)
-  const topicSlug = slugify(topic.name)
-  const firstProjectSlug = slugify(topic.projects[0]?.name ?? "")
-  const deadline = getEarliestDeadline(topic)
+function TopicListRow({
+  topic,
+  variant,
+  onMutate,
+}: {
+  topic: Topic;
+  variant: "user" | "community";
+  onMutate: () => void;
+}) {
+  const router = useRouter();
+  const [cloning, setCloning] = useState(false);
+
+  const handleClick = useCallback(
+    async (e: React.MouseEvent) => {
+      if (variant === "community") {
+        e.preventDefault();
+        setCloning(true);
+        try {
+          const res = await fetch(`/api/topics/${topic.id}/clone`, {
+            method: "POST",
+          });
+          const data = (await res.json()) as { topic: Topic };
+          router.push(`/dashboard/${data.topic.slug}`);
+        } finally {
+          setCloning(false);
+        }
+      }
+    },
+    [variant, topic.id, router],
+  );
+
+  const href = variant === "user" ? `/dashboard/${topic.slug}` : "#";
 
   return (
     <Link
-      href={`/dashboard/${topicSlug}/${firstProjectSlug}`}
+      href={href}
+      onClick={handleClick}
       className={cn(
-        "group flex items-center gap-4 rounded-xl p-5",
-        "bg-background",
-        "[box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05)]",
-        "dark:[border:1px_solid_rgba(255,255,255,.1)]",
-        "transition-all hover:shadow-md"
+        "group relative flex items-center gap-4 rounded-2xl p-5",
+        "bg-card text-card-foreground ring-1 ring-foreground/10",
+        "transition-all hover:shadow-md",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
       )}
     >
+      {variant === "user" && (
+        <TopicCardMenu topic={topic} onMutate={onMutate} />
+      )}
+
       <div className="min-w-0 flex-1">
         <h3 className="text-2xl font-semibold truncate">{topic.name}</h3>
-        <p className="text-sm text-muted-foreground truncate">{topic.domain}</p>
+        {topic.domain && (
+          <p className="text-sm text-muted-foreground truncate">
+            {topic.domain}
+          </p>
+        )}
       </div>
 
       <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground">
         <span className="flex items-center gap-1">
           <FileText className="size-3" />
-          {topic.fileCount}
+          {topic.sourceCount} sources
         </span>
-        <span className="flex items-center gap-1">
-          <MessageSquare className="size-3" />
-          {topic.chatHistory.length}
-        </span>
-        <span className="flex items-center gap-1">
-          <TrendingUp className="size-3" />
-          {formatPercent(totalMastery)}
-        </span>
-        {deadline && (
-          <span className="flex items-center gap-1">
-            <Calendar className="size-3" />
-            {new Date(deadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-          </span>
-        )}
       </div>
 
-      <div className="w-20 shrink-0">
-        <div className="h-1.5 w-full rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-primary/60 transition-all"
-            style={{ width: `${Math.round(totalMastery * 100)}%` }}
-          />
+      {variant === "community" && (
+        <div className="shrink-0">
+          {cloning ? (
+            <Loader2 className="size-4 animate-spin text-muted-foreground" />
+          ) : (
+            <Copy className="size-4 text-muted-foreground opacity-60 group-hover:opacity-100 transition-opacity" />
+          )}
         </div>
-      </div>
+      )}
     </Link>
-  )
+  );
 }

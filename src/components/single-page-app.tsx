@@ -1,180 +1,225 @@
-"use client"
+"use client";
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, Suspense } from "react"
-import Link from "next/link"
-import { useQueryState, parseAsBoolean, parseAsString } from "nuqs"
-import { TOPICS, slugify, type MockProject, type MockGuideBlock, type MockFile, type MockMastery, type MockAuditEvent } from "@/lib/topics"
 import {
-  SiOpenai,
-  SiAnthropic,
-  SiSlack,
-  SiDiscord,
-  SiModelcontextprotocol,
-  SiMarkdown,
-} from "react-icons/si"
-import { BsMicrosoftTeams } from "react-icons/bs"
-import { siteConfig } from "@/lib/white-label"
-import { cn } from "@/lib/utils"
-import {
+  AlertCircle,
   ArrowLeft,
   AudioLines,
   BarChart3,
+  BookOpen,
+  Bot,
+  Box,
   Braces,
   Brain,
   Calendar,
   Check,
   ChevronRight,
+  Clapperboard,
   Copy,
-  AlertCircle,
   ExternalLink,
   FileDown,
   FileText,
-  Loader2,
   FlipHorizontal,
   FolderOpen,
+  Globe,
   HelpCircle,
+  Loader2,
   Map,
   Menu,
   MessageSquare,
   Mic,
   MicOff,
+  MoreVertical,
   Pencil,
   Phone,
+  PhoneOff,
   Plug,
-  RefreshCw,
   Presentation,
+  RefreshCw,
   Send,
   Shield,
-  Bot,
-  Box,
-  Clapperboard,
+  Sparkles,
   Table2,
   Trash2,
   TrendingUp,
-  Globe,
   Upload,
   User,
-  X,
   Video,
-  MoreVertical,
   Waves,
-  Sparkles,
-} from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+  X,
+} from "lucide-react";
+import dynamic from "next/dynamic";
+import Link from "next/link";
+import { parseAsBoolean, parseAsString, useQueryState } from "nuqs";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+  Suspense,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import { BsMicrosoftTeams } from "react-icons/bs";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
+  SiAnthropic,
+  SiDiscord,
+  SiMarkdown,
+  SiModelcontextprotocol,
+  SiOpenai,
+  SiSlack,
+} from "react-icons/si";
+import { ShortcutKbd } from "@/components/shortcut-kbd";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Progress, ProgressLabel } from "@/components/ui/progress"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Progress, ProgressLabel } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
-import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
-import dynamic from "next/dynamic"
-import { ShinyText } from "@/components/reactbits/shiny-text"
-import { ACADEMIC_RESOURCES } from "@/lib/academic-resources"
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { ACADEMIC_RESOURCES } from "@/lib/academic-resources";
+import { useLatestAssessment } from "@/lib/assessments/use-latest-assessment";
+import { useHotkeys } from "@/lib/hooks/use-hotkeys";
+import {
+  type MockAuditEvent,
+  type MockFile,
+  type MockGuideBlock,
+  type MockMastery,
+  type MockProject,
+  slugify,
+  TOPICS,
+} from "@/lib/topics";
+import { siteConfig } from "@/lib/white-label";
 
 const ArtifactCanvas = dynamic(
-  () => import("@/components/artifacts/artifact-canvas").then((m) => ({ default: m.ArtifactCanvas })),
+  () =>
+    import("@/components/artifacts/artifact-canvas").then((m) => ({
+      default: m.ArtifactCanvas,
+    })),
   { ssr: false },
-)
-import { type ArtifactType, artifactTypeFromLabel } from "@/components/artifacts/artifact-store"
-import { LearningProfileForm } from "@/components/learning-profile-form"
-import { dataStore, useDataStore } from "@/lib/data-store"
-import { dispatchAgentResult } from "@/lib/agent-dispatch"
-import { ProfileSheetContent } from "@/components/profile-sheet-content"
-import { authClient } from "@/lib/auth-client"
-import { CreditBadge } from "@/components/billing/credit-badge"
+);
+
 import {
   LiveKitRoom,
-  useVoiceAssistant,
-  useConnectionState,
   RoomAudioRenderer,
-  useRoomContext,
+  useConnectionState,
   useLocalParticipant,
+  useRoomContext,
   useTrackTranscription,
-} from "@livekit/components-react"
-import { ConnectionState, Track } from "livekit-client"
-const AgentAudioVisualizerBar = dynamic(
-  () => import("@/components/agents-ui/agent-audio-visualizer-bar").then((m) => ({ default: m.AgentAudioVisualizerBar })),
-  { ssr: false },
-)
-const AgentAudioVisualizerWave = dynamic(
-  () => import("@/components/agents-ui/agent-audio-visualizer-wave").then((m) => ({ default: m.AgentAudioVisualizerWave })),
-  { ssr: false },
-)
-const AgentAudioVisualizerAura = dynamic(
-  () => import("@/components/agents-ui/agent-audio-visualizer-aura").then((m) => ({ default: m.AgentAudioVisualizerAura })),
-  { ssr: false },
-)
-import { useChat } from "@ai-sdk/react"
-import type { UIMessage } from "ai"
-import { conversationStore, type MessageEntry } from "@/lib/conversation-store"
+  useVoiceAssistant,
+} from "@livekit/components-react";
+import { ConnectionState, Track } from "livekit-client";
+import {
+  type ArtifactType,
+  artifactTypeFromLabel,
+} from "@/components/artifacts/artifact-store";
+import { CreditBadge } from "@/components/billing/credit-badge";
+import { LearningProfileForm } from "@/components/learning-profile-form";
+import { ProfileSheetContent } from "@/components/profile-sheet-content";
+import { dispatchAgentResult } from "@/lib/agent-dispatch";
+import { authClient } from "@/lib/auth-client";
+import { dataStore, useDataStore } from "@/lib/data-store";
+import {
+  usePreference,
+  usePreferencesHydration,
+} from "@/lib/hooks/use-preferences";
 
+const AgentAudioVisualizerBar = dynamic(
+  () =>
+    import("@/components/agents-ui/agent-audio-visualizer-bar").then((m) => ({
+      default: m.AgentAudioVisualizerBar,
+    })),
+  { ssr: false },
+);
+const AgentAudioVisualizerWave = dynamic(
+  () =>
+    import("@/components/agents-ui/agent-audio-visualizer-wave").then((m) => ({
+      default: m.AgentAudioVisualizerWave,
+    })),
+  { ssr: false },
+);
+const AgentAudioVisualizerAura = dynamic(
+  () =>
+    import("@/components/agents-ui/agent-audio-visualizer-aura").then((m) => ({
+      default: m.AgentAudioVisualizerAura,
+    })),
+  { ssr: false },
+);
+
+import { useChat } from "@ai-sdk/react";
+import type { UIMessage } from "ai";
+import { conversationStore, type MessageEntry } from "@/lib/conversation-store";
 
 // ── Unified Conversation Store (voice + text in one timeline) ──
 // Re-export the legacy TranscriptEntry shape for components that still use it.
 
 type TranscriptEntry = {
-  id: string
-  role: "user" | "agent"
-  text: string
-  timestamp: number
-  isFinal: boolean
-  modality?: "voice" | "text"
-}
+  id: string;
+  role: "user" | "agent";
+  text: string;
+  timestamp: number;
+  isFinal: boolean;
+  modality?: "voice" | "text";
+};
 
 /** Ensure a conversation exists, creating one lazily if needed. */
 async function ensureConversation(): Promise<string> {
-  const existing = conversationStore.getConversationId()
-  if (existing) return existing
+  const existing = conversationStore.getConversationId();
+  if (existing) return existing;
 
   const res = await fetch("/api/conversations", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title: "New conversation" }),
-  })
-  if (!res.ok) throw new Error("Failed to create conversation")
-  const { id } = (await res.json()) as { id: string }
-  await conversationStore.setConversationId(id)
-  sessionStorage.setItem("conversationId", id)
-  return id
+  });
+  if (!res.ok) throw new Error("Failed to create conversation");
+  const { id } = (await res.json()) as { id: string };
+  await conversationStore.setConversationId(id);
+  sessionStorage.setItem("conversationId", id);
+  return id;
 }
 
 /** Read-only hook for the full conversation (voice + text). */
@@ -183,12 +228,12 @@ function useConversation() {
     conversationStore.subscribe,
     conversationStore.getSnapshot,
     conversationStore.getSnapshot,
-  )
+  );
 }
 
 /** Legacy alias used by AuditDialog — maps MessageEntry[] → TranscriptEntry[] */
 function useVoiceTranscript(): TranscriptEntry[] {
-  const entries = useConversation()
+  const entries = useConversation();
   return entries.map((e) => ({
     id: e.id,
     role: e.role === "user" ? "user" : ("agent" as const),
@@ -196,324 +241,626 @@ function useVoiceTranscript(): TranscriptEntry[] {
     timestamp: e.timestamp,
     isFinal: e.isFinal,
     modality: e.modality,
-  }))
+  }));
 }
-
 
 const AUDIT_EVENTS: MockAuditEvent[] = [
   {
-    id: "ae-1", occurredAt: "2026-03-03T15:00:00Z",
-    observe: "Error rate rose from 15% to 40% over sessions 8-10 on eigenvalue items.",
-    analyze: "Cognitive load risk increased to 0.68 (confidence: medium). Mastery estimate for eigenvalues dropped from 0.55 to 0.48.",
+    id: "ae-1",
+    occurredAt: "2026-03-03T15:00:00Z",
+    observe:
+      "Error rate rose from 15% to 40% over sessions 8-10 on eigenvalue items.",
+    analyze:
+      "Cognitive load risk increased to 0.68 (confidence: medium). Mastery estimate for eigenvalues dropped from 0.55 to 0.48.",
     act: "Reduced chunk size from 8 to 4 items for eigenvalue practice. Added 2 worked examples before each practice block.",
-    summary: "Your recent eigenvalue practice showed increasing difficulty. We've made the practice blocks smaller and added worked examples to help.",
+    summary:
+      "Your recent eigenvalue practice showed increasing difficulty. We've made the practice blocks smaller and added worked examples to help.",
   },
   {
-    id: "ae-2", occurredAt: "2026-03-02T10:00:00Z",
-    observe: "Calibration data: predicted 80% confidence, scored 55% across 20 items.",
-    analyze: "ECE increased to 0.18 (above 0.12 threshold). Brier score: 0.31. Overconfidence pattern confirmed.",
+    id: "ae-2",
+    occurredAt: "2026-03-02T10:00:00Z",
+    observe:
+      "Calibration data: predicted 80% confidence, scored 55% across 20 items.",
+    analyze:
+      "ECE increased to 0.18 (above 0.12 threshold). Brier score: 0.31. Overconfidence pattern confirmed.",
     act: "Inserted prediction-reflection loops every 3rd item. Added confidence calibration exercise to daily guide.",
-    summary: "You're tending to overestimate how well you know the material. We've added reflection prompts to help you calibrate.",
+    summary:
+      "You're tending to overestimate how well you know the material. We've added reflection prompts to help you calibrate.",
   },
   {
-    id: "ae-3", occurredAt: "2026-03-01T09:00:00Z",
-    observe: "Completed 4 of 5 scheduled blocks this week. Skipped Day 4 metacognition routine.",
-    analyze: "Self-regulation risk at 0.35 (low-moderate). Adherence stable at 80%.",
+    id: "ae-3",
+    occurredAt: "2026-03-01T09:00:00Z",
+    observe:
+      "Completed 4 of 5 scheduled blocks this week. Skipped Day 4 metacognition routine.",
+    analyze:
+      "Self-regulation risk at 0.35 (low-moderate). Adherence stable at 80%.",
     act: "No policy change -- within acceptable range. Monitoring for decline.",
-    summary: "Your attendance is solid at 80%. The system is keeping an eye on it but no changes needed.",
+    summary:
+      "Your attendance is solid at 80%. The system is keeping an eye on it but no changes needed.",
   },
   {
-    id: "ae-4", occurredAt: "2026-02-28T14:00:00Z",
-    observe: "Cross-concept mastery mean reached 0.52 across 5 concepts with medium+ confidence.",
+    id: "ae-4",
+    occurredAt: "2026-02-28T14:00:00Z",
+    observe:
+      "Cross-concept mastery mean reached 0.52 across 5 concepts with medium+ confidence.",
     analyze: "Interleaving readiness threshold met (mean >= 0.5).",
     act: "Enabled mixed problem types within sessions at 40% interleaving ratio.",
-    summary: "You've built enough foundation across concepts to benefit from mixed practice. Sessions now blend different problem types.",
+    summary:
+      "You've built enough foundation across concepts to benefit from mixed practice. Sessions now blend different problem types.",
   },
-]
+];
 
 function formatPercent(n: number): string {
-  return `${Math.round(n * 100)}%`
+  return `${Math.round(n * 100)}%`;
 }
 
 const BLOCK_TYPE_LABELS: Record<string, { label: string; color: string }> = {
-  core_practice: { label: "Practice", color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
-  metacog_routine: { label: "Metacognition", color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200" },
-  skill_builder: { label: "Study Skill", color: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200" },
-  motivation_support: { label: "Motivation", color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" },
-}
+  core_practice: {
+    label: "Practice",
+    color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  },
+  metacog_routine: {
+    label: "Metacognition",
+    color:
+      "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+  },
+  skill_builder: {
+    label: "Study Skill",
+    color: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+  },
+  motivation_support: {
+    label: "Motivation",
+    color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  },
+};
 
 // ── Component ──
 
-export function SinglePageApp({ topicId, projectId, isAdmin = false }: { topicId?: string; projectId?: string; isAdmin?: boolean }) {
-  const { data: session } = authClient.useSession()
-  const selectedTopicId = topicId ?? "topic-1"
-  const selectedProjectId = projectId ?? "proj-1"
+export function SinglePageApp({
+  topicId,
+  projectId,
+  isAdmin = false,
+}: {
+  topicId?: string;
+  projectId?: string;
+  isAdmin?: boolean;
+}) {
+  const { data: session } = authClient.useSession();
+  usePreferencesHydration();
+  const selectedTopicId = topicId ?? "topic-1";
+  const selectedProjectId = projectId ?? "proj-1";
 
   // Conversation persistence — create or resume a conversation
   useEffect(() => {
-    const stored = sessionStorage.getItem("conversationId")
+    const stored = sessionStorage.getItem("conversationId");
     if (stored) {
-      void conversationStore.setConversationId(stored)
-      void conversationStore.hydrate(stored)
+      void conversationStore.setConversationId(stored);
+      void conversationStore.hydrate(stored);
     }
 
     // Flush pending messages on page unload
-    const handleBeforeUnload = () => conversationStore.flushSync()
-    window.addEventListener("beforeunload", handleBeforeUnload)
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
-  }, [])
+    const handleBeforeUnload = () => conversationStore.flushSync();
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
   // URL-synced UI state via nuqs
-  const [activeTab, setActiveTab] = useQueryState("tab", parseAsString.withDefault("guide"))
-  const [agentOpen, setAgentOpen] = useQueryState("agent", parseAsBoolean.withDefault(false))
-  const [profileSheetOpen, setProfileSheetOpen] = useQueryState("profile", parseAsBoolean.withDefault(false))
-  const [assessmentMode, setAssessmentMode] = useQueryState("assessment", parseAsBoolean.withDefault(false))
-  const [artifactParam, setArtifactParam] = useQueryState("artifact", parseAsString.withDefault(""))
+  const [activeTab, setActiveTab] = useQueryState(
+    "tab",
+    parseAsString.withDefault("guide"),
+  );
+  const [agentOpen, setAgentOpen] = useQueryState(
+    "agent",
+    parseAsBoolean.withDefault(false),
+  );
+  const [profileSheetOpen, setProfileSheetOpen] = useQueryState(
+    "profile",
+    parseAsBoolean.withDefault(false),
+  );
+  const [assessmentMode, setAssessmentMode] = useQueryState(
+    "assessment",
+    parseAsBoolean.withDefault(false),
+  );
+  const [artifactParam, setArtifactParam] = useQueryState(
+    "artifact",
+    parseAsString.withDefault(""),
+  );
 
   // Local-only state (not worth putting in URL)
-  const [scrollToArtifactId, setScrollToArtifactId] = useState<string | null>(null)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const userProfile = useDataStore((s) => s.learningProfile)
-  const guideBlocks = useDataStore((s) => s.guideBlocks)
-  const masteryScores = useDataStore((s) => s.masteryScores)
+  const [scrollToArtifactId, setScrollToArtifactId] = useState<string | null>(
+    null,
+  );
+  const [voiceMode, setVoiceMode] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { loading: assessmentLoading, assessment: latestAssessment } =
+    useLatestAssessment();
+  const [bannerDismissed, setBannerDismissed] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("assessment-banner-dismissed") === "true";
+  });
+  const userProfile = useDataStore((s) => s.learningProfile);
+  const guideBlocks = useDataStore((s) => s.guideBlocks);
+  const masteryScores = useDataStore((s) => s.masteryScores);
 
   // Wrappers for nuqs setters to work with component APIs expecting (boolean) => void
-  const handleSetProfileSheetOpen = useCallback((open: boolean) => { void setProfileSheetOpen(open) }, [setProfileSheetOpen])
-  const handleSetAgentOpen = useCallback((open: boolean) => { void setAgentOpen(open) }, [setAgentOpen])
-  const handleSetAssessmentMode = useCallback((open: boolean) => { void setAssessmentMode(open) }, [setAssessmentMode])
+  const handleSetProfileSheetOpen = useCallback(
+    (open: boolean) => {
+      void setProfileSheetOpen(open);
+    },
+    [setProfileSheetOpen],
+  );
+  const handleSetAgentOpen = useCallback(
+    (open: boolean) => {
+      void setAgentOpen(open);
+    },
+    [setAgentOpen],
+  );
+  const handleSetAssessmentMode = useCallback(
+    (open: boolean) => {
+      void setAssessmentMode(open);
+    },
+    [setAssessmentMode],
+  );
 
-  const activeArtifactType: ArtifactType | null = artifactParam ? (artifactParam as ArtifactType) : null
+  useHotkeys({
+    "mod+1": () => void setActiveTab("guide"),
+    "mod+2": () => void setActiveTab("sources"),
+    "mod+3": () => void setActiveTab("progress"),
+    "mod+j": () => handleSetAgentOpen(!agentOpen),
+    "mod+u": () => handleSetProfileSheetOpen(!profileSheetOpen),
+    "/": () => {
+      const el = document.querySelector<HTMLInputElement>("[data-chat-input]");
+      el?.focus();
+    },
+  });
 
-  const handleOpenArtifactType = useCallback((type: ArtifactType, scrollToId?: string) => {
-    void setArtifactParam(type)
-    void setActiveTab("")
-    setScrollToArtifactId(scrollToId ?? null)
-  }, [setArtifactParam, setActiveTab])
+  const activeArtifactType: ArtifactType | null = artifactParam
+    ? (artifactParam as ArtifactType)
+    : null;
+
+  const handleOpenArtifactType = useCallback(
+    (type: ArtifactType, scrollToId?: string) => {
+      void setArtifactParam(type);
+      void setActiveTab("");
+      setScrollToArtifactId(scrollToId ?? null);
+    },
+    [setArtifactParam, setActiveTab],
+  );
 
   const handleCloseCanvas = useCallback(() => {
-    void setArtifactParam(null)
-    setScrollToArtifactId(null)
-  }, [setArtifactParam])
+    void setArtifactParam(null);
+    setScrollToArtifactId(null);
+  }, [setArtifactParam]);
 
-  const selectedTopic = TOPICS.find((t) => t.id === selectedTopicId) ?? TOPICS[0]
-  const selectedProject =
-    selectedTopic.projects.find((p) => p.id === selectedProjectId) ??
-    selectedTopic.projects[0]
+  const handleAgentToolResult = useCallback(
+    (toolName: string, result: Record<string, unknown>) => {
+      dispatchAgentResult(toolName, result, {
+        setActiveTab: (tab) => void setActiveTab(tab),
+        setArtifactParam: (artifact) => void setArtifactParam(artifact),
+      });
+    },
+    [setActiveTab, setArtifactParam],
+  );
+
+  const selectedTopic = TOPICS.find((t) => t.id === selectedTopicId) ?? {
+    id: selectedTopicId,
+    name: "Topic",
+    domain: "",
+    parentGroup: "",
+    icon: "",
+    fileCount: 0,
+    projects: [] as MockProject[],
+    guideBlocks: [] as MockGuideBlock[],
+    chatHistory: [],
+    masteryData: [],
+    files: [],
+  };
+  const selectedProject = selectedTopic.projects.find(
+    (p) => p.id === selectedProjectId,
+  ) ??
+    selectedTopic.projects[0] ?? {
+      id: selectedProjectId,
+      name: "Project",
+      goalType: "mastery" as const,
+      mastery: 0,
+      masteryUncertainty: 0,
+      minutesPerDay: 30,
+      daysPerWeek: 5,
+      deadline: "",
+    };
 
   return (
-    <Suspense fallback={null}>
-    <Tabs value={activeTab} onValueChange={(val) => { void setActiveTab(val); void setArtifactParam(null) }} className="flex h-dvh flex-col gap-0 bg-background">
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-muted"
-          >
-            <Brain className="size-5 text-primary" />
-            <span className="text-sm font-semibold">{siteConfig.name}</span>
-            {isAdmin && <Badge variant="destructive" className="text-[10px] px-1.5 py-0">ADMIN</Badge>}
-          </Link>
-
-          <Separator orientation="vertical" className="mx-1 h-5" />
-
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted"
-          >
-            <FolderOpen className="size-3.5" />
-            <span className="hidden sm:inline">{selectedTopic.name}</span>
-            <ChevronRight className="size-3.5" />
-            <span className="font-medium text-foreground">{selectedProject.name}</span>
-          </Link>
-
-          <div className="ml-auto flex items-center gap-2">
-            {/* Desktop: Nav + Connect + Audit + User */}
-            <div className="hidden items-center gap-2 lg:flex">
-              <TabsList className="mr-4 bg-muted/50">
-                <TabsTrigger value="guide" className="gap-1.5 px-3 text-sm">
-                  <Calendar className="size-3.5" />
-                  Guide
-                </TabsTrigger>
-                <TabsTrigger value="sources" className="gap-1.5 px-3 text-sm">
-                  <FileText className="size-3.5" />
-                  Sources
-                </TabsTrigger>
-                <TabsTrigger value="progress" className="gap-1.5 px-3 text-sm">
-                  <TrendingUp className="size-3.5" />
-                  Progress
-                </TabsTrigger>
-              </TabsList>
-              <ConnectDialog />
-              <CreditBadge />
-              <AuditDialog />
-              <Sheet open={profileSheetOpen} onOpenChange={handleSetProfileSheetOpen}>
-                <SheetTrigger
-                  render={
-                    <button
-                      type="button"
-                      className="flex items-center gap-2 rounded-full border border-transparent px-2 py-1.5 transition-colors hover:bg-muted"
-                    />
-                  }
-                >
-                  <Avatar size="sm">
-                    <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
-                  </Avatar>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-full sm:max-w-lg">
-                  <ProfileSheetContent onRetakeAssessment={() => { handleSetAssessmentMode(true); handleSetProfileSheetOpen(false) }} />
-                </SheetContent>
-              </Sheet>
-            </div>
-
-            {/* Mobile: Agent toggle */}
-            <Button
-              variant={agentOpen ? "default" : "ghost"}
-              size="icon-sm"
-              className="lg:hidden"
-              onClick={() => handleSetAgentOpen(!agentOpen)}
+    <TooltipProvider delay={400}>
+      <Suspense fallback={null}>
+        <Tabs
+          value={activeTab}
+          onValueChange={(val) => {
+            void setActiveTab(val);
+            void setArtifactParam(null);
+          }}
+          className="flex h-dvh flex-col gap-0 bg-background"
+        >
+          <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-muted"
             >
-              <MessageSquare className="size-4" />
-            </Button>
+              <Brain className="size-5 text-primary" />
+              <span className="text-sm font-semibold">{siteConfig.name}</span>
+              {isAdmin && (
+                <Badge
+                  variant="destructive"
+                  className="text-[10px] px-1.5 py-0"
+                >
+                  ADMIN
+                </Badge>
+              )}
+            </Link>
 
-            {/* Mobile: Hamburger menu */}
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger
-                render={
-                  <Button variant="ghost" size="icon-sm" className="lg:hidden" />
-                }
-              >
-                <Menu className="size-4" />
-              </SheetTrigger>
-              <SheetContent side="right">
-                <SheetHeader>
-                  <SheetTitle>Menu</SheetTitle>
-                </SheetHeader>
-                <div className="flex flex-col gap-4 p-4">
-                  {/* Mobile nav - uses regular buttons to avoid duplicate TabsList conflicts */}
-                  <div className="flex w-full rounded-4xl border bg-muted/50 p-0.5">
-                    {([
-                      { value: "guide", label: "Guide", icon: Calendar },
-                      { value: "sources", label: "Sources", icon: FileText },
-                      { value: "progress", label: "Progress", icon: TrendingUp },
-                    ] as const).map((tab) => {
-                      const Icon = tab.icon
-                      return (
-                        <button
-                          key={tab.value}
-                          type="button"
-                          onClick={() => { void setActiveTab(tab.value); void setArtifactParam(null); setMobileMenuOpen(false) }}
-                          className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition-colors ${
-                            activeTab === tab.value
-                              ? "bg-background text-foreground shadow-sm"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          <Icon className="size-3.5" />
-                          {tab.label}
-                        </button>
-                      )
-                    })}
-                  </div>
+            <Separator orientation="vertical" className="mx-1 h-5" />
 
-                  <Separator />
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted"
+            >
+              <FolderOpen className="size-3.5" />
+              <span className="hidden sm:inline">{selectedTopic.name}</span>
+              <ChevronRight className="size-3.5" />
+              <span className="font-medium text-foreground">
+                {selectedProject.name}
+              </span>
+            </Link>
 
-                  <div className="flex gap-2">
-                    <ConnectDialog />
-                    <AuditDialog />
-                  </div>
-
-                  <Separator />
-
-                  <Sheet open={profileSheetOpen} onOpenChange={handleSetProfileSheetOpen}>
-                    <SheetTrigger
+            <div className="ml-auto flex items-center gap-2">
+              {/* Desktop: Nav + Connect + Audit + User */}
+              <div className="hidden items-center gap-2 lg:flex">
+                <TabsList className="mr-4 bg-muted/50">
+                  <Tooltip>
+                    <TooltipTrigger
                       render={
-                        <button
-                          type="button"
-                          className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted"
+                        <TabsTrigger
+                          value="guide"
+                          className="gap-1.5 px-3 text-sm"
+                        />
+                      }
+                    >
+                      <Calendar className="size-3.5" />
+                      Guide
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Guide <ShortcutKbd shortcut="⌘1" />
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <TabsTrigger
+                          value="sources"
+                          className="gap-1.5 px-3 text-sm"
+                        />
+                      }
+                    >
+                      <FileText className="size-3.5" />
+                      Sources
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Sources <ShortcutKbd shortcut="⌘2" />
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <TabsTrigger
+                          value="progress"
+                          className="gap-1.5 px-3 text-sm"
+                        />
+                      }
+                    >
+                      <TrendingUp className="size-3.5" />
+                      Progress
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Progress <ShortcutKbd shortcut="⌘3" />
+                    </TooltipContent>
+                  </Tooltip>
+                </TabsList>
+                <ConnectDialog />
+                <CreditBadge />
+                <AuditDialog />
+                <Sheet
+                  open={profileSheetOpen}
+                  onOpenChange={handleSetProfileSheetOpen}
+                >
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <SheetTrigger
+                          render={
+                            <button
+                              type="button"
+                              className="flex items-center gap-2 rounded-full border border-transparent px-2 py-1.5 transition-colors hover:bg-muted"
+                            />
+                          }
                         />
                       }
                     >
                       <Avatar size="sm">
-                        <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+                        <AvatarFallback>
+                          <User className="h-4 w-4" />
+                        </AvatarFallback>
                       </Avatar>
-                      <span className="text-sm font-medium">{session?.user?.name ?? "Account"}</span>
-                    </SheetTrigger>
-                    <SheetContent side="right" className="w-full sm:max-w-lg">
-                      <ProfileSheetContent onRetakeAssessment={() => { handleSetAssessmentMode(true); handleSetProfileSheetOpen(false); setMobileMenuOpen(false) }} />
-                    </SheetContent>
-                  </Sheet>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        </header>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Profile <ShortcutKbd shortcut="⌘U" />
+                    </TooltipContent>
+                  </Tooltip>
+                  <SheetContent side="right" className="w-full sm:max-w-lg">
+                    <ProfileSheetContent
+                      onRetakeAssessment={() => {
+                        handleSetAssessmentMode(true);
+                        handleSetProfileSheetOpen(false);
+                      }}
+                    />
+                  </SheetContent>
+                </Sheet>
+              </div>
 
-        {assessmentMode && (
-          <LearningProfileForm
-            initialData={userProfile ?? undefined}
-            onSave={(profileData) => dataStore.setLearningProfile(profileData)}
-            onCancel={() => handleSetAssessmentMode(false)}
-          />
-        )}
+              {/* Mobile: Agent toggle */}
+              <Button
+                variant={agentOpen ? "default" : "ghost"}
+                size="icon-sm"
+                className="lg:hidden"
+                onClick={() => handleSetAgentOpen(!agentOpen)}
+              >
+                <MessageSquare className="size-4" />
+              </Button>
 
-        <div className="flex flex-1 overflow-hidden">
-              {/* Left Sidebar - Create artifacts */}
-              <aside className="hidden w-48 shrink-0 border-r lg:flex lg:flex-col">
-                <div className="flex-1 overflow-y-auto p-3">
-                  <ArtifactGrid onOpenType={handleOpenArtifactType} activeType={activeArtifactType} />
-                </div>
-              </aside>
+              {/* Mobile: Hamburger menu */}
+              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                <SheetTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="lg:hidden"
+                    />
+                  }
+                >
+                  <Menu className="size-4" />
+                </SheetTrigger>
+                <SheetContent side="right">
+                  <SheetHeader>
+                    <SheetTitle>Menu</SheetTitle>
+                  </SheetHeader>
+                  <div className="flex flex-col gap-4 p-4">
+                    {/* Mobile nav - uses regular buttons to avoid duplicate TabsList conflicts */}
+                    <div className="flex w-full rounded-4xl border bg-muted/50 p-0.5">
+                      {(
+                        [
+                          { value: "guide", label: "Guide", icon: Calendar },
+                          {
+                            value: "sources",
+                            label: "Sources",
+                            icon: FileText,
+                          },
+                          {
+                            value: "progress",
+                            label: "Progress",
+                            icon: TrendingUp,
+                          },
+                        ] as const
+                      ).map((tab) => {
+                        const Icon = tab.icon;
+                        return (
+                          <button
+                            key={tab.value}
+                            type="button"
+                            onClick={() => {
+                              void setActiveTab(tab.value);
+                              void setArtifactParam(null);
+                              setMobileMenuOpen(false);
+                            }}
+                            className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition-colors ${
+                              activeTab === tab.value
+                                ? "bg-background text-foreground shadow-sm"
+                                : "text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            <Icon className="size-3.5" />
+                            {tab.label}
+                          </button>
+                        );
+                      })}
+                    </div>
 
-              {/* Main Content */}
-              <main className="relative flex-1 overflow-hidden">
-                {activeArtifactType ? (
-                  <ArtifactCanvas
-                    activeType={activeArtifactType}
-                    scrollToId={scrollToArtifactId}
-                    onClose={handleCloseCanvas}
-                  />
-                ) : (
-                  <div className="h-full overflow-y-auto">
-                    <TabsContent value="guide" className="p-4 sm:p-6">
-                      <GuideTab blocks={guideBlocks} />
-                    </TabsContent>
+                    <Separator />
 
-                    <TabsContent value="sources" className="p-4 sm:p-6">
-                      <SourcesTab topicSlug={slugify(selectedTopic.name)} fallbackFiles={selectedTopic.files} />
-                    </TabsContent>
+                    <div className="flex gap-2">
+                      <ConnectDialog />
+                      <AuditDialog />
+                    </div>
 
-                    <TabsContent value="progress" className="p-4 sm:p-6">
-                      <ProgressTab mastery={masteryScores} project={selectedProject} />
-                    </TabsContent>
+                    <Separator />
+
+                    <Sheet
+                      open={profileSheetOpen}
+                      onOpenChange={handleSetProfileSheetOpen}
+                    >
+                      <SheetTrigger
+                        render={
+                          <button
+                            type="button"
+                            className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted"
+                          />
+                        }
+                      >
+                        <Avatar size="sm">
+                          <AvatarFallback>
+                            <User className="h-4 w-4" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium">
+                          {session?.user?.name ?? "Account"}
+                        </span>
+                      </SheetTrigger>
+                      <SheetContent side="right" className="w-full sm:max-w-lg">
+                        <ProfileSheetContent
+                          onRetakeAssessment={() => {
+                            handleSetAssessmentMode(true);
+                            handleSetProfileSheetOpen(false);
+                            setMobileMenuOpen(false);
+                          }}
+                        />
+                      </SheetContent>
+                    </Sheet>
                   </div>
-                )}
-              </main>
-
-          {/* Agent Right Sidebar - Desktop: always visible, Mobile: toggleable */}
-        <aside
-          className={`flex w-full flex-col overflow-hidden border-l lg:w-96 lg:shrink-0 ${
-            agentOpen ? "fixed inset-0 top-14 z-30 bg-background lg:static lg:z-auto" : "hidden lg:flex"
-          }`}
-        >
-          <div className="flex h-10 shrink-0 items-center justify-between border-b px-4">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="size-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Agent</span>
+                </SheetContent>
+              </Sheet>
             </div>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              className="lg:hidden"
-              onClick={() => handleSetAgentOpen(false)}
+          </header>
+
+          {!assessmentLoading &&
+            !latestAssessment &&
+            !assessmentMode &&
+            !bannerDismissed && (
+              <div className="border-b bg-muted/50 px-4 py-3">
+                <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <Brain className="size-5 text-primary shrink-0" />
+                    <p className="text-sm">
+                      Complete your cognitive assessment to unlock personalized
+                      tutoring.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      onClick={() => handleSetAssessmentMode(true)}
+                    >
+                      Take Assessment
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setBannerDismissed(true);
+                        localStorage.setItem(
+                          "assessment-banner-dismissed",
+                          "true",
+                        );
+                      }}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          {assessmentMode && (
+            <LearningProfileForm
+              initialData={userProfile ?? undefined}
+              onSave={(profileData) =>
+                dataStore.setLearningProfile(profileData)
+              }
+              onCancel={() => handleSetAssessmentMode(false)}
+            />
+          )}
+
+          <div className="flex flex-1 overflow-hidden">
+            {/* Left Sidebar - Create artifacts */}
+            <aside className="hidden w-48 shrink-0 border-r lg:flex lg:flex-col">
+              <div className="flex-1 overflow-y-auto p-3">
+                <ArtifactGrid
+                  onOpenType={handleOpenArtifactType}
+                  activeType={activeArtifactType}
+                />
+              </div>
+            </aside>
+
+            {/* Main Content */}
+            <main className="relative flex-1 overflow-hidden">
+              {activeArtifactType ? (
+                <ArtifactCanvas
+                  activeType={activeArtifactType}
+                  scrollToId={scrollToArtifactId}
+                  onClose={handleCloseCanvas}
+                />
+              ) : (
+                <div className="h-full overflow-y-auto">
+                  <TabsContent value="guide" className="p-4 sm:p-6">
+                    <GuideTab blocks={guideBlocks} />
+                  </TabsContent>
+
+                  <TabsContent value="sources" className="p-4 sm:p-6">
+                    <SourcesTab
+                      topicSlug={slugify(selectedTopic.name)}
+                      fallbackFiles={selectedTopic.files}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="progress" className="p-4 sm:p-6">
+                    <ProgressTab
+                      mastery={masteryScores}
+                      project={selectedProject}
+                    />
+                  </TabsContent>
+                </div>
+              )}
+            </main>
+
+            {/* Agent Right Sidebar - Desktop: always visible, Mobile: toggleable */}
+            <aside
+              className={`flex w-full flex-col overflow-hidden border-l lg:w-96 lg:shrink-0 ${
+                agentOpen
+                  ? "fixed inset-0 top-14 z-30 bg-background lg:static lg:z-auto"
+                  : "hidden lg:flex"
+              }`}
             >
-              <ChevronRight className="size-4" />
-            </Button>
+              <div className="flex h-10 shrink-0 items-center justify-between border-b px-4">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="size-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Agent</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => setVoiceMode((v) => !v)}
+                    title={
+                      voiceMode ? "Switch to text chat" : "Switch to voice"
+                    }
+                  >
+                    {voiceMode ? (
+                      <MessageSquare className="size-4" />
+                    ) : (
+                      <Mic className="size-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    className="lg:hidden"
+                    onClick={() => handleSetAgentOpen(false)}
+                  >
+                    <ChevronRight className="size-4" />
+                  </Button>
+                </div>
+              </div>
+              {voiceMode ? (
+                <VoiceAgent />
+              ) : (
+                <AgentTab
+                  onOpenArtifact={handleOpenArtifactType}
+                  onToolResult={handleAgentToolResult}
+                />
+              )}
+            </aside>
           </div>
-          <VoiceAgent />
-        </aside>
-      </div>
-    </Tabs>
-    </Suspense>
-  )
+        </Tabs>
+      </Suspense>
+    </TooltipProvider>
+  );
 }
 
 // ── Agent Tab ──
@@ -521,16 +868,12 @@ export function SinglePageApp({ topicId, projectId, isAdmin = false }: { topicId
 // ── Audit Dialog ──
 
 function AuditDialog() {
-  const [auditTab, setAuditTab] = useState<"trail" | "transcript">("trail")
-  const transcript = useVoiceTranscript()
+  const [auditTab, setAuditTab] = useState<"trail" | "transcript">("trail");
+  const transcript = useVoiceTranscript();
 
   return (
     <Dialog>
-      <DialogTrigger
-        render={
-          <Button variant="ghost" />
-        }
-      >
+      <DialogTrigger render={<Button variant="ghost" />}>
         <Shield className="size-4" data-icon="inline-start" />
         Audit
       </DialogTrigger>
@@ -581,7 +924,7 @@ function AuditDialog() {
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 function VoiceTranscriptTab({ entries }: { entries: TranscriptEntry[] }) {
@@ -598,7 +941,7 @@ function VoiceTranscriptTab({ entries }: { entries: TranscriptEntry[] }) {
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -629,7 +972,11 @@ function VoiceTranscriptTab({ entries }: { entries: TranscriptEntry[] }) {
             <div className="flex flex-col gap-0.5 max-w-[80%]">
               {entry.modality && (
                 <span className="text-[9px] uppercase tracking-wider text-muted-foreground flex items-center gap-0.5">
-                  {entry.modality === "text" ? <MessageSquare className="size-2" /> : <Mic className="size-2" />}
+                  {entry.modality === "text" ? (
+                    <MessageSquare className="size-2" />
+                  ) : (
+                    <Mic className="size-2" />
+                  )}
                   {entry.modality}
                 </span>
               )}
@@ -647,53 +994,99 @@ function VoiceTranscriptTab({ entries }: { entries: TranscriptEntry[] }) {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 // ── Connect Dialog ──
 
-const MOCK_MCP_URL = siteConfig.mcpBaseUrl
-const MOCK_API_URL = siteConfig.apiBaseUrl
+const MOCK_MCP_URL = siteConfig.mcpBaseUrl;
+const MOCK_API_URL = siteConfig.apiBaseUrl;
 
-type IntegrationKey = "chatgpt" | "claude" | "slack" | "teams" | "discord" | "mcp"
+type IntegrationKey =
+  | "chatgpt"
+  | "claude"
+  | "slack"
+  | "teams"
+  | "discord"
+  | "mcp";
 
 const CONNECT_INTEGRATIONS: {
-  key: IntegrationKey
-  label: string
-  icon: React.ComponentType<{ className?: string }>
-  description: string
-  connected: boolean
+  key: IntegrationKey;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  description: string;
+  connected: boolean;
 }[] = [
-  { key: "chatgpt", label: "ChatGPT", icon: SiOpenai, description: "Connect via MCP Connector", connected: false },
-  { key: "claude", label: "Claude", icon: SiAnthropic, description: "Connect via Claude Desktop MCP", connected: true },
-  { key: "slack", label: "Slack", icon: SiSlack, description: "Post updates to Slack channels", connected: false },
-  { key: "teams", label: "Teams", icon: BsMicrosoftTeams, description: "Sync with Microsoft Teams", connected: false },
-  { key: "discord", label: "Discord", icon: SiDiscord, description: "Share progress to Discord", connected: false },
-  { key: "mcp", label: "MCP", icon: SiModelcontextprotocol, description: "Model Context Protocol server", connected: true },
-]
+  {
+    key: "chatgpt",
+    label: "ChatGPT",
+    icon: SiOpenai,
+    description: "Connect via MCP Connector",
+    connected: false,
+  },
+  {
+    key: "claude",
+    label: "Claude",
+    icon: SiAnthropic,
+    description: "Connect via Claude Desktop MCP",
+    connected: true,
+  },
+  {
+    key: "slack",
+    label: "Slack",
+    icon: SiSlack,
+    description: "Post updates to Slack channels",
+    connected: false,
+  },
+  {
+    key: "teams",
+    label: "Teams",
+    icon: BsMicrosoftTeams,
+    description: "Sync with Microsoft Teams",
+    connected: false,
+  },
+  {
+    key: "discord",
+    label: "Discord",
+    icon: SiDiscord,
+    description: "Share progress to Discord",
+    connected: false,
+  },
+  {
+    key: "mcp",
+    label: "MCP",
+    icon: SiModelcontextprotocol,
+    description: "Model Context Protocol server",
+    connected: true,
+  },
+];
 
 const EXPORT_FORMATS = [
   { label: "PDF", icon: FileDown, description: "Export as .pdf report" },
   { label: "Markdown", icon: SiMarkdown, description: "Export as .md files" },
   { label: "JSON", icon: Braces, description: "Export as .json data" },
-] as const
+] as const;
 
 function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState(false);
   return (
     <button
       type="button"
       className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors hover:bg-muted"
       onClick={() => {
-        navigator.clipboard.writeText(text)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
       }}
     >
-      {copied ? <Check className="size-3 text-green-500" /> : <Copy className="size-3" />}
+      {copied ? (
+        <Check className="size-3 text-green-500" />
+      ) : (
+        <Copy className="size-3" />
+      )}
       {copied ? "Copied" : "Copy"}
     </button>
-  )
+  );
 }
 
 function CodeBlock({ code }: { code: string }) {
@@ -702,9 +1095,11 @@ function CodeBlock({ code }: { code: string }) {
       <div className="absolute top-2 right-2">
         <CopyButton text={code} />
       </div>
-      <pre className="overflow-x-auto text-xs leading-relaxed whitespace-pre-wrap pr-16"><code>{code}</code></pre>
+      <pre className="overflow-x-auto text-xs leading-relaxed whitespace-pre-wrap pr-16">
+        <code>{code}</code>
+      </pre>
     </div>
-  )
+  );
 }
 
 function IntegrationContent({ integration }: { integration: IntegrationKey }) {
@@ -713,93 +1108,207 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
       return (
         <div className="flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">
-            Connect {siteConfig.name} to ChatGPT as an MCP Connector for real-time access to your learning data.
+            Connect {siteConfig.name} to ChatGPT as an MCP Connector for
+            real-time access to your learning data.
           </p>
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Setup via MCP Connector</p>
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Setup via MCP Connector
+            </p>
             <ol className="flex flex-col gap-2 text-sm">
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Open <span className="font-medium">ChatGPT</span> &rarr; Settings &rarr; <span className="font-medium">Apps &amp; Connectors</span></li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Scroll to <span className="font-medium">Advanced settings</span> and enable <span className="font-medium">Developer mode</span></li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Go to <span className="font-medium">Connectors</span> &rarr; <span className="font-medium">Create</span></li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">4.</span> Fill in the connector details:</li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">1.</span>{" "}
+                Open <span className="font-medium">ChatGPT</span> &rarr;
+                Settings &rarr;{" "}
+                <span className="font-medium">Apps &amp; Connectors</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">2.</span>{" "}
+                Scroll to <span className="font-medium">Advanced settings</span>{" "}
+                and enable <span className="font-medium">Developer mode</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">3.</span> Go
+                to <span className="font-medium">Connectors</span> &rarr;{" "}
+                <span className="font-medium">Create</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">4.</span>{" "}
+                Fill in the connector details:
+              </li>
             </ol>
-            <CodeBlock code={`Connector name: ${siteConfig.name}\nDescription: Access learning data, mastery levels, and study guides\nConnector URL: ${MOCK_MCP_URL.replace("/sse", "/mcp")}`} />
+            <CodeBlock
+              code={`Connector name: ${siteConfig.name}\nDescription: Access learning data, mastery levels, and study guides\nConnector URL: ${MOCK_MCP_URL.replace("/sse", "/mcp")}`}
+            />
             <ol start={5} className="flex flex-col gap-2 text-sm">
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">5.</span> Verify the connection &mdash; you should see the advertised tools</li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">5.</span>{" "}
+                Verify the connection &mdash; you should see the advertised
+                tools
+              </li>
             </ol>
           </div>
           <Separator />
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Using Your Connector</p>
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Using Your Connector
+            </p>
             <ol className="flex flex-col gap-2 text-sm">
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Open a new ChatGPT conversation</li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Click the <span className="font-medium">+</span> button near the message composer &rarr; <span className="font-medium">More</span></li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Select <span className="font-medium">{siteConfig.name}</span> from available tools</li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">4.</span> Ask: &ldquo;What are my current mastery levels?&rdquo;</li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">1.</span>{" "}
+                Open a new ChatGPT conversation
+              </li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">2.</span>{" "}
+                Click the <span className="font-medium">+</span> button near the
+                message composer &rarr;{" "}
+                <span className="font-medium">More</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">3.</span>{" "}
+                Select <span className="font-medium">{siteConfig.name}</span>{" "}
+                from available tools
+              </li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">4.</span>{" "}
+                Ask: &ldquo;What are my current mastery levels?&rdquo;
+              </li>
             </ol>
           </div>
           <Separator />
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Requirements</p>
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Requirements
+            </p>
             <ul className="flex flex-col gap-1.5 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2"><Check className="mt-0.5 size-3.5 text-green-500 shrink-0" /> ChatGPT Pro, Team, Enterprise, or Edu plan</li>
-              <li className="flex items-start gap-2"><Check className="mt-0.5 size-3.5 text-green-500 shrink-0" /> Developer mode enabled</li>
-              <li className="flex items-start gap-2"><Check className="mt-0.5 size-3.5 text-green-500 shrink-0" /> HTTPS endpoint (provided by {siteConfig.name})</li>
+              <li className="flex items-start gap-2">
+                <Check className="mt-0.5 size-3.5 text-green-500 shrink-0" />{" "}
+                ChatGPT Pro, Team, Enterprise, or Edu plan
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="mt-0.5 size-3.5 text-green-500 shrink-0" />{" "}
+                Developer mode enabled
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="mt-0.5 size-3.5 text-green-500 shrink-0" />{" "}
+                HTTPS endpoint (provided by {siteConfig.name})
+              </li>
             </ul>
           </div>
         </div>
-      )
+      );
     case "claude":
       return (
         <div className="flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">
-            Connect {siteConfig.name} to Claude Desktop via MCP (Model Context Protocol) for real-time access to your learning data.
+            Connect {siteConfig.name} to Claude Desktop via MCP (Model Context
+            Protocol) for real-time access to your learning data.
           </p>
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Option 1: Local MCP Server</p>
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Option 1: Local MCP Server
+            </p>
             <ol className="flex flex-col gap-2 text-sm">
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Open <span className="font-medium">Claude Desktop</span> menu &rarr; <span className="font-medium">Settings</span></li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Navigate to <span className="font-medium">Developer</span> tab &rarr; click <span className="font-medium">Edit Config</span></li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Add the {siteConfig.name} server to your <code className="rounded bg-muted px-1 text-xs">claude_desktop_config.json</code>:</li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">1.</span>{" "}
+                Open <span className="font-medium">Claude Desktop</span> menu
+                &rarr; <span className="font-medium">Settings</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">2.</span>{" "}
+                Navigate to <span className="font-medium">Developer</span> tab
+                &rarr; click <span className="font-medium">Edit Config</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">3.</span>{" "}
+                Add the {siteConfig.name} server to your{" "}
+                <code className="rounded bg-muted px-1 text-xs">
+                  claude_desktop_config.json
+                </code>
+                :
+              </li>
             </ol>
-            <CodeBlock code={JSON.stringify({
-              mcpServers: {
-                coremodel: {
-                  command: "npx",
-                  args: ["-y", "@coremodel/mcp-server"],
-                  env: {
-                    COREMODEL_API_KEY: "dl_sk_live_xxxxxxxxxxxxxxxxxxxx"
-                  }
-                }
-              }
-            }, null, 2)} />
+            <CodeBlock
+              code={JSON.stringify(
+                {
+                  mcpServers: {
+                    coremodel: {
+                      command: "npx",
+                      args: ["-y", "@coremodel/mcp-server"],
+                      env: {
+                        COREMODEL_API_KEY: "dl_sk_live_xxxxxxxxxxxxxxxxxxxx",
+                      },
+                    },
+                  },
+                },
+                null,
+                2,
+              )}
+            />
             <ol start={4} className="flex flex-col gap-2 text-sm">
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">4.</span> Completely quit and restart Claude Desktop</li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">5.</span> Look for the MCP server indicator in the bottom-right of the input box</li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">6.</span> Click it to verify <Badge variant="secondary" className="text-xs">{siteConfig.name}</Badge> tools are available</li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">4.</span>{" "}
+                Completely quit and restart Claude Desktop
+              </li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">5.</span>{" "}
+                Look for the MCP server indicator in the bottom-right of the
+                input box
+              </li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">6.</span>{" "}
+                Click it to verify{" "}
+                <Badge variant="secondary" className="text-xs">
+                  {siteConfig.name}
+                </Badge>{" "}
+                tools are available
+              </li>
             </ol>
           </div>
           <Separator />
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Option 2: Remote MCP Server</p>
-            <p className="text-sm text-muted-foreground">Connect to the hosted {siteConfig.name} MCP server instead of running locally:</p>
-            <CodeBlock code={JSON.stringify({
-              mcpServers: {
-                coremodel: {
-                  url: MOCK_MCP_URL.replace("/sse", "/mcp"),
-                  headers: {
-                    Authorization: "Bearer dl_sk_live_xxxxxxxxxxxxxxxxxxxx"
-                  }
-                }
-              }
-            }, null, 2)} />
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Option 2: Remote MCP Server
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Connect to the hosted {siteConfig.name} MCP server instead of
+              running locally:
+            </p>
+            <CodeBlock
+              code={JSON.stringify(
+                {
+                  mcpServers: {
+                    coremodel: {
+                      url: MOCK_MCP_URL.replace("/sse", "/mcp"),
+                      headers: {
+                        Authorization: "Bearer dl_sk_live_xxxxxxxxxxxxxxxxxxxx",
+                      },
+                    },
+                  },
+                },
+                null,
+                2,
+              )}
+            />
           </div>
           <Separator />
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Available Tools</p>
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Available Tools
+            </p>
             <div className="grid grid-cols-2 gap-1.5">
-              {["get_mastery", "get_guide", "get_topics", "get_progress", "create_quiz", "log_session"].map((tool) => (
-                <div key={tool} className="flex items-center gap-1.5 rounded border px-2 py-1 text-xs font-mono">
+              {[
+                "get_mastery",
+                "get_guide",
+                "get_topics",
+                "get_progress",
+                "create_quiz",
+                "log_session",
+              ].map((tool) => (
+                <div
+                  key={tool}
+                  className="flex items-center gap-1.5 rounded border px-2 py-1 text-xs font-mono"
+                >
                   <Braces className="size-3 text-muted-foreground" />
                   {tool}
                 </div>
@@ -807,17 +1316,24 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
             </div>
           </div>
         </div>
-      )
+      );
     case "slack":
       return (
         <div className="flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">
-            Get daily study reminders and progress summaries posted to a Slack channel.
+            Get daily study reminders and progress summaries posted to a Slack
+            channel.
           </p>
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Setup via Slack App</p>
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Setup via Slack App
+            </p>
             <ol className="flex flex-col gap-2 text-sm">
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Click the button below to install the {siteConfig.name} Slack app:</li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">1.</span>{" "}
+                Click the button below to install the {siteConfig.name} Slack
+                app:
+              </li>
             </ol>
             <button
               type="button"
@@ -828,75 +1344,134 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
               <ExternalLink className="size-3" />
             </button>
             <ol start={2} className="flex flex-col gap-2 text-sm">
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Authorize {siteConfig.name} to post to your chosen channel</li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Configure notifications in {siteConfig.name} settings</li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">2.</span>{" "}
+                Authorize {siteConfig.name} to post to your chosen channel
+              </li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">3.</span>{" "}
+                Configure notifications in {siteConfig.name} settings
+              </li>
             </ol>
           </div>
           <Separator />
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Alternative: Incoming Webhook</p>
-            <p className="text-sm text-muted-foreground">Use a Slack incoming webhook for custom integrations:</p>
-            <CodeBlock code={`Webhook URL: ${MOCK_API_URL}/webhooks/slack\n\n# Or configure your own webhook:\ncurl -X POST ${MOCK_API_URL}/integrations/slack \\\n  -H "Authorization: Bearer dl_sk_live_xxxx" \\\n  -d '{"webhook_url": "https://hooks.slack.com/services/T.../B.../xxx"}'`} />
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Alternative: Incoming Webhook
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Use a Slack incoming webhook for custom integrations:
+            </p>
+            <CodeBlock
+              code={`Webhook URL: ${MOCK_API_URL}/webhooks/slack\n\n# Or configure your own webhook:\ncurl -X POST ${MOCK_API_URL}/integrations/slack \\\n  -H "Authorization: Bearer dl_sk_live_xxxx" \\\n  -d '{"webhook_url": "https://hooks.slack.com/services/T.../B.../xxx"}'`}
+            />
           </div>
           <Separator />
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">What gets posted</p>
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              What gets posted
+            </p>
             <ul className="flex flex-col gap-1.5 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2"><Check className="mt-0.5 size-3.5 text-green-500 shrink-0" /> Daily study reminders at your preferred time</li>
-              <li className="flex items-start gap-2"><Check className="mt-0.5 size-3.5 text-green-500 shrink-0" /> Weekly progress summaries</li>
-              <li className="flex items-start gap-2"><Check className="mt-0.5 size-3.5 text-green-500 shrink-0" /> Mastery milestone celebrations</li>
-              <li className="flex items-start gap-2"><Check className="mt-0.5 size-3.5 text-green-500 shrink-0" /> Guide adjustments and recommendations</li>
+              <li className="flex items-start gap-2">
+                <Check className="mt-0.5 size-3.5 text-green-500 shrink-0" />{" "}
+                Daily study reminders at your preferred time
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="mt-0.5 size-3.5 text-green-500 shrink-0" />{" "}
+                Weekly progress summaries
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="mt-0.5 size-3.5 text-green-500 shrink-0" />{" "}
+                Mastery milestone celebrations
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="mt-0.5 size-3.5 text-green-500 shrink-0" />{" "}
+                Guide adjustments and recommendations
+              </li>
             </ul>
           </div>
         </div>
-      )
+      );
     case "teams":
       return (
         <div className="flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">
-            Sync {siteConfig.name} with Microsoft Teams for study reminders and progress updates.
+            Sync {siteConfig.name} with Microsoft Teams for study reminders and
+            progress updates.
           </p>
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Install Teams App</p>
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Install Teams App
+            </p>
             <ol className="flex flex-col gap-2 text-sm">
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Open <span className="font-medium">Microsoft Teams</span> &rarr; Apps &rarr; Search &ldquo;{siteConfig.name}&rdquo;</li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Click <span className="font-medium">Add</span> and authorize the connection</li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Choose which channel receives updates</li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">1.</span>{" "}
+                Open <span className="font-medium">Microsoft Teams</span> &rarr;
+                Apps &rarr; Search &ldquo;{siteConfig.name}&rdquo;
+              </li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">2.</span>{" "}
+                Click <span className="font-medium">Add</span> and authorize the
+                connection
+              </li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">3.</span>{" "}
+                Choose which channel receives updates
+              </li>
             </ol>
           </div>
           <Separator />
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Alternative: Webhook Connector</p>
-            <p className="text-sm text-muted-foreground">Use a Teams incoming webhook for custom setups:</p>
-            <CodeBlock code={`# 1. In Teams, right-click channel → Connectors → Incoming Webhook\n# 2. Copy the webhook URL, then configure:\n\ncurl -X POST ${MOCK_API_URL}/integrations/teams \\\n  -H "Authorization: Bearer dl_sk_live_xxxx" \\\n  -d '{\n    "webhook_url": "https://outlook.office.com/webhook/...",\n    "notifications": ["daily_reminder", "weekly_summary"]\n  }'`} />
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Alternative: Webhook Connector
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Use a Teams incoming webhook for custom setups:
+            </p>
+            <CodeBlock
+              code={`# 1. In Teams, right-click channel → Connectors → Incoming Webhook\n# 2. Copy the webhook URL, then configure:\n\ncurl -X POST ${MOCK_API_URL}/integrations/teams \\\n  -H "Authorization: Bearer dl_sk_live_xxxx" \\\n  -d '{\n    "webhook_url": "https://outlook.office.com/webhook/...",\n    "notifications": ["daily_reminder", "weekly_summary"]\n  }'`}
+            />
           </div>
           <Separator />
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Adaptive Card Preview</p>
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Adaptive Card Preview
+            </p>
             <div className="rounded-lg border p-3 text-xs">
               <div className="flex items-center gap-2 mb-2">
                 <Brain className="size-4 text-primary" />
-                <span className="font-semibold">{siteConfig.name} Daily Summary</span>
+                <span className="font-semibold">
+                  {siteConfig.name} Daily Summary
+                </span>
               </div>
               <div className="flex flex-col gap-1 text-muted-foreground">
-                <p>Mastery: Linear Algebra — <span className="text-foreground font-medium">55%</span></p>
+                <p>
+                  Mastery: Linear Algebra —{" "}
+                  <span className="text-foreground font-medium">55%</span>
+                </p>
                 <p>Today&apos;s guide: 45 min planned</p>
                 <p>Streak: 5 days</p>
               </div>
             </div>
           </div>
         </div>
-      )
+      );
     case "discord":
       return (
         <div className="flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">
-            Share your learning progress to a Discord server with a bot or webhook.
+            Share your learning progress to a Discord server with a bot or
+            webhook.
           </p>
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Option 1: Discord Bot</p>
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Option 1: Discord Bot
+            </p>
             <ol className="flex flex-col gap-2 text-sm">
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">1.</span> Click the button below to add the {siteConfig.name} bot:</li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">1.</span>{" "}
+                Click the button below to add the {siteConfig.name} bot:
+              </li>
             </ol>
             <button
               type="button"
@@ -907,27 +1482,51 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
               <ExternalLink className="size-3" />
             </button>
             <ol start={2} className="flex flex-col gap-2 text-sm">
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">2.</span> Select your server and authorize permissions</li>
-              <li className="flex gap-2"><span className="font-medium text-muted-foreground">3.</span> Use <code className="rounded bg-muted px-1 text-xs">/coremodel setup #channel</code> to configure</li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">2.</span>{" "}
+                Select your server and authorize permissions
+              </li>
+              <li className="flex gap-2">
+                <span className="font-medium text-muted-foreground">3.</span>{" "}
+                Use{" "}
+                <code className="rounded bg-muted px-1 text-xs">
+                  /coremodel setup #channel
+                </code>{" "}
+                to configure
+              </li>
             </ol>
           </div>
           <Separator />
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Option 2: Webhook</p>
-            <p className="text-sm text-muted-foreground">For simpler setups, use a Discord webhook:</p>
-            <CodeBlock code={`# 1. In Discord: Server Settings → Integrations → Webhooks → New\n# 2. Copy the webhook URL, then configure:\n\ncurl -X POST ${MOCK_API_URL}/integrations/discord \\\n  -H "Authorization: Bearer dl_sk_live_xxxx" \\\n  -d '{\n    "webhook_url": "https://discord.com/api/webhooks/...",\n    "events": ["progress", "milestones", "reminders"]\n  }'`} />
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Option 2: Webhook
+            </p>
+            <p className="text-sm text-muted-foreground">
+              For simpler setups, use a Discord webhook:
+            </p>
+            <CodeBlock
+              code={`# 1. In Discord: Server Settings → Integrations → Webhooks → New\n# 2. Copy the webhook URL, then configure:\n\ncurl -X POST ${MOCK_API_URL}/integrations/discord \\\n  -H "Authorization: Bearer dl_sk_live_xxxx" \\\n  -d '{\n    "webhook_url": "https://discord.com/api/webhooks/...",\n    "events": ["progress", "milestones", "reminders"]\n  }'`}
+            />
           </div>
           <Separator />
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Bot Commands</p>
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Bot Commands
+            </p>
             <div className="grid grid-cols-1 gap-1.5">
               {[
-                { cmd: "/coremodel status", desc: "View current mastery levels" },
+                {
+                  cmd: "/coremodel status",
+                  desc: "View current mastery levels",
+                },
                 { cmd: "/coremodel guide", desc: "Get today's study plan" },
                 { cmd: "/coremodel quiz", desc: "Start a quick quiz" },
                 { cmd: "/coremodel streak", desc: "Check your study streak" },
               ].map((item) => (
-                <div key={item.cmd} className="flex items-center gap-2 rounded border px-2 py-1.5 text-xs">
+                <div
+                  key={item.cmd}
+                  className="flex items-center gap-2 rounded border px-2 py-1.5 text-xs"
+                >
                   <code className="font-mono font-medium">{item.cmd}</code>
                   <span className="text-muted-foreground">— {item.desc}</span>
                 </div>
@@ -935,44 +1534,67 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
             </div>
           </div>
         </div>
-      )
+      );
     case "mcp":
       return (
         <div className="flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">
-            Connect any MCP-compatible client to the {siteConfig.name} server for programmatic access to your learning data.
+            Connect any MCP-compatible client to the {siteConfig.name} server
+            for programmatic access to your learning data.
           </p>
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Server Endpoint</p>
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Server Endpoint
+            </p>
             <CodeBlock code={MOCK_MCP_URL} />
           </div>
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Authentication</p>
-            <CodeBlock code={`Authorization: Bearer dl_sk_live_xxxxxxxxxxxxxxxxxxxx`} />
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Authentication
+            </p>
+            <CodeBlock
+              code={`Authorization: Bearer dl_sk_live_xxxxxxxxxxxxxxxxxxxx`}
+            />
           </div>
           <Separator />
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Generic MCP Client Config</p>
-            <CodeBlock code={JSON.stringify({
-              mcpServers: {
-                coremodel: {
-                  url: MOCK_MCP_URL,
-                  headers: {
-                    Authorization: "Bearer dl_sk_live_xxxxxxxxxxxxxxxxxxxx"
-                  }
-                }
-              }
-            }, null, 2)} />
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Generic MCP Client Config
+            </p>
+            <CodeBlock
+              code={JSON.stringify(
+                {
+                  mcpServers: {
+                    coremodel: {
+                      url: MOCK_MCP_URL,
+                      headers: {
+                        Authorization: "Bearer dl_sk_live_xxxxxxxxxxxxxxxxxxxx",
+                      },
+                    },
+                  },
+                },
+                null,
+                2,
+              )}
+            />
           </div>
           <Separator />
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">NPX Local Server</p>
-            <p className="text-sm text-muted-foreground">Run the MCP server locally for development or offline use:</p>
-            <CodeBlock code={`npx @coremodel/mcp-server --api-key dl_sk_live_xxxx`} />
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              NPX Local Server
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Run the MCP server locally for development or offline use:
+            </p>
+            <CodeBlock
+              code={`npx @coremodel/mcp-server --api-key dl_sk_live_xxxx`}
+            />
           </div>
           <Separator />
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase text-muted-foreground">Available Resources & Tools</p>
+            <p className="text-xs font-medium uppercase text-muted-foreground">
+              Available Resources & Tools
+            </p>
             <div className="grid grid-cols-2 gap-1.5">
               {[
                 "coremodel://topics",
@@ -984,7 +1606,10 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
                 "get_recommendations",
                 "update_schedule",
               ].map((item) => (
-                <div key={item} className="flex items-center gap-1.5 rounded border px-2 py-1 text-xs font-mono">
+                <div
+                  key={item}
+                  className="flex items-center gap-1.5 rounded border px-2 py-1 text-xs font-mono"
+                >
                   {item.startsWith("coremodel://") ? (
                     <FolderOpen className="size-3 text-muted-foreground shrink-0" />
                   ) : (
@@ -996,13 +1621,13 @@ function IntegrationContent({ integration }: { integration: IntegrationKey }) {
             </div>
           </div>
         </div>
-      )
+      );
   }
 }
 
 function buildAppStateForExport() {
-  const topic = TOPICS[0]
-  const project = topic.projects[0]
+  const topic = TOPICS[0];
+  const project = topic.projects[0];
   return {
     exportedAt: new Date().toISOString(),
     topic: {
@@ -1051,63 +1676,65 @@ function buildAppStateForExport() {
       act: e.act,
       summary: e.summary,
     })),
-  }
+  };
 }
 
-
 function downloadFile(content: string, filename: string, mimeType: string) {
-  const blob = new Blob([content], { type: mimeType })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function generatePdfHtml(): string {
-  const state = buildAppStateForExport()
+  const state = buildAppStateForExport();
   const masteryRows = state.masteryData
     .map(
       (m) =>
-        `<tr><td>${m.concept}</td><td>${Math.round(m.posteriorMean * 100)}%</td><td>\u00b1${Math.round(m.posteriorSd * 100)}%</td><td>${Math.round(m.credibleInterval[0] * 100)}%–${Math.round(m.credibleInterval[1] * 100)}%</td></tr>`
+        `<tr><td>${m.concept}</td><td>${Math.round(m.posteriorMean * 100)}%</td><td>\u00b1${Math.round(m.posteriorSd * 100)}%</td><td>${Math.round(m.credibleInterval[0] * 100)}%–${Math.round(m.credibleInterval[1] * 100)}%</td></tr>`,
     )
-    .join("")
+    .join("");
 
-  let guideHtml = ""
-  let currentDay = 0
+  let guideHtml = "";
+  let currentDay = 0;
   for (const b of state.guideBlocks) {
     if (b.day !== currentDay) {
-      if (currentDay !== 0) guideHtml += "</ul>"
-      currentDay = b.day
-      guideHtml += `<h3>Day ${b.day}</h3><ul>`
+      if (currentDay !== 0) guideHtml += "</ul>";
+      currentDay = b.day;
+      guideHtml += `<h3>Day ${b.day}</h3><ul>`;
     }
-    guideHtml += `<li>${b.completed ? "\u2705" : "\u2B1C"} <strong>${b.type}</strong> (${b.minutes} min) &mdash; ${b.description}</li>`
+    guideHtml += `<li>${b.completed ? "\u2705" : "\u2B1C"} <strong>${b.type}</strong> (${b.minutes} min) &mdash; ${b.description}</li>`;
   }
-  guideHtml += "</ul>"
+  guideHtml += "</ul>";
 
   const chatHtml = state.chatHistory
     .map(
       (msg) =>
-        `<div style="margin-bottom:12px;"><strong>${msg.role === "user" ? "You" : siteConfig.name}</strong> <em>(${new Date(msg.timestamp).toLocaleString()})</em><blockquote style="margin:4px 0 0 0;padding-left:12px;border-left:3px solid #ddd;color:#555;">${msg.content}</blockquote></div>`
+        `<div style="margin-bottom:12px;"><strong>${msg.role === "user" ? "You" : siteConfig.name}</strong> <em>(${new Date(msg.timestamp).toLocaleString()})</em><blockquote style="margin:4px 0 0 0;padding-left:12px;border-left:3px solid #ddd;color:#555;">${msg.content}</blockquote></div>`,
     )
-    .join("")
+    .join("");
 
   const filesRows = state.files
     .map((f) => {
-      const size = f.sizeBytes >= 1_000_000 ? `${(f.sizeBytes / 1_000_000).toFixed(1)} MB` : `${(f.sizeBytes / 1_000).toFixed(1)} KB`
-      return `<tr><td>${f.filename}</td><td>${size}</td><td>${f.uploadedAt}</td><td>${f.scope}</td></tr>`
+      const size =
+        f.sizeBytes >= 1_000_000
+          ? `${(f.sizeBytes / 1_000_000).toFixed(1)} MB`
+          : `${(f.sizeBytes / 1_000).toFixed(1)} KB`;
+      return `<tr><td>${f.filename}</td><td>${size}</td><td>${f.uploadedAt}</td><td>${f.scope}</td></tr>`;
     })
-    .join("")
+    .join("");
 
   const auditHtml = state.auditEvents
     .map(
       (e) =>
-        `<div style="margin-bottom:16px;border-left:3px solid #6366f1;padding-left:12px;"><strong>${new Date(e.occurredAt).toLocaleString()}</strong><br/><em>Observe:</em> ${e.observe}<br/><em>Analyze:</em> ${e.analyze}<br/><em>Act:</em> ${e.act}<br/><em>Summary:</em> ${e.summary}</div>`
+        `<div style="margin-bottom:16px;border-left:3px solid #6366f1;padding-left:12px;"><strong>${new Date(e.occurredAt).toLocaleString()}</strong><br/><em>Observe:</em> ${e.observe}<br/><em>Analyze:</em> ${e.analyze}<br/><em>Act:</em> ${e.act}<br/><em>Summary:</em> ${e.summary}</div>`,
     )
-    .join("")
+    .join("");
 
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>${siteConfig.name} Export — ${state.topic.name}</title>
@@ -1146,17 +1773,17 @@ ${chatHtml}
 <h2>Audit Log</h2>
 ${auditHtml}
 
-</body></html>`
+</body></html>`;
 }
 
 async function exportPdf(): Promise<void> {
-  const html = generatePdfHtml()
-  const container = document.createElement("div")
-  container.innerHTML = html
-  container.style.position = "fixed"
-  container.style.left = "-9999px"
-  document.body.appendChild(container)
-  const html2pdf = (await import("html2pdf.js")).default
+  const html = generatePdfHtml();
+  const container = document.createElement("div");
+  container.innerHTML = html;
+  container.style.position = "fixed";
+  container.style.left = "-9999px";
+  document.body.appendChild(container);
+  const html2pdf = (await import("html2pdf.js")).default;
   await html2pdf()
     .set({
       margin: [10, 10],
@@ -1165,43 +1792,48 @@ async function exportPdf(): Promise<void> {
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
     })
     .from(container)
-    .save()
-  document.body.removeChild(container)
+    .save();
+  document.body.removeChild(container);
 }
 
 async function exportMarkdownViaAI(): Promise<void> {
-  const state = buildAppStateForExport()
+  const state = buildAppStateForExport();
   const response = await fetch("/api/export-markdown", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(state),
-  })
-  const { markdown } = await response.json()
-  downloadFile(markdown, "coremodel-export.md", "text/markdown")
+  });
+  const { markdown } = await response.json();
+  downloadFile(markdown, "coremodel-export.md", "text/markdown");
 }
 
 function exportJson() {
-  const data = buildAppStateForExport()
-  downloadFile(JSON.stringify(data, null, 2), "coremodel-export.json", "application/json")
+  const data = buildAppStateForExport();
+  downloadFile(
+    JSON.stringify(data, null, 2),
+    "coremodel-export.json",
+    "application/json",
+  );
 }
 
 export function ConnectDialog() {
-  const optId = useId()
-  const [selectedIntegration, setSelectedIntegration] = useState<IntegrationKey | null>(null)
-  const [exportingMarkdown, setExportingMarkdown] = useState(false)
-  const [exportingPdf, setExportingPdf] = useState(false)
+  const optId = useId();
+  const [selectedIntegration, setSelectedIntegration] =
+    useState<IntegrationKey | null>(null);
+  const [exportingMarkdown, setExportingMarkdown] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const selectedInfo = selectedIntegration
     ? CONNECT_INTEGRATIONS.find((i) => i.key === selectedIntegration)
-    : null
+    : null;
 
   return (
-    <Dialog onOpenChange={(open) => { if (!open) setSelectedIntegration(null) }}>
-      <DialogTrigger
-        render={
-          <Button variant="ghost" />
-        }
-      >
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) setSelectedIntegration(null);
+      }}
+    >
+      <DialogTrigger render={<Button variant="ghost" />}>
         <Plug className="size-4" data-icon="inline-start" />
         Connect
       </DialogTrigger>
@@ -1222,9 +1854,7 @@ export function ConnectDialog() {
                   Connect {selectedInfo.label}
                 </DialogTitle>
               </div>
-              <DialogDescription>
-                {selectedInfo.description}
-              </DialogDescription>
+              <DialogDescription>{selectedInfo.description}</DialogDescription>
             </>
           ) : (
             <>
@@ -1244,7 +1874,7 @@ export function ConnectDialog() {
           <>
             <div className="grid grid-cols-3 gap-2">
               {CONNECT_INTEGRATIONS.map((opt) => {
-                const Icon = opt.icon
+                const Icon = opt.icon;
                 return (
                   <button
                     type="button"
@@ -1256,13 +1886,15 @@ export function ConnectDialog() {
                         : "border-border hover:bg-muted"
                     }`}
                   >
-                    <Icon className={`size-6 ${opt.connected ? "text-primary" : "text-muted-foreground"}`} />
+                    <Icon
+                      className={`size-6 ${opt.connected ? "text-primary" : "text-muted-foreground"}`}
+                    />
                     <span className="text-xs font-medium">{opt.label}</span>
                     {opt.connected && (
                       <span className="absolute top-2 right-2 size-2 rounded-full bg-green-500" />
                     )}
                   </button>
-                )
+                );
               })}
             </div>
 
@@ -1274,10 +1906,12 @@ export function ConnectDialog() {
               </p>
               <div className="flex gap-2">
                 {EXPORT_FORMATS.map((fmt) => {
-                  const Icon = fmt.icon
-                  const isPdf = fmt.label === "PDF"
-                  const isMarkdown = fmt.label === "Markdown"
-                  const isLoading = (isMarkdown && exportingMarkdown) || (isPdf && exportingPdf)
+                  const Icon = fmt.icon;
+                  const isPdf = fmt.label === "PDF";
+                  const isMarkdown = fmt.label === "Markdown";
+                  const isLoading =
+                    (isMarkdown && exportingMarkdown) ||
+                    (isPdf && exportingPdf);
                   return (
                     <button
                       type="button"
@@ -1286,21 +1920,20 @@ export function ConnectDialog() {
                       className="flex flex-1 flex-col items-center gap-2 rounded-xl border border-border p-3 transition-colors hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={async () => {
                         if (fmt.label === "PDF") {
-                          setExportingPdf(true)
+                          setExportingPdf(true);
                           try {
-                            await exportPdf()
+                            await exportPdf();
                           } finally {
-                            setExportingPdf(false)
+                            setExportingPdf(false);
                           }
                         } else if (fmt.label === "Markdown") {
-                          setExportingMarkdown(true)
+                          setExportingMarkdown(true);
                           try {
-                            await exportMarkdownViaAI()
+                            await exportMarkdownViaAI();
                           } finally {
-                            setExportingMarkdown(false)
+                            setExportingMarkdown(false);
                           }
-                        }
-                        else if (fmt.label === "JSON") exportJson()
+                        } else if (fmt.label === "JSON") exportJson();
                       }}
                     >
                       {isLoading ? (
@@ -1312,7 +1945,7 @@ export function ConnectDialog() {
                         {isLoading ? "Generating..." : fmt.label}
                       </span>
                     </button>
-                  )
+                  );
                 })}
               </div>
               <label className="mt-3 flex items-center gap-2 cursor-pointer">
@@ -1326,69 +1959,76 @@ export function ConnectDialog() {
         )}
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 // ── Voice Agent ──
 
 type LiveKitConnection = {
-  token: string
-  wsUrl: string
-  roomName: string
-}
+  token: string;
+  wsUrl: string;
+  roomName: string;
+};
 
-function VoiceAgentUI({
-  onDisconnect,
-}: {
-  onDisconnect: () => void
-}) {
-  const { state: agentState, audioTrack, agentTranscriptions } = useVoiceAssistant()
-  const connectionState = useConnectionState()
-  const room = useRoomContext()
-  const [isMuted, setIsMuted] = useState(false)
-  const [vizType, setVizType] = useState<"bars" | "wave" | "aura">("bars")
-  const [elapsed, setElapsed] = useState(0)
-  const transcriptEndRef = useRef<HTMLDivElement>(null)
+function VoiceAgentUI({ onDisconnect }: { onDisconnect: () => void }) {
+  const {
+    state: agentState,
+    audioTrack,
+    agentTranscriptions,
+  } = useVoiceAssistant();
+  const connectionState = useConnectionState();
+  const room = useRoomContext();
+  const [isMuted, setIsMuted] = useState(false);
+  const [vizType, setVizType] = usePreference("vizType");
+  const [elapsed, setElapsed] = useState(0);
+  const transcriptEndRef = useRef<HTMLDivElement>(null);
 
   // Get local participant mic track for user transcriptions
-  const { microphoneTrack, localParticipant } = useLocalParticipant()
+  const { microphoneTrack, localParticipant } = useLocalParticipant();
   const localTrackRef = microphoneTrack
-    ? { participant: localParticipant, publication: microphoneTrack, source: Track.Source.Microphone }
-    : undefined
-  const { segments: userSegments } = useTrackTranscription(localTrackRef)
+    ? {
+        participant: localParticipant,
+        publication: microphoneTrack,
+        source: Track.Source.Microphone,
+      }
+    : undefined;
+  const { segments: userSegments } = useTrackTranscription(localTrackRef);
 
-  const [textInput, setTextInput] = useState("")
-  const [textSending, setTextSending] = useState(false)
+  const [textInput, setTextInput] = useState("");
+  const [textSending, setTextSending] = useState(false);
 
   // Send text input via LiveKit sendText so the voice agent handles it natively.
   // The agent's RoomIO listens on "lk.chat" topic and will respond via TTS,
   // which gets transcribed back through agentTranscriptions → conversationStore.
-  const sendTextInVoiceMode = useCallback(async (msg: string) => {
-    const msgId = `text-${Date.now()}`
-    await ensureConversation()
-    conversationStore.addMessage({
-      id: msgId,
-      role: "user",
-      text: msg,
-      timestamp: Date.now(),
-      modality: "text",
-      isFinal: true,
-    })
-    setTextSending(true)
-    try {
-      await room.localParticipant.sendText(msg, { topic: "lk.chat" })
-    } catch (err) {
-      console.error("Failed to send text via LiveKit:", err)
-      // Rollback — message never reached the agent
-      conversationStore.removeMessage(msgId)
-    } finally {
-      setTextSending(false)
-    }
-  }, [room])
+  const sendTextInVoiceMode = useCallback(
+    async (msg: string) => {
+      const msgId = `text-${Date.now()}`;
+      await ensureConversation();
+      conversationStore.addMessage({
+        id: msgId,
+        role: "user",
+        text: msg,
+        timestamp: Date.now(),
+        modality: "text",
+        isFinal: true,
+      });
+      setTextSending(true);
+      try {
+        await room.localParticipant.sendText(msg, { topic: "lk.chat" });
+      } catch (err) {
+        console.error("Failed to send text via LiveKit:", err);
+        // Rollback — message never reached the agent
+        conversationStore.removeMessage(msgId);
+      } finally {
+        setTextSending(false);
+      }
+    },
+    [room],
+  );
 
   // Build merged transcript entries from voice segments
   const transcriptEntries = useMemo(() => {
-    const entries: MessageEntry[] = []
+    const entries: MessageEntry[] = [];
     for (const seg of agentTranscriptions) {
       entries.push({
         id: `agent-${seg.id}`,
@@ -1397,7 +2037,7 @@ function VoiceAgentUI({
         timestamp: seg.firstReceivedTime,
         modality: "voice",
         isFinal: seg.final,
-      })
+      });
     }
     for (const seg of userSegments) {
       entries.push({
@@ -1407,95 +2047,98 @@ function VoiceAgentUI({
         timestamp: seg.firstReceivedTime,
         modality: "voice",
         isFinal: seg.final,
-      })
+      });
     }
-    entries.sort((a, b) => a.timestamp - b.timestamp)
-    return entries
-  }, [agentTranscriptions, userSegments])
+    entries.sort((a, b) => a.timestamp - b.timestamp);
+    return entries;
+  }, [agentTranscriptions, userSegments]);
 
   // Sync voice transcripts into the unified conversation store
   useEffect(() => {
-    conversationStore.merge(transcriptEntries)
-  }, [transcriptEntries])
+    conversationStore.merge(transcriptEntries);
+  }, [transcriptEntries]);
 
   // Read the full conversation (voice + any text messages sent during voice mode)
-  const allEntries = useConversation()
+  const allEntries = useConversation();
 
   // Auto-scroll transcript
   useEffect(() => {
-    transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [allEntries])
+    transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
 
   useEffect(() => {
-    const interval = setInterval(() => setElapsed((e) => e + 1), 1000)
-    return () => clearInterval(interval)
-  }, [])
+    const interval = setInterval(() => setElapsed((e) => e + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const toggleMute = useCallback(() => {
     if (room?.localParticipant) {
-      const next = !isMuted
-      room.localParticipant.setMicrophoneEnabled(!next)
-      setIsMuted(next)
+      const next = !isMuted;
+      room.localParticipant.setMicrophoneEnabled(!next);
+      setIsMuted(next);
     }
-  }, [room, isMuted])
+  }, [room, isMuted]);
+
+  useHotkeys({
+    "mod+m": toggleMute,
+    "mod+.": onDisconnect,
+  });
 
   const formatTime = (s: number) =>
-    `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`
+    `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
   const statusText = (() => {
-    if (connectionState !== ConnectionState.Connected) return "Connecting..."
+    if (connectionState !== ConnectionState.Connected) return "Connecting...";
     switch (agentState) {
       case "speaking":
-        return "Agent is speaking..."
+        return "Agent is speaking...";
       case "thinking":
-        return "Thinking..."
+        return "Thinking...";
       case "listening":
-        return "Listening..."
+        return "Listening...";
       default:
-        return "Connecting to agent..."
+        return "Connecting to agent...";
     }
-  })()
-
-  const isSpeaking = agentState === "speaking"
+  })();
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className="relative flex flex-1 flex-col overflow-hidden">
+      {/* Background: voice visualizer — behind everything, allowed to bleed */}
+      <div className="absolute inset-0 pointer-events-none grayscale opacity-30 flex items-center justify-center z-0">
+        {vizType === "bars" && (
+          <AgentAudioVisualizerBar
+            state={agentState}
+            audioTrack={audioTrack}
+            barCount={5}
+            size="lg"
+          />
+        )}
+        {vizType === "wave" && (
+          <AgentAudioVisualizerWave
+            state={agentState}
+            audioTrack={audioTrack}
+            size="xl"
+          />
+        )}
+        {vizType === "aura" && (
+          <AgentAudioVisualizerAura
+            state={agentState}
+            audioTrack={audioTrack}
+            size="xl"
+          />
+        )}
+      </div>
+
       {/* Status */}
-      <div className="flex flex-col items-center gap-1 pt-6 shrink-0">
+      <div className="relative z-10 flex flex-col items-center gap-1 pt-6 shrink-0">
         <span className="text-xs text-muted-foreground">{statusText}</span>
         <span className="text-xs tabular-nums text-muted-foreground">
           {formatTime(elapsed)}
         </span>
       </div>
 
-      {/* Main content: visualizer background + transcript foreground */}
-      <div className="relative flex flex-1 flex-col overflow-hidden">
-        {/* Background: voice visualizer — always visible, grayscale, non-interactive */}
-        <div className="absolute inset-0 pointer-events-none grayscale opacity-30 flex items-center justify-center">
-          {vizType === "bars" && (
-            <AgentAudioVisualizerBar
-              state={agentState}
-              audioTrack={audioTrack}
-              barCount={5}
-              size="lg"
-            />
-          )}
-          {vizType === "wave" && (
-            <AgentAudioVisualizerWave
-              state={agentState}
-              audioTrack={audioTrack}
-              size="lg"
-            />
-          )}
-          {vizType === "aura" && (
-            <AgentAudioVisualizerAura
-              state={agentState}
-              audioTrack={audioTrack}
-              size="lg"
-            />
-          )}
-        </div>
-
+      {/* Main content: transcript foreground */}
+      <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
         {/* Foreground: transcript — scrollable, interactive */}
         <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
           <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden px-4">
@@ -1545,33 +2188,49 @@ function VoiceAgentUI({
       {/* Text input during voice mode */}
       <form
         onSubmit={(e) => {
-          e.preventDefault()
-          const msg = textInput.trim()
-          if (!msg || textSending) return
-          void sendTextInVoiceMode(msg)
-          setTextInput("")
+          e.preventDefault();
+          const msg = textInput.trim();
+          if (!msg || textSending) return;
+          void sendTextInVoiceMode(msg);
+          setTextInput("");
         }}
         className="shrink-0 border-t px-3 py-2"
       >
         <div className="flex gap-2">
           <Input
+            data-chat-input
             placeholder="Type a message while in voice mode..."
             value={textInput}
             onChange={(e) => setTextInput(e.target.value)}
             className="h-8 text-sm"
             disabled={textSending}
           />
-          <Button type="submit" size="icon-xs" disabled={!textInput.trim() || textSending}>
-            {textSending ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
+          <Button
+            type="submit"
+            size="icon-xs"
+            disabled={!textInput.trim() || textSending}
+          >
+            {textSending ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Send className="size-3.5" />
+            )}
           </Button>
         </div>
       </form>
 
       {/* Controls */}
       <div className="flex shrink-0 items-center justify-between border-t p-4 pb-6">
-        {/* Spacer for symmetry */}
-        <div className="w-8" />
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="destructive"
+            size="icon"
+            onClick={onDisconnect}
+            className="group"
+          >
+            <PhoneOff className="size-4 hidden group-hover:block" />
+            <Mic className="size-4 group-hover:hidden" />
+          </Button>
           <Button
             variant={isMuted ? "destructive" : "outline"}
             size="icon"
@@ -1583,30 +2242,9 @@ function VoiceAgentUI({
               <Mic className="size-4" />
             )}
           </Button>
-          <Button
-            variant={
-              connectionState === ConnectionState.Connected
-                ? "default"
-                : "outline"
-            }
-            size="icon-lg"
-            className={isSpeaking ? "animate-pulse" : ""}
-            disabled
-          >
-            <Mic className="size-5" />
-          </Button>
-          <Button
-            variant="destructive"
-            size="icon"
-            onClick={onDisconnect}
-          >
-            <Phone className="size-4" />
-          </Button>
         </div>
         <DropdownMenu>
-          <DropdownMenuTrigger
-            className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-          >
+          <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md p-1.5 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
             <MoreVertical className="size-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -1630,56 +2268,70 @@ function VoiceAgentUI({
       </div>
       <RoomAudioRenderer />
     </div>
-  )
+  );
 }
 
 function VoiceAgent() {
-  const [micAccess, setMicAccess] = useState<
-    "pending" | "granted" | "denied"
-  >("pending")
-  const [requesting, setRequesting] = useState(false)
-  const [connection, setConnection] = useState<LiveKitConnection | null>(null)
-  const [tokenError, setTokenError] = useState<string | null>(null)
-  const fetchingRef = useRef(false)
+  const [micAccess, setMicAccess] = useState<"pending" | "granted" | "denied">(
+    "pending",
+  );
+  const [requesting, setRequesting] = useState(false);
+  const [connection, setConnection] = useState<LiveKitConnection | null>(null);
+  const [tokenError, setTokenError] = useState<string | null>(null);
+  const [userDisconnected, setUserDisconnected] = useState(false);
+  const fetchingRef = useRef(false);
 
   const requestMic = () => {
-    setRequesting(true)
+    setRequesting(true);
     navigator.mediaDevices
       .getUserMedia({ audio: true })
       .then((stream) => {
-        stream.getTracks().forEach((t) => t.stop())
-        setMicAccess("granted")
+        stream.getTracks().forEach((t) => t.stop());
+        setMicAccess("granted");
       })
       .catch(() => setMicAccess("denied"))
-      .finally(() => setRequesting(false))
-  }
+      .finally(() => setRequesting(false));
+  };
 
   useEffect(() => {
-    requestMic()
-  }, [])
+    requestMic();
+  }, [requestMic]);
 
-  // Fetch token once mic is granted
+  // Fetch token once mic is granted (skip if user disconnected)
   useEffect(() => {
-    if (micAccess !== "granted" || connection || fetchingRef.current) return
-    fetchingRef.current = true
+    if (
+      micAccess !== "granted" ||
+      connection ||
+      fetchingRef.current ||
+      userDisconnected
+    )
+      return;
+    fetchingRef.current = true;
     fetch("/api/livekit-token", { method: "POST" })
       .then((res) => {
-        if (!res.ok) throw new Error(`Failed to get token: ${res.status}`)
-        return res.json()
+        if (!res.ok) throw new Error(`Failed to get token: ${res.status}`);
+        return res.json();
       })
       .then((data: LiveKitConnection) => {
-        setConnection(data)
+        setConnection(data);
       })
       .catch((err: unknown) => {
-        setTokenError(err instanceof Error ? err.message : "Connection failed")
-        fetchingRef.current = false
-      })
-  }, [micAccess, connection])
+        setTokenError(err instanceof Error ? err.message : "Connection failed");
+        fetchingRef.current = false;
+      });
+  }, [micAccess, connection, userDisconnected]);
 
   const handleDisconnect = useCallback(() => {
-    setConnection(null)
-    fetchingRef.current = false
-  }, [])
+    setConnection(null);
+    setUserDisconnected(true);
+    fetchingRef.current = false;
+  }, []);
+
+  const handleReconnect = useCallback(() => {
+    setUserDisconnected(false);
+    setConnection(null);
+    fetchingRef.current = false;
+  }, []);
 
   if (micAccess !== "granted") {
     return (
@@ -1714,7 +2366,7 @@ function VoiceAgent() {
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
   if (tokenError) {
@@ -1730,8 +2382,8 @@ function VoiceAgent() {
             variant="secondary"
             size="sm"
             onClick={() => {
-              setTokenError(null)
-              setConnection(null)
+              setTokenError(null);
+              setConnection(null);
             }}
           >
             <RefreshCw className="size-3.5" data-icon="inline-start" />
@@ -1739,18 +2391,33 @@ function VoiceAgent() {
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
   if (!connection) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">
-          Connecting to voice agent...
-        </p>
+        {userDisconnected ? (
+          <>
+            <div className="flex size-16 items-center justify-center rounded-full bg-muted">
+              <Phone className="size-7 text-muted-foreground" />
+            </div>
+            <p className="text-sm text-muted-foreground">Call ended</p>
+            <Button variant="outline" size="sm" onClick={handleReconnect}>
+              <Phone className="size-3.5" data-icon="inline-start" />
+              Reconnect
+            </Button>
+          </>
+        ) : (
+          <>
+            <Loader2 className="size-8 animate-spin text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              Connecting to voice agent...
+            </p>
+          </>
+        )}
       </div>
-    )
+    );
   }
 
   return (
@@ -1762,11 +2429,9 @@ function VoiceAgent() {
       className="flex flex-1 flex-col overflow-hidden"
       onDisconnected={handleDisconnect}
     >
-      <VoiceAgentUI
-        onDisconnect={handleDisconnect}
-      />
+      <VoiceAgentUI onDisconnect={handleDisconnect} />
     </LiveKitRoom>
-  )
+  );
 }
 
 // ── Agent Chat Tab ──
@@ -1778,7 +2443,7 @@ const TOOL_TYPE_TO_ARTIFACT: Record<string, ArtifactType> = {
   create_slides: "slidedeck",
   create_spatial: "spatial",
   create_learning_guide: "report",
-}
+};
 
 const TOOL_LABELS: Record<string, string> = {
   create_quiz: "View Quiz",
@@ -1796,7 +2461,7 @@ const TOOL_LABELS: Record<string, string> = {
   complete_guide_block: "Marking complete...",
   open_artifact: "Opening artifact...",
   get_current_state: "Reading state...",
-}
+};
 
 const STATE_TOOL_NAMES = new Set([
   "navigate_to_view",
@@ -1808,24 +2473,26 @@ const STATE_TOOL_NAMES = new Set([
   "complete_guide_block",
   "open_artifact",
   "get_current_state",
-])
+]);
 
 function AgentTab({
   onOpenArtifact,
   onToolResult,
 }: {
-  onOpenArtifact: (type: ArtifactType, scrollToId?: string) => void
-  onToolResult?: (toolName: string, result: Record<string, unknown>) => void
+  onOpenArtifact: (type: ArtifactType, scrollToId?: string) => void;
+  onToolResult?: (toolName: string, result: Record<string, unknown>) => void;
 }) {
-  const msgId = useId()
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const msgId = useId();
+  const scrollRef = useRef<HTMLDivElement>(null);
   const { messages, sendMessage, status, error } = useChat({
     onFinish: ({ message }) => {
       // Sync assistant responses into the unified conversation store
       const textContent = message.parts
-        .filter((p): p is Extract<typeof p, { type: "text" }> => p.type === "text")
+        .filter(
+          (p): p is Extract<typeof p, { type: "text" }> => p.type === "text",
+        )
         .map((p) => p.text)
-        .join("")
+        .join("");
       if (textContent.trim()) {
         conversationStore.addMessage({
           id: `chat-assistant-${message.id}`,
@@ -1834,40 +2501,49 @@ function AgentTab({
           timestamp: Date.now(),
           modality: "text",
           isFinal: true,
-        })
+        });
       }
     },
-  })
-  const [input, setInput] = useState("")
-  const processedToolCalls = useRef(new Set<string>())
+  });
+  const [input, setInput] = useState("");
+  const processedToolCalls = useRef(new Set<string>());
 
-  const isLoading = status === "streaming" || status === "submitted"
+  const isLoading = status === "streaming" || status === "submitted";
 
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
 
   // Process tool results from messages — routes to agent-dispatch
   useEffect(() => {
-    if (!onToolResult) return
+    if (!onToolResult) return;
     for (const msg of messages) {
-      if (msg.role !== "assistant") continue
+      if (msg.role !== "assistant") continue;
       for (const part of msg.parts) {
         if (part.type.startsWith("tool-")) {
-          const toolName = part.type.replace("tool-", "")
-          const toolPart = part as { type: string; state: string; toolCallId: string; result?: Record<string, unknown> }
-          if (toolPart.state === "result" && toolPart.result && !processedToolCalls.current.has(toolPart.toolCallId)) {
-            processedToolCalls.current.add(toolPart.toolCallId)
-            onToolResult(toolName, toolPart.result)
+          const toolName = part.type.replace("tool-", "");
+          const toolPart = part as {
+            type: string;
+            state: string;
+            toolCallId: string;
+            result?: Record<string, unknown>;
+          };
+          if (
+            toolPart.state === "result" &&
+            toolPart.result &&
+            !processedToolCalls.current.has(toolPart.toolCallId)
+          ) {
+            processedToolCalls.current.add(toolPart.toolCallId);
+            onToolResult(toolName, toolPart.result);
           }
         }
       }
     }
-  }, [messages, onToolResult])
+  }, [messages, onToolResult]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!input.trim() || isLoading) return
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
     // Also add to unified store so voice mode picks it up
     conversationStore.addMessage({
       id: `text-chat-${Date.now()}`,
@@ -1876,16 +2552,22 @@ function AgentTab({
       timestamp: Date.now(),
       modality: "text",
       isFinal: true,
-    })
-    await ensureConversation()
+    });
+    await ensureConversation();
     // Send all non-useChat messages as prior context (voice + text-in-voice-mode).
     // useChat tracks its own messages, so we exclude those (they have "text-chat-" prefix).
-    const priorContext = conversationStore.getSnapshot()
-      .filter((entry) => entry.isFinal && !entry.id.startsWith("text-chat-") && !entry.id.startsWith("chat-assistant-"))
-      .map((entry) => ({ role: entry.role, content: entry.text }))
-    sendMessage({ text: input }, { body: { priorContext } })
-    setInput("")
-  }
+    const priorContext = conversationStore
+      .getSnapshot()
+      .filter(
+        (entry) =>
+          entry.isFinal &&
+          !entry.id.startsWith("text-chat-") &&
+          !entry.id.startsWith("chat-assistant-"),
+      )
+      .map((entry) => ({ role: entry.role, content: entry.text }));
+    sendMessage({ text: input }, { body: { priorContext } });
+    setInput("");
+  };
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -1894,7 +2576,9 @@ function AgentTab({
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
               <MessageSquare className="size-8 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">Ask me anything about your studies</p>
+              <p className="text-sm text-muted-foreground">
+                Ask me anything about your studies
+              </p>
             </div>
           )}
           {messages.map((msg: UIMessage) => (
@@ -1904,7 +2588,9 @@ function AgentTab({
             >
               {msg.role === "assistant" && (
                 <Avatar size="sm" className="mt-0.5 shrink-0">
-                  <AvatarFallback><Bot className="size-4" /></AvatarFallback>
+                  <AvatarFallback>
+                    <Bot className="size-4" />
+                  </AvatarFallback>
                 </Avatar>
               )}
               <div className={`max-w-[85%] ${msg.role === "user" ? "" : ""}`}>
@@ -1921,31 +2607,46 @@ function AgentTab({
                       >
                         {part.text}
                       </div>
-                    )
+                    );
                   }
                   if (part.type.startsWith("tool-")) {
-                    const toolName = part.type.replace("tool-", "")
-                    const isStateTool = STATE_TOOL_NAMES.has(toolName)
-                    const artifactType = TOOL_TYPE_TO_ARTIFACT[toolName]
-                    const label = TOOL_LABELS[toolName] ?? toolName
-                    const toolPart = part as { type: string; state: string; toolCallId: string }
+                    const toolName = part.type.replace("tool-", "");
+                    const isStateTool = STATE_TOOL_NAMES.has(toolName);
+                    const artifactType = TOOL_TYPE_TO_ARTIFACT[toolName];
+                    const label = TOOL_LABELS[toolName] ?? toolName;
+                    const toolPart = part as {
+                      type: string;
+                      state: string;
+                      toolCallId: string;
+                    };
 
-                    if (toolPart.state === "call" || toolPart.state === "input-streaming") {
+                    if (
+                      toolPart.state === "call" ||
+                      toolPart.state === "input-streaming"
+                    ) {
                       return (
-                        <div key={`${msg.id}-part-${partIdx}`} className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                        <div
+                          key={`${msg.id}-part-${partIdx}`}
+                          className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"
+                        >
                           <Loader2 className="size-3 animate-spin" />
-                          {isStateTool ? label : `Creating ${label.toLowerCase().replace("view ", "")}...`}
+                          {isStateTool
+                            ? label
+                            : `Creating ${label.toLowerCase().replace("view ", "")}...`}
                         </div>
-                      )
+                      );
                     }
 
                     if (toolPart.state === "result" && isStateTool) {
                       return (
-                        <div key={`${msg.id}-part-${partIdx}`} className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <div
+                          key={`${msg.id}-part-${partIdx}`}
+                          className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground"
+                        >
                           <Check className="size-3 text-green-600" />
                           Done
                         </div>
-                      )
+                      );
                     }
 
                     if (toolPart.state === "result" && artifactType) {
@@ -1960,17 +2661,19 @@ function AgentTab({
                             {label}
                           </button>
                         </div>
-                      )
+                      );
                     }
 
-                    return null
+                    return null;
                   }
-                  return null
+                  return null;
                 })}
               </div>
               {msg.role === "user" && (
                 <Avatar size="sm" className="mt-0.5 shrink-0">
-                  <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
+                  <AvatarFallback>
+                    <User className="h-4 w-4" />
+                  </AvatarFallback>
                 </Avatar>
               )}
             </div>
@@ -1987,166 +2690,61 @@ function AgentTab({
       <form onSubmit={handleSubmit} className="shrink-0 border-t p-4">
         <div className="flex gap-2">
           <Input
+            data-chat-input
             placeholder="Ask your learning agent..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             className="flex-1"
             disabled={isLoading}
           />
-          <Button size="icon" type="submit" disabled={isLoading || !input.trim()}>
+          <Button
+            size="icon"
+            type="submit"
+            disabled={isLoading || !input.trim()}
+          >
             {isLoading ? <Loader2 className="animate-spin" /> : <Send />}
           </Button>
         </div>
       </form>
     </div>
-  )
-}
-
-// ── Adjustments Dialog ──
-
-function AdjustmentsDialog() {
-  const [dailyMinutes, setDailyMinutes] = useState([60])
-  const [difficulty, setDifficulty] = useState([3])
-  const [reviewFrequency, setReviewFrequency] = useState([4])
-
-  const handleSlider = (setter: (v: number[]) => void) => (value: number | readonly number[]) => {
-    setter(Array.isArray(value) ? [...value] : [value])
-  }
-
-  return (
-    <Dialog>
-      <DialogTrigger render={<Button size="lg" variant="outline" />}>
-        Make Adjustments
-      </DialogTrigger>
-      <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Adjust Your Guide</DialogTitle>
-          <DialogDescription>
-            Fine-tune your learning preferences and regenerate the guide.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="min-h-0 flex-1 overflow-y-auto -mx-6 px-6">
-          <Accordion defaultValue={["schedule", "difficulty", "focus"]}>
-            <AccordionItem value="schedule">
-              <AccordionTrigger>Schedule &amp; Pacing</AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <Label>Daily study time: {dailyMinutes[0]} min</Label>
-                  <Slider
-                    value={dailyMinutes}
-                    onValueChange={handleSlider(setDailyMinutes)}
-                    min={15}
-                    max={180}
-                    step={15}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Preferred start day</Label>
-                  <Input type="date" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Days per week</Label>
-                  <Input type="number" min={1} max={7} defaultValue={5} />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="difficulty">
-              <AccordionTrigger>Difficulty &amp; Depth</AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <Label>Challenge level: {["Beginner", "Easy", "Moderate", "Hard", "Expert"][difficulty[0] - 1]}</Label>
-                  <Slider
-                    value={difficulty}
-                    onValueChange={handleSlider(setDifficulty)}
-                    min={1}
-                    max={5}
-                    step={1}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Review frequency: every {reviewFrequency[0]} blocks</Label>
-                  <Slider
-                    value={reviewFrequency}
-                    onValueChange={handleSlider(setReviewFrequency)}
-                    min={1}
-                    max={10}
-                    step={1}
-                  />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="focus">
-              <AccordionTrigger>Focus Areas</AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <Label>Topics to prioritize</Label>
-                  <Input placeholder="e.g. eigenvalues, matrix decomposition" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Topics to skip or de-emphasize</Label>
-                  <Input placeholder="e.g. proofs, history" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Learning goal</Label>
-                  <Input placeholder="e.g. pass final exam, build intuition" />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </div>
-
-        <DialogFooter>
-          <Button className="w-full" size="lg">
-            Regenerate Guide
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
+  );
 }
 
 // ── Guide Tab ──
 
 function GuideTab({ blocks }: { blocks: MockGuideBlock[] }) {
-  const blockId = useId()
-  const days = Array.from(new Set(blocks.map((b) => b.dayIndex))).sort()
+  const blockId = useId();
+  const days = Array.from(new Set(blocks.map((b) => b.dayIndex))).sort();
+
+  if (blocks.length === 0) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <Alert>
+          <BookOpen className="size-4" />
+          <AlertTitle>No guide yet</AlertTitle>
+          <AlertDescription>
+            Upload sources and ask the agent to generate a learning guide for
+            this topic.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <div className="rounded-xl border p-6">
-        <h1 className="text-2xl font-bold tracking-tight">
-          <ShinyText
-            text="Welcome to your generated guide"
-            speed={3}
-            color="#64748b"
-            shineColor="#8b5cf6"
-            className="text-2xl font-bold tracking-tight"
-          />
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          Upload your study materials, and Core Model builds a scientific profile of how you actually learn — then generates an adaptive guide with evidence-traced recommendations that evolve as you do.
-        </p>
-        <div className="mt-4 flex gap-3">
-          <Button size="lg">
-            Get Started
-          </Button>
-          <AdjustmentsDialog />
-        </div>
-      </div>
-
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold">7-Day Learning Guide</h2>
+        <h2 className="text-base font-semibold">
+          {days.length}-Day Learning Guide
+        </h2>
         <Badge variant="outline">
           {blocks.filter((b) => b.completed).length}/{blocks.length} completed
         </Badge>
       </div>
 
       {days.map((day) => {
-        const dayBlocks = blocks.filter((b) => b.dayIndex === day)
-        const allDone = dayBlocks.every((b) => b.completed)
+        const dayBlocks = blocks.filter((b) => b.dayIndex === day);
+        const allDone = dayBlocks.every((b) => b.completed);
         return (
           <Card key={`${blockId}-day-${day}`} size="sm">
             <CardHeader>
@@ -2171,7 +2769,7 @@ function GuideTab({ blocks }: { blocks: MockGuideBlock[] }) {
                 const typeInfo = BLOCK_TYPE_LABELS[block.blockType] ?? {
                   label: block.blockType,
                   color: "bg-gray-100 text-gray-800",
-                }
+                };
                 return (
                   <div
                     key={`${blockId}-${block.id}`}
@@ -2185,7 +2783,9 @@ function GuideTab({ blocks }: { blocks: MockGuideBlock[] }) {
                       {typeInfo.label}
                     </div>
                     <div className="flex-1">
-                      <p className={`text-sm ${block.completed ? "line-through" : ""}`}>
+                      <p
+                        className={`text-sm ${block.completed ? "line-through" : ""}`}
+                      >
                         {block.description}
                       </p>
                       <p className="mt-0.5 text-xs text-muted-foreground">
@@ -2198,212 +2798,241 @@ function GuideTab({ blocks }: { blocks: MockGuideBlock[] }) {
                       </Button>
                     )}
                   </div>
-                )
+                );
               })}
             </CardContent>
           </Card>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
 
 // ── Sources Tab ──
 
 function formatFileSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 type UploadItem = {
-  tempId: string
-  filename: string
-  sizeBytes: number
-  progress: number
-  status: "uploading" | "error" | "done"
-  error?: string
-  abortController?: AbortController
-}
+  tempId: string;
+  filename: string;
+  sizeBytes: number;
+  progress: number;
+  status: "uploading" | "error" | "done";
+  error?: string;
+  abortController?: AbortController;
+};
 
 type SourceRow = {
-  id: string
-  filename: string
-  mimeType: string
-  sizeBytes: number
-  blobUrl: string
-  createdAt: string
-}
+  id: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  blobUrl: string;
+  createdAt: string;
+};
 
-function SourcesTab({ topicSlug, fallbackFiles }: { topicSlug: string; fallbackFiles: MockFile[] }) {
-  const fileId = useId()
-  const uploadId = useId()
-  const [dragOver, setDragOver] = useState(false)
-  const [uploads, setUploads] = useState<UploadItem[]>([])
-  const [sources, setSources] = useState<SourceRow[]>([])
-  const [loaded, setLoaded] = useState(false)
-  const [renamingId, setRenamingId] = useState<string | null>(null)
-  const [renameValue, setRenameValue] = useState("")
-  const [quotaError, setQuotaError] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+function SourcesTab({
+  topicSlug,
+  fallbackFiles,
+}: {
+  topicSlug: string;
+  fallbackFiles: MockFile[];
+}) {
+  const fileId = useId();
+  const uploadId = useId();
+  const [dragOver, setDragOver] = useState(false);
+  const [uploads, setUploads] = useState<UploadItem[]>([]);
+  const [sources, setSources] = useState<SourceRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [quotaError, setQuotaError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch sources from API
   const fetchSources = useCallback(async () => {
     try {
-      const res = await fetch(`/api/sources?topicSlug=${encodeURIComponent(topicSlug)}`)
+      const res = await fetch(
+        `/api/sources?topicSlug=${encodeURIComponent(topicSlug)}`,
+      );
       if (res.ok) {
-        const data = await res.json()
-        setSources(data.sources)
+        const data = await res.json();
+        setSources(data.sources);
       }
     } finally {
-      setLoaded(true)
+      setLoaded(true);
     }
-  }, [topicSlug])
+  }, [topicSlug]);
 
   useEffect(() => {
-    fetchSources()
-  }, [fetchSources])
+    fetchSources();
+  }, [fetchSources]);
 
-  const uploadFiles = useCallback(async (fileList: FileList | File[]) => {
-    const files = Array.from(fileList)
-    if (files.length === 0) return
+  const uploadFiles = useCallback(
+    async (fileList: FileList | File[]) => {
+      const files = Array.from(fileList);
+      if (files.length === 0) return;
 
-    const newUploads: UploadItem[] = files.map((f) => ({
-      tempId: crypto.randomUUID(),
-      filename: f.name,
-      sizeBytes: f.size,
-      progress: 0,
-      status: "uploading" as const,
-      abortController: new AbortController(),
-    }))
+      const newUploads: UploadItem[] = files.map((f) => ({
+        tempId: crypto.randomUUID(),
+        filename: f.name,
+        sizeBytes: f.size,
+        progress: 0,
+        status: "uploading" as const,
+        abortController: new AbortController(),
+      }));
 
-    setUploads((prev) => [...prev, ...newUploads])
+      setUploads((prev) => [...prev, ...newUploads]);
 
-    // Upload all files in a single request
-    const formData = new FormData()
-    formData.append("topicSlug", topicSlug)
-    for (const file of files) {
-      formData.append("files", file)
-    }
+      // Upload all files in a single request
+      const formData = new FormData();
+      formData.append("topicSlug", topicSlug);
+      for (const file of files) {
+        formData.append("files", file);
+      }
 
-    // Use a shared abort controller for the batch
-    const controller = new AbortController()
-    for (const u of newUploads) {
-      u.abortController = controller
-    }
+      // Use a shared abort controller for the batch
+      const controller = new AbortController();
+      for (const u of newUploads) {
+        u.abortController = controller;
+      }
 
-    try {
-      const res = await fetch("/api/sources", {
-        method: "POST",
-        body: formData,
-        signal: controller.signal,
-      })
+      try {
+        const res = await fetch("/api/sources", {
+          method: "POST",
+          body: formData,
+          signal: controller.signal,
+        });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Upload failed" }))
-        if (res.status === 413) {
-          setQuotaError(err.error ?? "Storage quota exceeded")
+        if (!res.ok) {
+          const err = await res
+            .json()
+            .catch(() => ({ error: "Upload failed" }));
+          if (res.status === 413) {
+            setQuotaError(err.error ?? "Storage quota exceeded");
+          }
+          setUploads((prev) =>
+            prev.map((u) =>
+              newUploads.some((n) => n.tempId === u.tempId)
+                ? {
+                    ...u,
+                    status: "error" as const,
+                    error: err.error ?? "Upload failed",
+                  }
+                : u,
+            ),
+          );
+          return;
+        }
+
+        const data = await res.json();
+        // Remove completed uploads from the upload list
+        setUploads((prev) =>
+          prev.filter((u) => !newUploads.some((n) => n.tempId === u.tempId)),
+        );
+
+        // Check for per-file errors
+        const errors = data.results.filter((r: { error?: string }) => r.error);
+        if (errors.length > 0) {
+          setUploads((prev) => [
+            ...prev,
+            ...errors.map((e: { filename: string; error: string }) => ({
+              tempId: crypto.randomUUID(),
+              filename: e.filename,
+              sizeBytes: 0,
+              progress: 0,
+              status: "error" as const,
+              error: e.error,
+            })),
+          ]);
+        }
+
+        fetchSources();
+      } catch (err) {
+        if ((err as Error).name === "AbortError") {
+          setUploads((prev) =>
+            prev.filter((u) => !newUploads.some((n) => n.tempId === u.tempId)),
+          );
+          return;
         }
         setUploads((prev) =>
           prev.map((u) =>
             newUploads.some((n) => n.tempId === u.tempId)
-              ? { ...u, status: "error" as const, error: err.error ?? "Upload failed" }
-              : u
-          )
-        )
-        return
+              ? { ...u, status: "error" as const, error: "Network error" }
+              : u,
+          ),
+        );
       }
+    },
+    [topicSlug, fetchSources],
+  );
 
-      const data = await res.json()
-      // Remove completed uploads from the upload list
-      setUploads((prev) => prev.filter((u) => !newUploads.some((n) => n.tempId === u.tempId)))
-
-      // Check for per-file errors
-      const errors = data.results.filter((r: { error?: string }) => r.error)
-      if (errors.length > 0) {
-        setUploads((prev) => [
-          ...prev,
-          ...errors.map((e: { filename: string; error: string }) => ({
-            tempId: crypto.randomUUID(),
-            filename: e.filename,
-            sizeBytes: 0,
-            progress: 0,
-            status: "error" as const,
-            error: e.error,
-          })),
-        ])
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragOver(false);
+      if (e.dataTransfer.files.length > 0) {
+        uploadFiles(e.dataTransfer.files);
       }
+    },
+    [uploadFiles],
+  );
 
-      fetchSources()
-    } catch (err) {
-      if ((err as Error).name === "AbortError") {
-        setUploads((prev) => prev.filter((u) => !newUploads.some((n) => n.tempId === u.tempId)))
-        return
+  const handleFileInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files.length > 0) {
+        uploadFiles(e.target.files);
+        e.target.value = "";
       }
-      setUploads((prev) =>
-        prev.map((u) =>
-          newUploads.some((n) => n.tempId === u.tempId)
-            ? { ...u, status: "error" as const, error: "Network error" }
-            : u
-        )
-      )
-    }
-  }, [topicSlug, fetchSources])
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-    if (e.dataTransfer.files.length > 0) {
-      uploadFiles(e.dataTransfer.files)
-    }
-  }, [uploadFiles])
-
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      uploadFiles(e.target.files)
-      e.target.value = ""
-    }
-  }, [uploadFiles])
+    },
+    [uploadFiles],
+  );
 
   const cancelUpload = useCallback((tempId: string) => {
     setUploads((prev) => {
-      const item = prev.find((u) => u.tempId === tempId)
-      item?.abortController?.abort()
-      return prev.filter((u) => u.tempId !== tempId)
-    })
-  }, [])
+      const item = prev.find((u) => u.tempId === tempId);
+      item?.abortController?.abort();
+      return prev.filter((u) => u.tempId !== tempId);
+    });
+  }, []);
 
   const deleteSource = useCallback(async (id: string) => {
-    const res = await fetch(`/api/sources/${id}`, { method: "DELETE" })
+    const res = await fetch(`/api/sources/${id}`, { method: "DELETE" });
     if (res.ok) {
-      setSources((prev) => prev.filter((s) => s.id !== id))
-      setQuotaError(null)
+      setSources((prev) => prev.filter((s) => s.id !== id));
+      setQuotaError(null);
     }
-  }, [])
+  }, []);
 
   const startRename = useCallback((id: string, currentName: string) => {
-    setRenamingId(id)
-    setRenameValue(currentName)
-  }, [])
+    setRenamingId(id);
+    setRenameValue(currentName);
+  }, []);
 
   const submitRename = useCallback(async () => {
-    if (!renamingId || !renameValue.trim()) return
+    if (!renamingId || !renameValue.trim()) return;
     const res = await fetch(`/api/sources/${renamingId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ filename: renameValue.trim() }),
-    })
+    });
     if (res.ok) {
-      const data = await res.json()
+      const data = await res.json();
       setSources((prev) =>
-        prev.map((s) => (s.id === renamingId ? { ...s, filename: data.source.filename } : s))
-      )
+        prev.map((s) =>
+          s.id === renamingId ? { ...s, filename: data.source.filename } : s,
+        ),
+      );
     }
-    setRenamingId(null)
-    setRenameValue("")
-  }, [renamingId, renameValue])
+    setRenamingId(null);
+    setRenameValue("");
+  }, [renamingId, renameValue]);
 
-  const displayFiles = loaded ? sources : []
+  const displayFiles = loaded ? sources : [];
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -2416,7 +3045,11 @@ function SourcesTab({ topicSlug, fallbackFiles }: { topicSlug: string; fallbackF
         <div className="flex items-center gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-3">
           <AlertCircle className="size-4 shrink-0 text-destructive" />
           <div className="flex-1 text-sm text-destructive">{quotaError}</div>
-          <Button variant="ghost" size="icon-xs" onClick={() => setQuotaError(null)}>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={() => setQuotaError(null)}
+          >
             <X className="size-3" />
           </Button>
         </div>
@@ -2429,15 +3062,23 @@ function SourcesTab({ topicSlug, fallbackFiles }: { topicSlug: string; fallbackF
             ? "border-primary bg-primary/5"
             : "border-border hover:border-muted-foreground/50 hover:bg-muted/50"
         }`}
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         data-testid="dropzone"
       >
         <Upload className="size-5 text-muted-foreground" />
         <div className="text-center">
-          <p className="text-sm font-medium">Drop files here or click to browse</p>
-          <p className="text-xs text-muted-foreground">Any file type — documents, images, audio, video, data, code (50 MB, 500 MB for media)</p>
+          <p className="text-sm font-medium">
+            Drop files here or click to browse
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Any file type — documents, images, audio, video, data, code (50 MB,
+            500 MB for media)
+          </p>
         </div>
         <input
           ref={fileInputRef}
@@ -2452,7 +3093,9 @@ function SourcesTab({ topicSlug, fallbackFiles }: { topicSlug: string; fallbackF
       {/* Uploading files */}
       {uploads.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground uppercase">Uploading</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase">
+            Uploading
+          </p>
           {uploads.map((upload) => (
             <div
               key={`${uploadId}-${upload.tempId}`}
@@ -2466,7 +3109,9 @@ function SourcesTab({ topicSlug, fallbackFiles }: { topicSlug: string; fallbackF
                   <AlertCircle className="size-4 shrink-0 text-destructive" />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="truncate text-sm font-medium">{upload.filename}</p>
+                  <p className="truncate text-sm font-medium">
+                    {upload.filename}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {formatFileSize(upload.sizeBytes)}
                     {upload.status === "uploading" && " · uploading..."}
@@ -2506,11 +3151,17 @@ function SourcesTab({ topicSlug, fallbackFiles }: { topicSlug: string; fallbackF
             No sources yet. Upload files to get started.
           </p>
         )}
-        {(displayFiles.length > 0 ? displayFiles : (!loaded ? [] : fallbackFiles)).map((file) => {
-          const id = "id" in file ? file.id : (file as MockFile).id
-          const filename = file.filename
-          const size = "sizeBytes" in file ? file.sizeBytes : (file as MockFile).sizeBytes
-          const isRenaming = renamingId === id
+        {(displayFiles.length > 0
+          ? displayFiles
+          : !loaded
+            ? []
+            : fallbackFiles
+        ).map((file) => {
+          const id = "id" in file ? file.id : (file as MockFile).id;
+          const filename = file.filename;
+          const size =
+            "sizeBytes" in file ? file.sizeBytes : (file as MockFile).sizeBytes;
+          const isRenaming = renamingId === id;
           return (
             <div
               key={`${fileId}-${id}`}
@@ -2521,7 +3172,10 @@ function SourcesTab({ topicSlug, fallbackFiles }: { topicSlug: string; fallbackF
               <div className="flex-1 min-w-0">
                 {isRenaming ? (
                   <form
-                    onSubmit={(e) => { e.preventDefault(); submitRename() }}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      submitRename();
+                    }}
                     className="flex items-center gap-2"
                   >
                     <Input
@@ -2531,7 +3185,12 @@ function SourcesTab({ topicSlug, fallbackFiles }: { topicSlug: string; fallbackF
                       autoFocus
                       data-testid="rename-input"
                     />
-                    <Button type="submit" size="xs" variant="outline" data-testid="rename-save">
+                    <Button
+                      type="submit"
+                      size="xs"
+                      variant="outline"
+                      data-testid="rename-save"
+                    >
                       <Check className="size-3" />
                     </Button>
                     <Button
@@ -2574,19 +3233,19 @@ function SourcesTab({ topicSlug, fallbackFiles }: { topicSlug: string; fallbackF
                 </div>
               )}
             </div>
-          )
+          );
         })}
       </div>
 
       {/* Academic Resources */}
       <AcademicResourcesList />
     </div>
-  )
+  );
 }
 
 function AcademicResourcesList() {
-  const [open, setOpen] = useState(false)
-  const resourceId = useId()
+  const [open, setOpen] = useState(false);
+  const resourceId = useId();
 
   return (
     <div className="space-y-2">
@@ -2597,36 +3256,51 @@ function AcademicResourcesList() {
       >
         Academic Resources ({ACADEMIC_RESOURCES.length})
       </button>
-      {open && ACADEMIC_RESOURCES.map((resource) => (
-        <a
-          key={`${resourceId}-${resource.id}`}
-          href={resource.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-lg border p-3"
-        >
-          <resource.icon className="h-6 w-8 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="truncate text-sm font-medium">{resource.shortName}</p>
-            <p className="text-xs text-muted-foreground">{resource.description}</p>
-          </div>
-        </a>
-      ))}
+      {open &&
+        ACADEMIC_RESOURCES.map((resource) => (
+          <a
+            key={`${resourceId}-${resource.id}`}
+            href={resource.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 rounded-lg border p-3"
+          >
+            <resource.icon className="h-6 w-8 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="truncate text-sm font-medium">
+                {resource.shortName}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {resource.description}
+              </p>
+            </div>
+          </a>
+        ))}
     </div>
-  )
+  );
 }
 
 // ── Progress Tab ──
 
-function ProgressTab({ mastery, project }: { mastery: MockMastery[]; project: MockProject }) {
-  const statId = useId()
+function ProgressTab({
+  mastery,
+  project,
+}: {
+  mastery: MockMastery[];
+  project: MockProject;
+}) {
+  const statId = useId();
 
   const stats = [
-    { label: "Overall Mastery", value: formatPercent(project.mastery), sub: `+/- ${formatPercent(project.masteryUncertainty)}` },
+    {
+      label: "Overall Mastery",
+      value: formatPercent(project.mastery),
+      sub: `+/- ${formatPercent(project.masteryUncertainty)}`,
+    },
     { label: "Calibration (ECE)", value: "0.18", sub: "Overconfident" },
     { label: "Cognitive Load Risk", value: "0.68", sub: "High" },
     { label: "Adherence", value: "80%", sub: "4/5 blocks" },
-  ]
+  ];
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -2636,7 +3310,9 @@ function ProgressTab({ mastery, project }: { mastery: MockMastery[]; project: Mo
           <Card key={`${statId}-${stat.label}`} size="sm">
             <CardHeader>
               <CardDescription>{stat.label}</CardDescription>
-              <CardTitle className="text-2xl tabular-nums">{stat.value}</CardTitle>
+              <CardTitle className="text-2xl tabular-nums">
+                {stat.value}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-xs text-muted-foreground">{stat.sub}</p>
@@ -2722,10 +3398,30 @@ function ProgressTab({ mastery, project }: { mastery: MockMastery[]; project: Mo
         </CardHeader>
         <CardContent className="space-y-3">
           {[
-            { name: "Cognitive Load Risk", value: 0.68, band: "medium", status: "High -- chunks reduced" },
-            { name: "Self-Regulation Risk", value: 0.35, band: "medium", status: "Low-moderate -- monitoring" },
-            { name: "Motivation Support Need", value: 0.42, band: "low", status: "Moderate -- no action yet" },
-            { name: "Dropout Risk", value: 0.15, band: "low", status: "Low -- attendance stable" },
+            {
+              name: "Cognitive Load Risk",
+              value: 0.68,
+              band: "medium",
+              status: "High -- chunks reduced",
+            },
+            {
+              name: "Self-Regulation Risk",
+              value: 0.35,
+              band: "medium",
+              status: "Low-moderate -- monitoring",
+            },
+            {
+              name: "Motivation Support Need",
+              value: 0.42,
+              band: "low",
+              status: "Moderate -- no action yet",
+            },
+            {
+              name: "Dropout Risk",
+              value: 0.15,
+              band: "low",
+              status: "Low -- attendance stable",
+            },
           ].map((construct) => (
             <div key={`construct-${construct.name}`} className="space-y-1">
               <div className="flex items-center justify-between">
@@ -2747,7 +3443,7 @@ function ProgressTab({ mastery, project }: { mastery: MockMastery[]; project: Mo
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
 
 // ── Audit Tab ──
@@ -2808,7 +3504,7 @@ function AuditTab({ events }: { events: MockAuditEvent[] }) {
         ))}
       </Accordion>
     </div>
-  )
+  );
 }
 
 // ── Artifact Grid ──
@@ -2826,39 +3522,41 @@ const ARTIFACT_TYPES = [
   { label: "Reports", icon: FileText },
   { label: "Manim", icon: Clapperboard },
   { label: "Geo", icon: Globe },
-] as const
+] as const;
 
 function ArtifactGrid({
   onOpenType,
   activeType,
 }: {
-  onOpenType: (type: ArtifactType) => void
-  activeType: ArtifactType | null
+  onOpenType: (type: ArtifactType) => void;
+  activeType: ArtifactType | null;
 }) {
-  const gridId = useId()
-  const artifactState = useDataStore((s) => s.artifacts)
-  const seenCounts = useDataStore((s) => s.artifactSeenCounts)
+  const gridId = useId();
+  const artifactState = useDataStore((s) => s.artifacts);
+  const seenCounts = useDataStore((s) => s.artifactSeenCounts);
 
   // Mark the active type as seen whenever it changes
   useEffect(() => {
     if (activeType) {
-      dataStore.markArtifactTypeSeen(activeType)
+      dataStore.markArtifactTypeSeen(activeType);
     }
-  }, [activeType])
+  }, [activeType]);
 
   return (
     <div className="grid grid-cols-2 gap-1.5">
       {ARTIFACT_TYPES.map((artifact) => {
-        const Icon = artifact.icon
-        const artifactType = artifactTypeFromLabel(artifact.label)
+        const Icon = artifact.icon;
+        const artifactType = artifactTypeFromLabel(artifact.label);
         const realCount = artifactType
-          ? Array.from(artifactState.values()).filter((a) => a.type === artifactType).length
-          : 0
+          ? Array.from(artifactState.values()).filter(
+              (a) => a.type === artifactType,
+            ).length
+          : 0;
         const unreadCount = artifactType
           ? Math.max(0, realCount - (seenCounts.get(artifactType) ?? 0))
-          : 0
-        const hasItems = realCount > 0
-        const isActive = activeType === artifactType
+          : 0;
+        const hasItems = realCount > 0;
+        const isActive = activeType === artifactType;
         return (
           <button
             type="button"
@@ -2872,8 +3570,12 @@ function ArtifactGrid({
                   : "border-border/50 bg-muted/30 hover:bg-muted hover:border-border"
             }`}
           >
-            <Icon className={`size-4 ${hasItems || isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
-            <span className={`truncate text-xs font-medium ${hasItems || isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"}`}>
+            <Icon
+              className={`size-4 ${hasItems || isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`}
+            />
+            <span
+              className={`truncate text-xs font-medium ${hasItems || isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"}`}
+            >
               {artifact.label}
             </span>
             {unreadCount > 0 && !isActive && (
@@ -2885,10 +3587,10 @@ function ArtifactGrid({
               <Pencil className="absolute top-2.5 right-2.5 size-3 text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100" />
             )}
           </button>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
 
 // ── Shared: Mastery Bar ──
@@ -2897,8 +3599,8 @@ function MasteryBar({
   item,
   showInterval,
 }: {
-  item: MockMastery
-  showInterval?: boolean
+  item: MockMastery;
+  showInterval?: boolean;
 }) {
   return (
     <div className="space-y-1">
@@ -2925,5 +3627,5 @@ function MasteryBar({
         )}
       </div>
     </div>
-  )
+  );
 }

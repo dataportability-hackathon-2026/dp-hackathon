@@ -1,19 +1,32 @@
-import type { Resource } from "./types"
+import type { Resource } from "./types";
 
 export const resources: Resource[] = [
   {
     slug: "spaced-repetition-implementation-guide",
     title: "The Complete Guide to Spaced Repetition",
     metaTitle: "Spaced Repetition Implementation Guide | Core Model Resources",
-    metaDescription: "A comprehensive guide to implementing spaced repetition in your study routine. Includes schedules, algorithms, and best practices backed by cognitive science research.",
-    keywords: ["spaced repetition guide", "study schedule", "learning guide", "memory techniques"],
+    metaDescription:
+      "A comprehensive guide to implementing spaced repetition in your study routine. Includes schedules, algorithms, and best practices backed by cognitive science research.",
+    keywords: [
+      "spaced repetition guide",
+      "study schedule",
+      "learning guide",
+      "memory techniques",
+    ],
     type: "guide",
     category: "Learning Science",
-    description: "A 20-page guide to implementing spaced repetition effectively, with sample schedules and evidence-based best practices.",
-    longDescription: "This comprehensive guide covers everything you need to know about spaced repetition: the neuroscience behind it, how to calculate optimal review intervals, sample weekly study schedules for different time budgets, common mistakes to avoid, and how to integrate spaced repetition with active recall and interleaving for maximum retention.",
+    description:
+      "A 20-page guide to implementing spaced repetition effectively, with sample schedules and evidence-based best practices.",
+    longDescription:
+      "This comprehensive guide covers everything you need to know about spaced repetition: the neuroscience behind it, how to calculate optimal review intervals, sample weekly study schedules for different time budgets, common mistakes to avoid, and how to integrate spaced repetition with active recall and interleaving for maximum retention.",
     pages: 20,
     downloadCta: "Download Free Guide",
-    topics: ["Spaced Repetition", "Memory Science", "Study Schedules", "Learning Optimization"],
+    topics: [
+      "Spaced Repetition",
+      "Memory Science",
+      "Study Schedules",
+      "Learning Optimization",
+    ],
     content: `THE COMPLETE GUIDE TO SPACED REPETITION
 Implementation Guide for Learners and Educators
 
@@ -102,21 +115,34 @@ CHAPTER 8: ADVANCED TECHNIQUES
 
 - Interleaved spacing: Mix different topics within spaced review sessions
 - Elaborative retrieval: During review, explain why the answer is correct
-- Calibration tracking: Monitor your confidence accuracy over time`
+- Calibration tracking: Monitor your confidence accuracy over time`,
   },
   {
     slug: "study-plan-template",
     title: "The Evidence-Based Study Plan Template",
     metaTitle: "Study Plan Template | Core Model Resources",
-    metaDescription: "Download a free study plan template based on cognitive science research. Includes goal setting, scheduling, and progress tracking frameworks.",
-    keywords: ["study plan template", "study schedule", "learning plan", "exam preparation template"],
+    metaDescription:
+      "Download a free study plan template based on cognitive science research. Includes goal setting, scheduling, and progress tracking frameworks.",
+    keywords: [
+      "study plan template",
+      "study schedule",
+      "learning plan",
+      "exam preparation template",
+    ],
     type: "template",
     category: "Study Planning",
-    description: "A ready-to-use study plan template incorporating spaced repetition, retrieval practice, and interleaving schedules.",
-    longDescription: "This template provides a structured framework for building an evidence-based study plan. It includes sections for goal setting with SMART criteria, daily and weekly scheduling blocks, spaced repetition tracking sheets, confidence calibration logs, and progress monitoring dashboards. Based on the learning science principles of retrieval practice, spaced repetition, and interleaving.",
+    description:
+      "A ready-to-use study plan template incorporating spaced repetition, retrieval practice, and interleaving schedules.",
+    longDescription:
+      "This template provides a structured framework for building an evidence-based study plan. It includes sections for goal setting with SMART criteria, daily and weekly scheduling blocks, spaced repetition tracking sheets, confidence calibration logs, and progress monitoring dashboards. Based on the learning science principles of retrieval practice, spaced repetition, and interleaving.",
     pages: 12,
     downloadCta: "Download Free Template",
-    topics: ["Study Planning", "Time Management", "Goal Setting", "Progress Tracking"],
+    topics: [
+      "Study Planning",
+      "Time Management",
+      "Goal Setting",
+      "Progress Tracking",
+    ],
     content: `THE EVIDENCE-BASED STUDY PLAN TEMPLATE
 Your Framework for Effective Learning
 
@@ -195,21 +221,34 @@ Week 1: Focus on lowest-mastery topics
 Week 2-3: Build breadth across all topics
 Week 4: Interleaved practice across all topics
 Final week: Light review, focus on confidence calibration
-Exam day: Trust your preparation`
+Exam day: Trust your preparation`,
   },
   {
     slug: "metacognition-checklist",
     title: "The Metacognition Self-Assessment Checklist",
     metaTitle: "Metacognition Checklist for Students | Core Model Resources",
-    metaDescription: "Assess and develop your metacognitive skills with this comprehensive checklist. Improve self-awareness, study planning, and learning efficiency.",
-    keywords: ["metacognition checklist", "self-assessment", "study skills assessment", "learning self-awareness"],
+    metaDescription:
+      "Assess and develop your metacognitive skills with this comprehensive checklist. Improve self-awareness, study planning, and learning efficiency.",
+    keywords: [
+      "metacognition checklist",
+      "self-assessment",
+      "study skills assessment",
+      "learning self-awareness",
+    ],
     type: "checklist",
     category: "Metacognition",
-    description: "A practical checklist for developing metacognitive awareness, with self-assessment tools and improvement strategies.",
-    longDescription: "This checklist helps learners assess their metacognitive skills across four dimensions: planning, monitoring, evaluating, and calibrating. Each section includes diagnostic questions, scoring rubrics, and specific strategies for improvement. Use it weekly to track your metacognitive development and become a more self-aware learner.",
+    description:
+      "A practical checklist for developing metacognitive awareness, with self-assessment tools and improvement strategies.",
+    longDescription:
+      "This checklist helps learners assess their metacognitive skills across four dimensions: planning, monitoring, evaluating, and calibrating. Each section includes diagnostic questions, scoring rubrics, and specific strategies for improvement. Use it weekly to track your metacognitive development and become a more self-aware learner.",
     pages: 8,
     downloadCta: "Download Free Checklist",
-    topics: ["Metacognition", "Self-Assessment", "Study Skills", "Self-Regulation"],
+    topics: [
+      "Metacognition",
+      "Self-Assessment",
+      "Study Skills",
+      "Self-Regulation",
+    ],
     content: `THE METACOGNITION SELF-ASSESSMENT CHECKLIST
 Develop Self-Awareness as a Learner
 
@@ -285,21 +324,34 @@ TOTAL SCORE: ___/20
 16-20: Strong metacognitive learner
 11-15: Developing metacognitive skills, focus on weakest area
 6-10: Significant room for improvement, start with planning
-0-5: Consider working with a study skills coach or advisor`
+0-5: Consider working with a study skills coach or advisor`,
   },
   {
     slug: "adaptive-learning-whitepaper",
     title: "Adaptive Learning in Higher Education: Evidence and Implementation",
     metaTitle: "Adaptive Learning Whitepaper | Core Model Resources",
-    metaDescription: "A research whitepaper on adaptive learning effectiveness in higher education. Includes data from meta-analyses, implementation strategies, and ROI analysis.",
-    keywords: ["adaptive learning whitepaper", "education research", "learning technology", "higher education innovation"],
+    metaDescription:
+      "A research whitepaper on adaptive learning effectiveness in higher education. Includes data from meta-analyses, implementation strategies, and ROI analysis.",
+    keywords: [
+      "adaptive learning whitepaper",
+      "education research",
+      "learning technology",
+      "higher education innovation",
+    ],
     type: "whitepaper",
     category: "Research",
-    description: "A research whitepaper examining the evidence base for adaptive learning in higher education, with implementation recommendations.",
-    longDescription: "This whitepaper synthesizes evidence from multiple meta-analyses examining adaptive learning effectiveness in higher education settings. It covers learning outcomes data, implementation models, cost-benefit analysis, faculty adoption strategies, and student experience research. Designed for administrators, department heads, and educational technology decision-makers.",
+    description:
+      "A research whitepaper examining the evidence base for adaptive learning in higher education, with implementation recommendations.",
+    longDescription:
+      "This whitepaper synthesizes evidence from multiple meta-analyses examining adaptive learning effectiveness in higher education settings. It covers learning outcomes data, implementation models, cost-benefit analysis, faculty adoption strategies, and student experience research. Designed for administrators, department heads, and educational technology decision-makers.",
     pages: 28,
     downloadCta: "Download Whitepaper",
-    topics: ["Adaptive Learning", "Higher Education", "Evidence-Based Practice", "Educational Technology"],
+    topics: [
+      "Adaptive Learning",
+      "Higher Education",
+      "Evidence-Based Practice",
+      "Educational Technology",
+    ],
     content: `ADAPTIVE LEARNING IN HIGHER EDUCATION:
 EVIDENCE AND IMPLEMENTATION
 A Whitepaper by Core Model Research
@@ -377,21 +429,35 @@ The most valued features: personalized study plans, mastery tracking dashboards,
 
 CONCLUSION
 
-The evidence for adaptive learning in higher education is compelling. Institutions that implement adaptive technology thoughtfully — with faculty support, proper integration, and attention to student experience — can expect meaningful improvements in learning outcomes, retention, and student satisfaction.`
+The evidence for adaptive learning in higher education is compelling. Institutions that implement adaptive technology thoughtfully — with faculty support, proper integration, and attention to student experience — can expect meaningful improvements in learning outcomes, retention, and student satisfaction.`,
   },
   {
     slug: "knowledge-gap-analysis-template",
     title: "Knowledge Gap Analysis Template for Educators",
     metaTitle: "Knowledge Gap Analysis Template | Core Model Resources",
-    metaDescription: "A practical template for educators to identify and address knowledge gaps in their students. Includes assessment frameworks and intervention strategies.",
-    keywords: ["knowledge gap analysis", "student assessment", "educator tools", "learning gaps", "formative assessment"],
+    metaDescription:
+      "A practical template for educators to identify and address knowledge gaps in their students. Includes assessment frameworks and intervention strategies.",
+    keywords: [
+      "knowledge gap analysis",
+      "student assessment",
+      "educator tools",
+      "learning gaps",
+      "formative assessment",
+    ],
     type: "template",
     category: "Educator Tools",
-    description: "A structured template for identifying, analyzing, and addressing knowledge gaps in your students or your own learning.",
-    longDescription: "This template provides a systematic framework for conducting knowledge gap analyses. It includes concept inventory checklists, mastery estimation rubrics, gap prioritization matrices, and intervention planning worksheets. Designed for educators who want data-driven insights into student understanding at the concept level.",
+    description:
+      "A structured template for identifying, analyzing, and addressing knowledge gaps in your students or your own learning.",
+    longDescription:
+      "This template provides a systematic framework for conducting knowledge gap analyses. It includes concept inventory checklists, mastery estimation rubrics, gap prioritization matrices, and intervention planning worksheets. Designed for educators who want data-driven insights into student understanding at the concept level.",
     pages: 15,
     downloadCta: "Download Free Template",
-    topics: ["Assessment", "Knowledge Gaps", "Formative Assessment", "Intervention Planning"],
+    topics: [
+      "Assessment",
+      "Knowledge Gaps",
+      "Formative Assessment",
+      "Intervention Planning",
+    ],
     content: `KNOWLEDGE GAP ANALYSIS TEMPLATE
 For Educators and Self-Directed Learners
 
@@ -479,21 +545,34 @@ Weekly check-in:
 - Are new gaps emerging? (Update inventory)
 - Is the pacing appropriate? (Adjust timeline)
 
-Use this template iteratively throughout your course to maintain a data-driven approach to student learning.`
+Use this template iteratively throughout your course to maintain a data-driven approach to student learning.`,
   },
   {
     slug: "learning-science-research-summary",
     title: "Learning Science Research Summary: What Works, What Doesn't",
     metaTitle: "Learning Science Research Summary | Core Model Resources",
-    metaDescription: "A concise summary of the most important learning science research findings. Covers what study techniques work, what doesn't, and why, with citations.",
-    keywords: ["learning science", "study techniques research", "evidence-based learning", "education research summary"],
+    metaDescription:
+      "A concise summary of the most important learning science research findings. Covers what study techniques work, what doesn't, and why, with citations.",
+    keywords: [
+      "learning science",
+      "study techniques research",
+      "evidence-based learning",
+      "education research summary",
+    ],
     type: "research",
     category: "Learning Science",
-    description: "A research summary covering the most impactful findings in learning science, with practical applications for students and educators.",
-    longDescription: "This research summary distills decades of cognitive science and educational psychology research into actionable findings. It covers the most effective study strategies (and ranks them by evidence strength), debunks common learning myths, explains the key principles of memory and cognition, and provides a bibliography of essential readings for educators and serious learners.",
+    description:
+      "A research summary covering the most impactful findings in learning science, with practical applications for students and educators.",
+    longDescription:
+      "This research summary distills decades of cognitive science and educational psychology research into actionable findings. It covers the most effective study strategies (and ranks them by evidence strength), debunks common learning myths, explains the key principles of memory and cognition, and provides a bibliography of essential readings for educators and serious learners.",
     pages: 18,
     downloadCta: "Download Research Summary",
-    topics: ["Learning Science", "Cognitive Psychology", "Study Strategies", "Education Research"],
+    topics: [
+      "Learning Science",
+      "Cognitive Psychology",
+      "Study Strategies",
+      "Education Research",
+    ],
     content: `LEARNING SCIENCE RESEARCH SUMMARY
 What Works, What Doesn't, and Why
 
@@ -575,6 +654,6 @@ Essential Readings:
 - Freeman et al. (2014). Active learning increases student performance in science
 - Kornell & Bjork (2008). Learning concepts and categories
 
-Full bibliography available at coremodel.app/research`
+Full bibliography available at coremodel.app/research`,
   },
-]
+];

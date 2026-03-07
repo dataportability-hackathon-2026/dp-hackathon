@@ -1,244 +1,724 @@
-import type { LandingPage } from "./types"
+import type { LandingPage } from "./types";
 
 export const industryPages: LandingPage[] = [
   {
     slug: "healthcare",
     title: "Healthcare & Life Sciences",
     metaTitle: "Adaptive Learning for Healthcare & Life Sciences | Core Model",
-    metaDescription: "Empower healthcare professionals and life sciences researchers with evidence-based adaptive learning. Master clinical knowledge, pharmacology, and research methodology efficiently.",
-    keywords: ["healthcare learning", "medical education", "nursing education", "clinical training", "pharmacology study", "life sciences education"],
+    metaDescription:
+      "Empower healthcare professionals and life sciences researchers with evidence-based adaptive learning. Master clinical knowledge, pharmacology, and research methodology efficiently.",
+    keywords: [
+      "healthcare learning",
+      "medical education",
+      "nursing education",
+      "clinical training",
+      "pharmacology study",
+      "life sciences education",
+    ],
     heroHeadline: "In Healthcare, What You Don't Know Can Hurt Someone.",
-    heroSubheadline: "Core Model's Bayesian mastery tracking eliminates dangerous knowledge gaps in clinical education. Know exactly what your learners know — and what they think they know but don't.",
+    heroSubheadline:
+      "Core Model's Bayesian mastery tracking eliminates dangerous knowledge gaps in clinical education. Know exactly what your learners know — and what they think they know but don't.",
     heroCta: { text: "See Healthcare Solutions", href: "/dashboard" },
     secondaryCta: { text: "Read the Case Study", href: "#testimonials" },
     painPoints: [
-      { title: "Overconfidence kills in clinical settings", description: "Studies show nursing and medical students overestimate their clinical reasoning ability by 25-40%. In healthcare, the gap between perceived and actual competence can be fatal." },
-      { title: "Continuing education feels like checkbox compliance", description: "Most CE programs test completion, not comprehension. Healthcare professionals complete modules without retaining the critical knowledge." },
-      { title: "Clinical knowledge evolves faster than curricula", description: "Guidelines, drug interactions, and treatment protocols change constantly. Learners need a system that tracks evolving knowledge, not static syllabi." },
+      {
+        title: "Overconfidence kills in clinical settings",
+        description:
+          "Studies show nursing and medical students overestimate their clinical reasoning ability by 25-40%. In healthcare, the gap between perceived and actual competence can be fatal.",
+      },
+      {
+        title: "Continuing education feels like checkbox compliance",
+        description:
+          "Most CE programs test completion, not comprehension. Healthcare professionals complete modules without retaining the critical knowledge.",
+      },
+      {
+        title: "Clinical knowledge evolves faster than curricula",
+        description:
+          "Guidelines, drug interactions, and treatment protocols change constantly. Learners need a system that tracks evolving knowledge, not static syllabi.",
+      },
     ],
     features: [
-      { title: "Metacognitive Calibration", description: "Core Model measures not just what learners know, but how accurately they assess their own knowledge. Critical for patient safety.", icon: "Shield" },
-      { title: "Clinical Concept Mapping", description: "Upload clinical guidelines, pharmacology references, and case studies. Core Model maps the relationships between diagnoses, treatments, and contraindications.", icon: "Map" },
-      { title: "Evidence-Based Study Methods", description: "Every study session uses retrieval practice and spaced repetition — the most validated methods for building durable clinical knowledge.", icon: "Brain" },
-      { title: "Audit Trail for Competency", description: "Full transparency in how mastery estimates are calculated. Every recommendation comes with reasoning. Essential for accreditation documentation.", icon: "Eye" },
+      {
+        title: "Metacognitive Calibration",
+        description:
+          "Core Model measures not just what learners know, but how accurately they assess their own knowledge. Critical for patient safety.",
+        icon: "Shield",
+      },
+      {
+        title: "Clinical Concept Mapping",
+        description:
+          "Upload clinical guidelines, pharmacology references, and case studies. Core Model maps the relationships between diagnoses, treatments, and contraindications.",
+        icon: "Map",
+      },
+      {
+        title: "Evidence-Based Study Methods",
+        description:
+          "Every study session uses retrieval practice and spaced repetition — the most validated methods for building durable clinical knowledge.",
+        icon: "Brain",
+      },
+      {
+        title: "Audit Trail for Competency",
+        description:
+          "Full transparency in how mastery estimates are calculated. Every recommendation comes with reasoning. Essential for accreditation documentation.",
+        icon: "Eye",
+      },
     ],
     benefits: [
-      { metric: "89%", label: "Improved Outcomes", description: "89% of nursing students showed improved clinical reasoning scores after adopting Core Model." },
-      { metric: "42%", label: "Better Calibration", description: "Students' ability to accurately assess their own knowledge improved by 42 percentage points." },
-      { metric: "Published", label: "Research-Quality Data", description: "Core Model generates learning analytics data suitable for educational research publication." },
+      {
+        metric: "89%",
+        label: "Improved Outcomes",
+        description:
+          "89% of nursing students showed improved clinical reasoning scores after adopting Core Model.",
+      },
+      {
+        metric: "42%",
+        label: "Better Calibration",
+        description:
+          "Students' ability to accurately assess their own knowledge improved by 42 percentage points.",
+      },
+      {
+        metric: "Published",
+        label: "Research-Quality Data",
+        description:
+          "Core Model generates learning analytics data suitable for educational research publication.",
+      },
     ],
     testimonial: {
-      quote: "Confidence without competence is dangerous in our field. Core Model's metacognitive feedback is exactly what nursing education needs.",
+      quote:
+        "Confidence without competence is dangerous in our field. Core Model's metacognitive feedback is exactly what nursing education needs.",
       name: "Sarah Lindqvist",
       role: "Nursing Educator & DNP Student",
       institution: "Johns Hopkins School of Nursing",
     },
     faq: [
-      { question: "Is this HIPAA compliant?", answer: "Core Model processes learning materials, not patient data. No PHI is ever ingested or stored. The platform is fully compliant with educational data privacy requirements." },
-      { question: "Can it handle pharmacology content?", answer: "Yes. Core Model handles complex clinical content including drug interactions, dosing calculations, and treatment protocols. It tracks mastery at the concept level across all pharmacology domains." },
-      { question: "Do you integrate with nursing/medical school LMS platforms?", answer: "Core Model works alongside existing LMS platforms. Students access it for adaptive study while your LMS handles grades and administrative functions." },
-      { question: "Is there evidence this approach works in healthcare education?", answer: "Yes. Spaced repetition and retrieval practice are among the most validated learning strategies in cognitive science. Multiple studies in medical education have shown significant improvements in knowledge retention and clinical reasoning." },
+      {
+        question: "Is this HIPAA compliant?",
+        answer:
+          "Core Model processes learning materials, not patient data. No PHI is ever ingested or stored. The platform is fully compliant with educational data privacy requirements.",
+      },
+      {
+        question: "Can it handle pharmacology content?",
+        answer:
+          "Yes. Core Model handles complex clinical content including drug interactions, dosing calculations, and treatment protocols. It tracks mastery at the concept level across all pharmacology domains.",
+      },
+      {
+        question: "Do you integrate with nursing/medical school LMS platforms?",
+        answer:
+          "Core Model works alongside existing LMS platforms. Students access it for adaptive study while your LMS handles grades and administrative functions.",
+      },
+      {
+        question:
+          "Is there evidence this approach works in healthcare education?",
+        answer:
+          "Yes. Spaced repetition and retrieval practice are among the most validated learning strategies in cognitive science. Multiple studies in medical education have shown significant improvements in knowledge retention and clinical reasoning.",
+      },
     ],
-    finalCta: { headline: "Patient Safety Starts with Better Education", subheadline: "Give your healthcare learners the evidence-based tools they need to build genuine clinical competence.", buttonText: "Get Started for Healthcare", href: "/dashboard" },
+    finalCta: {
+      headline: "Patient Safety Starts with Better Education",
+      subheadline:
+        "Give your healthcare learners the evidence-based tools they need to build genuine clinical competence.",
+      buttonText: "Get Started for Healthcare",
+      href: "/dashboard",
+    },
   },
   {
     slug: "technology",
     title: "Technology & Software Engineering",
     metaTitle: "Adaptive Learning for Tech Professionals | Core Model",
-    metaDescription: "Stay current in fast-moving tech fields with adaptive learning. Master programming languages, system design, ML/AI, and emerging technologies with personalized study plans.",
-    keywords: ["tech learning", "software engineering training", "developer education", "programming learning", "AI ML learning", "tech upskilling"],
+    metaDescription:
+      "Stay current in fast-moving tech fields with adaptive learning. Master programming languages, system design, ML/AI, and emerging technologies with personalized study plans.",
+    keywords: [
+      "tech learning",
+      "software engineering training",
+      "developer education",
+      "programming learning",
+      "AI ML learning",
+      "tech upskilling",
+    ],
     heroHeadline: "Tech Moves Fast. Your Learning Should Too.",
-    heroSubheadline: "New frameworks, languages, and paradigms emerge constantly. Core Model helps tech professionals build deep understanding — not just surface familiarity — with adaptive, evidence-based learning.",
+    heroSubheadline:
+      "New frameworks, languages, and paradigms emerge constantly. Core Model helps tech professionals build deep understanding — not just surface familiarity — with adaptive, evidence-based learning.",
     heroCta: { text: "Start Learning", href: "/dashboard" },
     secondaryCta: { text: "See How It Works", href: "#how-it-works" },
     painPoints: [
-      { title: "Tutorial hell is real", description: "Watching coding tutorials feels productive but rarely produces real competence. Without active recall, you'll forget 80% of what you watched within a week." },
-      { title: "The technology landscape changes faster than you can learn", description: "By the time you master one framework, three new ones have emerged. You need a system that helps you learn efficiently and retain what you learn." },
-      { title: "Imposter syndrome is fueled by knowledge gaps you can't see", description: "When you don't know what you don't know, every new project feels overwhelming. You need honest assessment, not false confidence." },
+      {
+        title: "Tutorial hell is real",
+        description:
+          "Watching coding tutorials feels productive but rarely produces real competence. Without active recall, you'll forget 80% of what you watched within a week.",
+      },
+      {
+        title: "The technology landscape changes faster than you can learn",
+        description:
+          "By the time you master one framework, three new ones have emerged. You need a system that helps you learn efficiently and retain what you learn.",
+      },
+      {
+        title: "Imposter syndrome is fueled by knowledge gaps you can't see",
+        description:
+          "When you don't know what you don't know, every new project feels overwhelming. You need honest assessment, not false confidence.",
+      },
     ],
     features: [
-      { title: "Concept-Level Mastery Tracking", description: "Track your understanding of specific patterns, algorithms, and architectures. Know the difference between 'I've seen this' and 'I can implement this.'", icon: "BarChart3" },
-      { title: "Code-Aware Learning", description: "Upload documentation, code snippets, and technical articles. Core Model understands programming concepts and builds study plans around them.", icon: "Braces" },
-      { title: "Adaptive Difficulty", description: "Problems and review questions automatically adjust to your level. Challenge yourself without frustration or boredom.", icon: "TrendingUp" },
-      { title: "Interview & Certification Ready", description: "Preparing for AWS certification, system design interviews, or language proficiency? Core Model builds targeted prep plans.", icon: "Target" },
+      {
+        title: "Concept-Level Mastery Tracking",
+        description:
+          "Track your understanding of specific patterns, algorithms, and architectures. Know the difference between 'I've seen this' and 'I can implement this.'",
+        icon: "BarChart3",
+      },
+      {
+        title: "Code-Aware Learning",
+        description:
+          "Upload documentation, code snippets, and technical articles. Core Model understands programming concepts and builds study plans around them.",
+        icon: "Braces",
+      },
+      {
+        title: "Adaptive Difficulty",
+        description:
+          "Problems and review questions automatically adjust to your level. Challenge yourself without frustration or boredom.",
+        icon: "TrendingUp",
+      },
+      {
+        title: "Interview & Certification Ready",
+        description:
+          "Preparing for AWS certification, system design interviews, or language proficiency? Core Model builds targeted prep plans.",
+        icon: "Target",
+      },
     ],
     benefits: [
-      { metric: "14 weeks", label: "To Proficiency", description: "Tech professionals reach working proficiency in new domains in an average of 14 weeks with Core Model." },
-      { metric: "3x", label: "Faster Than Tutorials", description: "Active learning with spaced repetition is 3x more effective than passive video watching." },
-      { metric: "78%", label: "Pattern Recognition", description: "Users achieve 78% mastery across core algorithm patterns, up from 40% baseline." },
+      {
+        metric: "14 weeks",
+        label: "To Proficiency",
+        description:
+          "Tech professionals reach working proficiency in new domains in an average of 14 weeks with Core Model.",
+      },
+      {
+        metric: "3x",
+        label: "Faster Than Tutorials",
+        description:
+          "Active learning with spaced repetition is 3x more effective than passive video watching.",
+      },
+      {
+        metric: "78%",
+        label: "Pattern Recognition",
+        description:
+          "Users achieve 78% mastery across core algorithm patterns, up from 40% baseline.",
+      },
     ],
     testimonial: {
-      quote: "I was switching from web development to ML engineering. Core Model mapped my existing knowledge, showed me exactly what gaps I had, and built a 14-week plan. I landed the role.",
+      quote:
+        "I was switching from web development to ML engineering. Core Model mapped my existing knowledge, showed me exactly what gaps I had, and built a 14-week plan. I landed the role.",
       name: "Dr. Priya Ramanathan",
       role: "Biomedical Engineering Researcher",
       institution: "UT Austin",
     },
     faq: [
-      { question: "Can I upload code documentation?", answer: "Yes. Core Model handles markdown, code snippets, API documentation, and technical articles. It extracts key concepts and builds your study plan around them." },
-      { question: "Does it work for system design learning?", answer: "Absolutely. Upload system design resources and Core Model tracks your understanding of scalability, distributed systems, database design, and architectural patterns." },
-      { question: "Can my engineering team use this together?", answer: "Yes. Core Model supports team deployments. Each team member gets personalized learning paths while managers get aggregate skill gap analytics." },
-      { question: "Is this for beginners or experienced developers?", answer: "Both. Core Model adapts to your current level. It quickly identifies what you already know and builds from there, whether you're learning your first language or your fifth framework." },
+      {
+        question: "Can I upload code documentation?",
+        answer:
+          "Yes. Core Model handles markdown, code snippets, API documentation, and technical articles. It extracts key concepts and builds your study plan around them.",
+      },
+      {
+        question: "Does it work for system design learning?",
+        answer:
+          "Absolutely. Upload system design resources and Core Model tracks your understanding of scalability, distributed systems, database design, and architectural patterns.",
+      },
+      {
+        question: "Can my engineering team use this together?",
+        answer:
+          "Yes. Core Model supports team deployments. Each team member gets personalized learning paths while managers get aggregate skill gap analytics.",
+      },
+      {
+        question: "Is this for beginners or experienced developers?",
+        answer:
+          "Both. Core Model adapts to your current level. It quickly identifies what you already know and builds from there, whether you're learning your first language or your fifth framework.",
+      },
     ],
-    finalCta: { headline: "Build Real Skills, Not Tutorial Familiarity", subheadline: "Learn deeply, retain permanently, and advance your tech career with evidence-based methods.", buttonText: "Start Building Skills", href: "/dashboard" },
+    finalCta: {
+      headline: "Build Real Skills, Not Tutorial Familiarity",
+      subheadline:
+        "Learn deeply, retain permanently, and advance your tech career with evidence-based methods.",
+      buttonText: "Start Building Skills",
+      href: "/dashboard",
+    },
   },
   {
     slug: "legal",
     title: "Legal Education & Bar Prep",
     metaTitle: "Adaptive Learning for Law Students & Attorneys | Core Model",
-    metaDescription: "Master legal concepts with evidence-based adaptive learning. Prepare for bar exams, law school finals, and continuing legal education with Bayesian mastery tracking.",
-    keywords: ["legal education", "bar exam prep", "law school study", "legal CLE", "law student tools", "bar preparation"],
-    heroHeadline: "The Bar Exam Doesn't Test What You Studied. It Tests What You Remember.",
-    heroSubheadline: "Core Model uses spaced repetition and Bayesian mastery tracking to ensure you retain the law, not just read it. Full audit trails on every recommendation — because lawyers expect transparency.",
+    metaDescription:
+      "Master legal concepts with evidence-based adaptive learning. Prepare for bar exams, law school finals, and continuing legal education with Bayesian mastery tracking.",
+    keywords: [
+      "legal education",
+      "bar exam prep",
+      "law school study",
+      "legal CLE",
+      "law student tools",
+      "bar preparation",
+    ],
+    heroHeadline:
+      "The Bar Exam Doesn't Test What You Studied. It Tests What You Remember.",
+    heroSubheadline:
+      "Core Model uses spaced repetition and Bayesian mastery tracking to ensure you retain the law, not just read it. Full audit trails on every recommendation — because lawyers expect transparency.",
     heroCta: { text: "Start Bar Prep", href: "/dashboard" },
     secondaryCta: { text: "See the Methodology", href: "#how-it-works" },
     painPoints: [
-      { title: "You outline, but retention drops by exam day", description: "Creating outlines is step one. Without retrieval practice and spaced review, the material fades. Most 1Ls retain less than 40% of their outlines by finals." },
-      { title: "Issue-spotting requires pattern recognition, not memorization", description: "Bar exam success requires recognizing legal patterns under time pressure. Passive review doesn't build this skill." },
-      { title: "Legal education is still lecture-heavy", description: "The Socratic method builds oral skills but doesn't optimize knowledge retention. Law students need tools designed for how memory actually works." },
+      {
+        title: "You outline, but retention drops by exam day",
+        description:
+          "Creating outlines is step one. Without retrieval practice and spaced review, the material fades. Most 1Ls retain less than 40% of their outlines by finals.",
+      },
+      {
+        title: "Issue-spotting requires pattern recognition, not memorization",
+        description:
+          "Bar exam success requires recognizing legal patterns under time pressure. Passive review doesn't build this skill.",
+      },
+      {
+        title: "Legal education is still lecture-heavy",
+        description:
+          "The Socratic method builds oral skills but doesn't optimize knowledge retention. Law students need tools designed for how memory actually works.",
+      },
     ],
     features: [
-      { title: "Doctrine-Level Mastery Tracking", description: "Core Model tracks your mastery of specific legal doctrines, tests, and rules — not just broad subject areas. Know exactly which rules you can apply under pressure.", icon: "BarChart3" },
-      { title: "Case Law Integration", description: "Upload case briefs, outlines, and hornbook excerpts. Core Model extracts key holdings, tests, and doctrinal rules from your materials.", icon: "FileText" },
-      { title: "Tiers of Scrutiny? Tracked.", description: "Complex multi-part legal tests (tiers of scrutiny, Erie doctrine, Commerce Clause) are broken into discrete components. Master each element individually.", icon: "Target" },
-      { title: "Full Audit Trail", description: "Every mastery estimate shows its reasoning chain. Core Model explains why it thinks you know (or don't know) specific material.", icon: "Eye" },
+      {
+        title: "Doctrine-Level Mastery Tracking",
+        description:
+          "Core Model tracks your mastery of specific legal doctrines, tests, and rules — not just broad subject areas. Know exactly which rules you can apply under pressure.",
+        icon: "BarChart3",
+      },
+      {
+        title: "Case Law Integration",
+        description:
+          "Upload case briefs, outlines, and hornbook excerpts. Core Model extracts key holdings, tests, and doctrinal rules from your materials.",
+        icon: "FileText",
+      },
+      {
+        title: "Tiers of Scrutiny? Tracked.",
+        description:
+          "Complex multi-part legal tests (tiers of scrutiny, Erie doctrine, Commerce Clause) are broken into discrete components. Master each element individually.",
+        icon: "Target",
+      },
+      {
+        title: "Full Audit Trail",
+        description:
+          "Every mastery estimate shows its reasoning chain. Core Model explains why it thinks you know (or don't know) specific material.",
+        icon: "Eye",
+      },
     ],
     benefits: [
-      { metric: "94%", label: "Mastery Confidence", description: "Law students using Core Model reach 94% confidence in core doctrine mastery before their exams." },
-      { metric: "35%", label: "Less Study Time", description: "Adaptive scheduling eliminates redundant review, reducing total study hours by 35%." },
-      { metric: "Distinction", label: "Exam Results", description: "Users consistently report meeting or exceeding their target exam performance." },
+      {
+        metric: "94%",
+        label: "Mastery Confidence",
+        description:
+          "Law students using Core Model reach 94% confidence in core doctrine mastery before their exams.",
+      },
+      {
+        metric: "35%",
+        label: "Less Study Time",
+        description:
+          "Adaptive scheduling eliminates redundant review, reducing total study hours by 35%.",
+      },
+      {
+        metric: "Distinction",
+        label: "Exam Results",
+        description:
+          "Users consistently report meeting or exceeding their target exam performance.",
+      },
     ],
     testimonial: {
-      quote: "The audit trail is what sold me. Every recommendation tells me exactly why. As a lawyer, I need that transparency. No other learning tool gives me the reasoning chain.",
+      quote:
+        "The audit trail is what sold me. Every recommendation tells me exactly why. As a lawyer, I need that transparency. No other learning tool gives me the reasoning chain.",
       name: "Elena Vasquez, J.D.",
       role: "Corporate Attorney & LL.M. Student",
       institution: "Georgetown Law",
     },
     faq: [
-      { question: "Does it work for bar exam preparation?", answer: "Yes. Upload your bar prep materials (outlines, practice questions, hornbook excerpts) and Core Model builds a targeted study plan organized by subject and doctrine." },
-      { question: "Can it handle the complexity of legal rules?", answer: "Absolutely. Core Model breaks complex legal tests into discrete components and tracks your mastery of each. Multi-part tests like strict scrutiny or the Rule Against Perpetuities are handled at the element level." },
-      { question: "Is this approved for CLE credit?", answer: "Core Model is a study tool, not a CLE provider. However, many attorneys use it to deeply learn CLE material and retain it long after the seminar ends." },
-      { question: "How does the audit trail work?", answer: "Every mastery estimate includes a reasoning chain showing which interactions informed the estimate, how recent they are, and how much uncertainty remains. Full transparency." },
+      {
+        question: "Does it work for bar exam preparation?",
+        answer:
+          "Yes. Upload your bar prep materials (outlines, practice questions, hornbook excerpts) and Core Model builds a targeted study plan organized by subject and doctrine.",
+      },
+      {
+        question: "Can it handle the complexity of legal rules?",
+        answer:
+          "Absolutely. Core Model breaks complex legal tests into discrete components and tracks your mastery of each. Multi-part tests like strict scrutiny or the Rule Against Perpetuities are handled at the element level.",
+      },
+      {
+        question: "Is this approved for CLE credit?",
+        answer:
+          "Core Model is a study tool, not a CLE provider. However, many attorneys use it to deeply learn CLE material and retain it long after the seminar ends.",
+      },
+      {
+        question: "How does the audit trail work?",
+        answer:
+          "Every mastery estimate includes a reasoning chain showing which interactions informed the estimate, how recent they are, and how much uncertainty remains. Full transparency.",
+      },
     ],
-    finalCta: { headline: "Pass the Bar. Pass Your Finals. Pass with Confidence.", subheadline: "Build the retention and pattern recognition skills that legal exams actually test.", buttonText: "Start Your Legal Study Plan", href: "/dashboard" },
+    finalCta: {
+      headline: "Pass the Bar. Pass Your Finals. Pass with Confidence.",
+      subheadline:
+        "Build the retention and pattern recognition skills that legal exams actually test.",
+      buttonText: "Start Your Legal Study Plan",
+      href: "/dashboard",
+    },
   },
   {
     slug: "higher-education",
     title: "Higher Education & Universities",
-    metaTitle: "Adaptive Learning for Universities & Higher Education | Core Model",
-    metaDescription: "Transform university teaching with evidence-based adaptive learning. Give students personalized study paths, track concept-level mastery, and improve learning outcomes.",
-    keywords: ["higher education", "university learning", "college study tools", "academic technology", "edtech", "university teaching"],
-    heroHeadline: "Every Student Learns Differently. Finally, a Tool That Adapts.",
-    heroSubheadline: "Core Model brings evidence-based adaptive learning to your university. Students get personalized study plans. Professors get concept-level analytics. Everyone gets better outcomes.",
+    metaTitle:
+      "Adaptive Learning for Universities & Higher Education | Core Model",
+    metaDescription:
+      "Transform university teaching with evidence-based adaptive learning. Give students personalized study paths, track concept-level mastery, and improve learning outcomes.",
+    keywords: [
+      "higher education",
+      "university learning",
+      "college study tools",
+      "academic technology",
+      "edtech",
+      "university teaching",
+    ],
+    heroHeadline:
+      "Every Student Learns Differently. Finally, a Tool That Adapts.",
+    heroSubheadline:
+      "Core Model brings evidence-based adaptive learning to your university. Students get personalized study plans. Professors get concept-level analytics. Everyone gets better outcomes.",
     heroCta: { text: "See University Solutions", href: "/dashboard" },
     secondaryCta: { text: "Request a Demo", href: "#contact" },
     painPoints: [
-      { title: "Lecture + exam is a 200-year-old model", description: "The traditional lecture-and-test approach ignores everything we've learned about how memory and learning actually work. Students deserve better." },
-      { title: "Office hours can't scale", description: "Professors can't provide individualized feedback to 200 students. But every student has different knowledge gaps and learning needs." },
-      { title: "Grade inflation masks real learning", description: "Rising GPAs don't mean students are learning more. Without concept-level mastery data, institutions can't measure true educational outcomes." },
+      {
+        title: "Lecture + exam is a 200-year-old model",
+        description:
+          "The traditional lecture-and-test approach ignores everything we've learned about how memory and learning actually work. Students deserve better.",
+      },
+      {
+        title: "Office hours can't scale",
+        description:
+          "Professors can't provide individualized feedback to 200 students. But every student has different knowledge gaps and learning needs.",
+      },
+      {
+        title: "Grade inflation masks real learning",
+        description:
+          "Rising GPAs don't mean students are learning more. Without concept-level mastery data, institutions can't measure true educational outcomes.",
+      },
     ],
     features: [
-      { title: "Student-Level Mastery Dashboards", description: "See which concepts each student has mastered and where they're struggling. Intervene early, with data, not intuition.", icon: "BarChart3" },
-      { title: "Curriculum-Aligned Study Plans", description: "Upload your syllabus, textbooks, and lecture notes. Core Model generates study plans aligned with your course structure and learning objectives.", icon: "BookOpen" },
-      { title: "Metacognitive Development", description: "Help students become better learners. Calibration exercises develop self-awareness and self-regulation — skills that transfer across all courses.", icon: "Brain" },
-      { title: "Research-Ready Analytics", description: "Core Model generates the granular learning data needed for educational research. Track interventions, measure outcomes, publish results.", icon: "LineChart" },
+      {
+        title: "Student-Level Mastery Dashboards",
+        description:
+          "See which concepts each student has mastered and where they're struggling. Intervene early, with data, not intuition.",
+        icon: "BarChart3",
+      },
+      {
+        title: "Curriculum-Aligned Study Plans",
+        description:
+          "Upload your syllabus, textbooks, and lecture notes. Core Model generates study plans aligned with your course structure and learning objectives.",
+        icon: "BookOpen",
+      },
+      {
+        title: "Metacognitive Development",
+        description:
+          "Help students become better learners. Calibration exercises develop self-awareness and self-regulation — skills that transfer across all courses.",
+        icon: "Brain",
+      },
+      {
+        title: "Research-Ready Analytics",
+        description:
+          "Core Model generates the granular learning data needed for educational research. Track interventions, measure outcomes, publish results.",
+        icon: "LineChart",
+      },
     ],
     benefits: [
-      { metric: "89%", label: "Student Improvement", description: "89% of students showed improved outcomes when instructors adopted Core Model." },
-      { metric: "3 weeks", label: "Faster Completion", description: "Students using adaptive pacing consistently finish ahead of traditional schedules." },
-      { metric: "42%", label: "Better Self-Assessment", description: "Students improve their ability to accurately assess their own knowledge by 42 percentage points." },
+      {
+        metric: "89%",
+        label: "Student Improvement",
+        description:
+          "89% of students showed improved outcomes when instructors adopted Core Model.",
+      },
+      {
+        metric: "3 weeks",
+        label: "Faster Completion",
+        description:
+          "Students using adaptive pacing consistently finish ahead of traditional schedules.",
+      },
+      {
+        metric: "42%",
+        label: "Better Self-Assessment",
+        description:
+          "Students improve their ability to accurately assess their own knowledge by 42 percentage points.",
+      },
     ],
     testimonial: {
-      quote: "I used Core Model for my own learning and then recommended it to my students. 89% of my students who adopted it showed improved clinical reasoning scores.",
+      quote:
+        "I used Core Model for my own learning and then recommended it to my students. 89% of my students who adopted it showed improved clinical reasoning scores.",
       name: "Sarah Lindqvist",
       role: "Nursing Educator & DNP Student",
       institution: "Johns Hopkins School of Nursing",
     },
     faq: [
-      { question: "How does institutional licensing work?", answer: "We offer department and university-wide licensing. Contact us for pricing based on student count and feature requirements." },
-      { question: "Does it integrate with Canvas, Blackboard, or Moodle?", answer: "Core Model works alongside your existing LMS. Students access it for adaptive study while your LMS handles grades and course management." },
-      { question: "Can professors see individual student progress?", answer: "Yes. Instructors get dashboards showing concept-level mastery for each student, enabling targeted interventions and personalized feedback." },
-      { question: "Is there research supporting this approach?", answer: "Core Model is built on decades of cognitive science research. Spaced repetition, retrieval practice, and calibration training are among the most replicated findings in learning science." },
+      {
+        question: "How does institutional licensing work?",
+        answer:
+          "We offer department and university-wide licensing. Contact us for pricing based on student count and feature requirements.",
+      },
+      {
+        question: "Does it integrate with Canvas, Blackboard, or Moodle?",
+        answer:
+          "Core Model works alongside your existing LMS. Students access it for adaptive study while your LMS handles grades and course management.",
+      },
+      {
+        question: "Can professors see individual student progress?",
+        answer:
+          "Yes. Instructors get dashboards showing concept-level mastery for each student, enabling targeted interventions and personalized feedback.",
+      },
+      {
+        question: "Is there research supporting this approach?",
+        answer:
+          "Core Model is built on decades of cognitive science research. Spaced repetition, retrieval practice, and calibration training are among the most replicated findings in learning science.",
+      },
     ],
-    finalCta: { headline: "Transform How Your Students Learn", subheadline: "Evidence-based adaptive learning for every student, every course, every department.", buttonText: "Request Institutional Demo", href: "/dashboard" },
+    finalCta: {
+      headline: "Transform How Your Students Learn",
+      subheadline:
+        "Evidence-based adaptive learning for every student, every course, every department.",
+      buttonText: "Request Institutional Demo",
+      href: "/dashboard",
+    },
   },
   {
     slug: "finance",
     title: "Finance & Professional Certifications",
     metaTitle: "Adaptive Learning for Finance Professionals | Core Model",
-    metaDescription: "Master CFA, CPA, FRM, and financial concepts with adaptive learning. Core Model builds personalized study plans for finance professionals and certification candidates.",
-    keywords: ["CFA prep", "CPA study", "finance certification", "financial education", "FRM preparation", "finance learning"],
+    metaDescription:
+      "Master CFA, CPA, FRM, and financial concepts with adaptive learning. Core Model builds personalized study plans for finance professionals and certification candidates.",
+    keywords: [
+      "CFA prep",
+      "CPA study",
+      "finance certification",
+      "financial education",
+      "FRM preparation",
+      "finance learning",
+    ],
     heroHeadline: "Master Finance. Don't Just Memorize It.",
-    heroSubheadline: "CFA, CPA, FRM, or MBA coursework — Core Model builds deep understanding of financial concepts with adaptive study plans, spaced repetition, and honest mastery tracking.",
+    heroSubheadline:
+      "CFA, CPA, FRM, or MBA coursework — Core Model builds deep understanding of financial concepts with adaptive study plans, spaced repetition, and honest mastery tracking.",
     heroCta: { text: "Start Your Certification Prep", href: "/dashboard" },
     secondaryCta: { text: "See the Method", href: "#how-it-works" },
     painPoints: [
-      { title: "Financial certifications have massive syllabi", description: "The CFA curriculum alone is 3,000+ pages across 10 subjects. Without strategic prioritization, you'll spend months on material you'll forget." },
-      { title: "Conceptual understanding matters more than formula memorization", description: "Exams test application, not recall. Memorizing formulas without understanding when and why to use them leads to exam-day surprises." },
-      { title: "Study burnout is the number one reason people fail", description: "Inefficient studying leads to burnout. When you waste hours reviewing material you already know, motivation crashes." },
+      {
+        title: "Financial certifications have massive syllabi",
+        description:
+          "The CFA curriculum alone is 3,000+ pages across 10 subjects. Without strategic prioritization, you'll spend months on material you'll forget.",
+      },
+      {
+        title:
+          "Conceptual understanding matters more than formula memorization",
+        description:
+          "Exams test application, not recall. Memorizing formulas without understanding when and why to use them leads to exam-day surprises.",
+      },
+      {
+        title: "Study burnout is the number one reason people fail",
+        description:
+          "Inefficient studying leads to burnout. When you waste hours reviewing material you already know, motivation crashes.",
+      },
     ],
     features: [
-      { title: "Formula + Concept Tracking", description: "Core Model tracks both formula recall and conceptual understanding separately. Know whether you can derive the answer or just recognize it.", icon: "BarChart3" },
-      { title: "Cross-Topic Integration", description: "Finance topics are deeply interconnected. Core Model maps relationships between fixed income, derivatives, portfolio management, and more.", icon: "Map" },
-      { title: "Adaptive Practice Questions", description: "Practice questions target your weakest areas at the right difficulty level. No more wasting time on questions that are too easy.", icon: "Target" },
-      { title: "Burnout Prevention", description: "Smart scheduling distributes your study load evenly and eliminates redundant review. Study less, retain more.", icon: "Shield" },
+      {
+        title: "Formula + Concept Tracking",
+        description:
+          "Core Model tracks both formula recall and conceptual understanding separately. Know whether you can derive the answer or just recognize it.",
+        icon: "BarChart3",
+      },
+      {
+        title: "Cross-Topic Integration",
+        description:
+          "Finance topics are deeply interconnected. Core Model maps relationships between fixed income, derivatives, portfolio management, and more.",
+        icon: "Map",
+      },
+      {
+        title: "Adaptive Practice Questions",
+        description:
+          "Practice questions target your weakest areas at the right difficulty level. No more wasting time on questions that are too easy.",
+        icon: "Target",
+      },
+      {
+        title: "Burnout Prevention",
+        description:
+          "Smart scheduling distributes your study load evenly and eliminates redundant review. Study less, retain more.",
+        icon: "Shield",
+      },
     ],
     benefits: [
-      { metric: "35%", label: "Less Study Time", description: "Adaptive scheduling eliminates redundant review, saving 35% of total study hours." },
-      { metric: "2.4x", label: "Better Retention", description: "Spaced repetition produces 2.4x better long-term retention of financial concepts and formulas." },
-      { metric: "94%", label: "Concept Mastery", description: "Users reach 94% mastery confidence in core financial concepts before exam day." },
+      {
+        metric: "35%",
+        label: "Less Study Time",
+        description:
+          "Adaptive scheduling eliminates redundant review, saving 35% of total study hours.",
+      },
+      {
+        metric: "2.4x",
+        label: "Better Retention",
+        description:
+          "Spaced repetition produces 2.4x better long-term retention of financial concepts and formulas.",
+      },
+      {
+        metric: "94%",
+        label: "Concept Mastery",
+        description:
+          "Users reach 94% mastery confidence in core financial concepts before exam day.",
+      },
     ],
     testimonial: {
-      quote: "I failed CFA Level 2 the first time using traditional study methods. With Core Model, I identified exactly which topics I was overconfident in and fixed them. Passed on my second attempt with room to spare.",
+      quote:
+        "I failed CFA Level 2 the first time using traditional study methods. With Core Model, I identified exactly which topics I was overconfident in and fixed them. Passed on my second attempt with room to spare.",
       name: "Finance Professional",
       role: "CFA Candidate",
       institution: "Investment Bank",
     },
     faq: [
-      { question: "Does it work for CFA preparation?", answer: "Yes. Upload your CFA study materials and Core Model builds a targeted study plan across all topics. It tracks mastery at the reading level and identifies your weakest areas." },
-      { question: "Can I import my existing study materials?", answer: "Absolutely. Upload Schweser notes, CFA Institute readings, practice problems, or any PDF/markdown study materials." },
-      { question: "How does it handle quantitative topics?", answer: "Core Model handles mathematical and quantitative content well. It tracks your understanding of formulas, their derivations, and their applications separately." },
-      { question: "Is this for individuals or firms?", answer: "Both. Individual finance professionals use Core Model for certification prep. Firms use it for team training and compliance education. Contact us for enterprise pricing." },
+      {
+        question: "Does it work for CFA preparation?",
+        answer:
+          "Yes. Upload your CFA study materials and Core Model builds a targeted study plan across all topics. It tracks mastery at the reading level and identifies your weakest areas.",
+      },
+      {
+        question: "Can I import my existing study materials?",
+        answer:
+          "Absolutely. Upload Schweser notes, CFA Institute readings, practice problems, or any PDF/markdown study materials.",
+      },
+      {
+        question: "How does it handle quantitative topics?",
+        answer:
+          "Core Model handles mathematical and quantitative content well. It tracks your understanding of formulas, their derivations, and their applications separately.",
+      },
+      {
+        question: "Is this for individuals or firms?",
+        answer:
+          "Both. Individual finance professionals use Core Model for certification prep. Firms use it for team training and compliance education. Contact us for enterprise pricing.",
+      },
     ],
-    finalCta: { headline: "Your Certification Is Within Reach", subheadline: "Study smarter, not harder. Build the deep understanding that certifications actually test.", buttonText: "Start Your Finance Study Plan", href: "/dashboard" },
+    finalCta: {
+      headline: "Your Certification Is Within Reach",
+      subheadline:
+        "Study smarter, not harder. Build the deep understanding that certifications actually test.",
+      buttonText: "Start Your Finance Study Plan",
+      href: "/dashboard",
+    },
   },
   {
     slug: "creative-arts",
     title: "Creative Arts & Design",
     metaTitle: "Adaptive Learning for Creative Professionals | Core Model",
-    metaDescription: "Master design theory, art history, and creative research methodology with adaptive learning. Core Model helps creative professionals build the theoretical knowledge behind their practice.",
-    keywords: ["creative learning", "design education", "art history study", "MFA study", "creative research", "design theory"],
+    metaDescription:
+      "Master design theory, art history, and creative research methodology with adaptive learning. Core Model helps creative professionals build the theoretical knowledge behind their practice.",
+    keywords: [
+      "creative learning",
+      "design education",
+      "art history study",
+      "MFA study",
+      "creative research",
+      "design theory",
+    ],
     heroHeadline: "Creativity Needs Knowledge. Build Yours.",
-    heroSubheadline: "From design theory to art history to research methodology, Core Model helps creative professionals build the deep theoretical knowledge that elevates their practice.",
+    heroSubheadline:
+      "From design theory to art history to research methodology, Core Model helps creative professionals build the deep theoretical knowledge that elevates their practice.",
     heroCta: { text: "Start Your Creative Study Plan", href: "/dashboard" },
     secondaryCta: { text: "Read Marcus's Story", href: "#testimonials" },
     painPoints: [
-      { title: "Creative programs demand theoretical rigor you weren't trained for", description: "MFA and design programs require research methodology, critical theory, and historical knowledge that creative professionals may not have from their practice." },
-      { title: "Reading dense theory texts feels inefficient", description: "Academic texts in art theory, semiotics, and critical studies are challenging. Without active engagement strategies, the material doesn't stick." },
-      { title: "Your portfolio gets stronger but your vocabulary doesn't", description: "Being able to create great work and being able to articulate why it works are different skills. The theoretical vocabulary matters for career advancement." },
+      {
+        title:
+          "Creative programs demand theoretical rigor you weren't trained for",
+        description:
+          "MFA and design programs require research methodology, critical theory, and historical knowledge that creative professionals may not have from their practice.",
+      },
+      {
+        title: "Reading dense theory texts feels inefficient",
+        description:
+          "Academic texts in art theory, semiotics, and critical studies are challenging. Without active engagement strategies, the material doesn't stick.",
+      },
+      {
+        title: "Your portfolio gets stronger but your vocabulary doesn't",
+        description:
+          "Being able to create great work and being able to articulate why it works are different skills. The theoretical vocabulary matters for career advancement.",
+      },
     ],
     features: [
-      { title: "Theory Concept Mapping", description: "Upload design theory texts, art history readings, and critical studies. Core Model maps the conceptual landscape of your creative discipline.", icon: "Map" },
-      { title: "Project-Based Retrieval", description: "Core Model adapts to project-based and kinesthetic learning styles. Get retrieval challenges tied to your creative practice, not just flashcards.", icon: "Palette" },
-      { title: "Research Methodology Support", description: "For MFA and Ph.D. candidates: Core Model tracks your understanding of research methods, helping you build the skills your thesis demands.", icon: "BookOpen" },
-      { title: "Cross-Disciplinary Connections", description: "See how concepts from art history, philosophy, cognitive science, and design theory connect. Build the interdisciplinary fluency that creative leaders need.", icon: "Brain" },
+      {
+        title: "Theory Concept Mapping",
+        description:
+          "Upload design theory texts, art history readings, and critical studies. Core Model maps the conceptual landscape of your creative discipline.",
+        icon: "Map",
+      },
+      {
+        title: "Project-Based Retrieval",
+        description:
+          "Core Model adapts to project-based and kinesthetic learning styles. Get retrieval challenges tied to your creative practice, not just flashcards.",
+        icon: "Palette",
+      },
+      {
+        title: "Research Methodology Support",
+        description:
+          "For MFA and Ph.D. candidates: Core Model tracks your understanding of research methods, helping you build the skills your thesis demands.",
+        icon: "BookOpen",
+      },
+      {
+        title: "Cross-Disciplinary Connections",
+        description:
+          "See how concepts from art history, philosophy, cognitive science, and design theory connect. Build the interdisciplinary fluency that creative leaders need.",
+        icon: "Brain",
+      },
     ],
     benefits: [
-      { metric: "3 weeks", label: "Ahead of Schedule", description: "MFA students using Core Model consistently complete thesis work ahead of schedule." },
-      { metric: "9 weeks", label: "To Research Proficiency", description: "Creative professionals reach research methodology proficiency in 9 weeks with Core Model." },
-      { metric: "Published", label: "Academic Papers", description: "Users report stronger academic writing and increased publication success." },
+      {
+        metric: "3 weeks",
+        label: "Ahead of Schedule",
+        description:
+          "MFA students using Core Model consistently complete thesis work ahead of schedule.",
+      },
+      {
+        metric: "9 weeks",
+        label: "To Research Proficiency",
+        description:
+          "Creative professionals reach research methodology proficiency in 9 weeks with Core Model.",
+      },
+      {
+        metric: "Published",
+        label: "Academic Papers",
+        description:
+          "Users report stronger academic writing and increased publication success.",
+      },
     ],
     testimonial: {
-      quote: "I learn by doing, not reading. Core Model adapted by giving me project-based retrieval challenges instead of flashcards. My thesis advisor noticed the difference in my literature review quality.",
+      quote:
+        "I learn by doing, not reading. Core Model adapted by giving me project-based retrieval challenges instead of flashcards. My thesis advisor noticed the difference in my literature review quality.",
       name: "Marcus Chen",
       role: "Senior UX Designer & MFA Candidate",
       institution: "Rhode Island School of Design",
     },
     faq: [
-      { question: "I'm not a 'textbook learner.' Will this work for me?", answer: "Core Model adapts to your learning style. For kinesthetic and project-based learners, it generates retrieval challenges tied to your creative practice rather than abstract flashcards." },
-      { question: "Can it handle visual and design-oriented content?", answer: "Core Model processes the text and conceptual content of your materials. For visual analysis, it focuses on the theoretical frameworks and vocabulary of visual criticism." },
-      { question: "Is this for students or working professionals?", answer: "Both. MFA and design Ph.D. students use it for coursework and thesis research. Working designers use it for continuing education and skill development." },
-      { question: "Does it support art history?", answer: "Yes. Upload art history texts, exhibition catalogs, and critical essays. Core Model tracks your mastery of periods, movements, artists, and theoretical frameworks." },
+      {
+        question: "I'm not a 'textbook learner.' Will this work for me?",
+        answer:
+          "Core Model adapts to your learning style. For kinesthetic and project-based learners, it generates retrieval challenges tied to your creative practice rather than abstract flashcards.",
+      },
+      {
+        question: "Can it handle visual and design-oriented content?",
+        answer:
+          "Core Model processes the text and conceptual content of your materials. For visual analysis, it focuses on the theoretical frameworks and vocabulary of visual criticism.",
+      },
+      {
+        question: "Is this for students or working professionals?",
+        answer:
+          "Both. MFA and design Ph.D. students use it for coursework and thesis research. Working designers use it for continuing education and skill development.",
+      },
+      {
+        question: "Does it support art history?",
+        answer:
+          "Yes. Upload art history texts, exhibition catalogs, and critical essays. Core Model tracks your mastery of periods, movements, artists, and theoretical frameworks.",
+      },
     ],
-    finalCta: { headline: "Elevate Your Creative Practice with Knowledge", subheadline: "Build the theoretical depth that separates good creatives from great ones.", buttonText: "Start Your Creative Study Plan", href: "/dashboard" },
+    finalCta: {
+      headline: "Elevate Your Creative Practice with Knowledge",
+      subheadline:
+        "Build the theoretical depth that separates good creatives from great ones.",
+      buttonText: "Start Your Creative Study Plan",
+      href: "/dashboard",
+    },
   },
-]
+];

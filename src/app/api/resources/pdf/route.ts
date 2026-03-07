@@ -1,15 +1,18 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { resources } from "@/lib/content/resources"
+import { type NextRequest, NextResponse } from "next/server";
+import { resources } from "@/lib/content/resources";
 
 export async function GET(request: NextRequest) {
-  const slug = request.nextUrl.searchParams.get("slug")
+  const slug = request.nextUrl.searchParams.get("slug");
   if (!slug) {
-    return NextResponse.json({ error: "Missing slug parameter" }, { status: 400 })
+    return NextResponse.json(
+      { error: "Missing slug parameter" },
+      { status: 400 },
+    );
   }
 
-  const resource = resources.find((r) => r.slug === slug)
+  const resource = resources.find((r) => r.slug === slug);
   if (!resource) {
-    return NextResponse.json({ error: "Resource not found" }, { status: 404 })
+    return NextResponse.json({ error: "Resource not found" }, { status: 404 });
   }
 
   // Generate a plain text version formatted for PDF-like reading
@@ -25,7 +28,7 @@ ${resource.longDescription}
 
 ${"=".repeat(60)}
 
-`
+`;
 
   const footer = `
 
@@ -35,14 +38,14 @@ https://coremodel.app
 
 Topics covered: ${resource.topics.join(", ")}
 ${"=".repeat(60)}
-`
+`;
 
-  const fullContent = header + resource.content + footer
+  const fullContent = header + resource.content + footer;
 
   return new NextResponse(fullContent, {
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
       "Content-Disposition": `attachment; filename="${resource.slug}.txt"`,
     },
-  })
+  });
 }
