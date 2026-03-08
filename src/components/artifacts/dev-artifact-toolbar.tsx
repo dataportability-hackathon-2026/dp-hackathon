@@ -43,12 +43,6 @@ export function DevArtifactToolbar({
 
   if (!SUPPORTED_TYPES.has(activeType)) return null;
 
-  const subject = topicName ?? "Linear Algebra";
-  const concepts =
-    topicConcepts && topicConcepts.length > 0
-      ? topicConcepts
-      : ["Eigenvalues", "Eigenvectors", "Diagonalization"];
-
   async function handleGenerate() {
     setLoading(true);
     setError(null);
@@ -58,11 +52,12 @@ export function DevArtifactToolbar({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: activeType,
+          topicSlug,
           input: {
-            subject,
-            concepts,
+            subject: topicName ?? "Unknown topic",
+            concepts: topicConcepts ?? [],
             priorKnowledgeLevel: "intermediate",
-            goalType: "exam prep",
+            goalType: "mastery",
           },
         }),
       });
