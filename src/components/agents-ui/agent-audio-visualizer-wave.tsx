@@ -141,14 +141,14 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord) {
   
   // Apply line intensity
   color *= line;
-  
+
   // Add dithering for smoother gradients
   // color += (randFibo(fragCoord).x - 0.5) / 255.0;
-  
+
   // Calculate alpha based on line intensity
   float alpha = line * uMix;
-  
-  fragColor = vec4(color * uMix, alpha);
+
+  fragColor = vec4(color * uMix * 2.0, alpha);
 }`;
 
 interface WaveShaderProps {
@@ -339,10 +339,17 @@ export function AgentAudioVisualizerWave({
     }
     switch (size) {
       case "icon":
-      case "sm":
-        return 2;
-      default:
         return 1;
+      case "sm":
+        return 1.5;
+      case "md":
+        return 2;
+      case "lg":
+        return 3;
+      case "xl":
+        return 4;
+      default:
+        return 2;
     }
   }, [lineWidth, size]);
 

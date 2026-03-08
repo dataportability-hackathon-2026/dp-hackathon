@@ -48,27 +48,6 @@ export default async function ResourcePage({ params }: Props) {
       <MarketingNav />
 
       <div className="max-w-6xl mx-auto px-6 pt-12 pb-20">
-        {/* Breadcrumbs */}
-        <nav className="text-sm text-neutral-500 dark:text-neutral-400 mb-8">
-          <a
-            href="/"
-            className="hover:text-neutral-700 dark:hover:text-neutral-300"
-          >
-            Home
-          </a>
-          <span className="mx-2">/</span>
-          <a
-            href="/resources"
-            className="hover:text-neutral-700 dark:hover:text-neutral-300"
-          >
-            Resources
-          </a>
-          <span className="mx-2">/</span>
-          <span className="text-neutral-700 dark:text-neutral-300">
-            {resource.title}
-          </span>
-        </nav>
-
         <div className="grid lg:grid-cols-3 gap-12">
           {/* Main Content */}
           <div className="lg:col-span-2">

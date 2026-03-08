@@ -6,23 +6,6 @@ export function slugify(name: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-export function findTopicBySlug(slug: string) {
-  return TOPICS.find((t) => slugify(t.name) === slug);
-}
-
-export function findProjectBySlug(topic: MockTopic, slug: string) {
-  return topic.projects.find((p) => slugify(p.name) === slug);
-}
-
-export function getTopicsByGroup(): Record<string, MockTopic[]> {
-  const groups: Record<string, MockTopic[]> = {};
-  for (const topic of TOPICS) {
-    if (!groups[topic.parentGroup]) groups[topic.parentGroup] = [];
-    groups[topic.parentGroup].push(topic);
-  }
-  return groups;
-}
-
 // ── Types ──
 
 export type GoalType = "exam" | "project" | "fluency" | "teach";

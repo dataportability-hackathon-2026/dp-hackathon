@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   AudioLines,
   BarChart3,
+  BookOpen,
   Bot,
   Box,
   Braces,
@@ -30,6 +31,7 @@ import {
   MoreVertical,
   Pencil,
   Phone,
+  PhoneOff,
   Plug,
   Presentation,
   RefreshCw,
@@ -67,13 +69,14 @@ import {
   SiOpenai,
   SiSlack,
 } from "react-icons/si";
-import { ShinyText } from "@/components/reactbits/shiny-text";
+import { ShortcutKbd } from "@/components/shortcut-kbd";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -89,7 +92,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -101,7 +103,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -112,9 +113,16 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ACADEMIC_RESOURCES } from "@/lib/academic-resources";
+import { useLatestAssessment } from "@/lib/assessments/use-latest-assessment";
+import { useHotkeys } from "@/lib/hooks/use-hotkeys";
 import {
   type MockAuditEvent,
   type MockFile,
@@ -151,8 +159,13 @@ import {
 import { CreditBadge } from "@/components/billing/credit-badge";
 import { LearningProfileForm } from "@/components/learning-profile-form";
 import { ProfileSheetContent } from "@/components/profile-sheet-content";
+import { dispatchAgentResult } from "@/lib/agent-dispatch";
 import { authClient } from "@/lib/auth-client";
 import { dataStore, useDataStore } from "@/lib/data-store";
+import {
+  usePreference,
+  usePreferencesHydration,
+} from "@/lib/hooks/use-preferences";
 
 const AgentAudioVisualizerBar = dynamic(
   () =>
@@ -176,7 +189,6 @@ const AgentAudioVisualizerAura = dynamic(
   { ssr: false },
 );
 
-import { upload } from "@vercel/blob/client";
 import { useChat } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import { conversationStore, type MessageEntry } from "@/lib/conversation-store";
@@ -314,6 +326,7 @@ export function SinglePageApp({
   isAdmin?: boolean;
 }) {
   const { data: session } = authClient.useSession();
+  usePreferencesHydration();
   const selectedTopicId = topicId ?? "topic-1";
   const selectedProjectId = projectId ?? "proj-1";
 
@@ -357,7 +370,14 @@ export function SinglePageApp({
   const [scrollToArtifactId, setScrollToArtifactId] = useState<string | null>(
     null,
   );
+  const [voiceMode, setVoiceMode] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { loading: assessmentLoading, assessment: latestAssessment } =
+    useLatestAssessment();
+  const [bannerDismissed, setBannerDismissed] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("assessment-banner-dismissed") === "true";
+  });
   const userProfile = useDataStore((s) => s.learningProfile);
   const guideBlocks = useDataStore((s) => s.guideBlocks);
   const masteryScores = useDataStore((s) => s.masteryScores);
@@ -382,6 +402,18 @@ export function SinglePageApp({
     [setAssessmentMode],
   );
 
+  useHotkeys({
+    "mod+1": () => void setActiveTab("guide"),
+    "mod+2": () => void setActiveTab("sources"),
+    "mod+3": () => void setActiveTab("progress"),
+    "mod+j": () => handleSetAgentOpen(!agentOpen),
+    "mod+u": () => handleSetProfileSheetOpen(!profileSheetOpen),
+    "/": () => {
+      const el = document.querySelector<HTMLInputElement>("[data-chat-input]");
+      el?.focus();
+    },
+  });
+
   const activeArtifactType: ArtifactType | null = artifactParam
     ? (artifactParam as ArtifactType)
     : null;
@@ -400,289 +432,446 @@ export function SinglePageApp({
     setScrollToArtifactId(null);
   }, [setArtifactParam]);
 
-  const selectedTopic =
-    TOPICS.find((t) => t.id === selectedTopicId) ?? TOPICS[0];
-  const selectedProject =
-    selectedTopic.projects.find((p) => p.id === selectedProjectId) ??
-    selectedTopic.projects[0];
+  const handleAgentToolResult = useCallback(
+    (toolName: string, result: Record<string, unknown>) => {
+      dispatchAgentResult(toolName, result, {
+        setActiveTab: (tab) => void setActiveTab(tab),
+        setArtifactParam: (artifact) => void setArtifactParam(artifact),
+      });
+    },
+    [setActiveTab, setArtifactParam],
+  );
+
+  const selectedTopic = TOPICS.find((t) => t.id === selectedTopicId) ?? {
+    id: selectedTopicId,
+    name: "Topic",
+    domain: "",
+    parentGroup: "",
+    icon: "",
+    fileCount: 0,
+    projects: [] as MockProject[],
+    guideBlocks: [] as MockGuideBlock[],
+    chatHistory: [],
+    masteryData: [],
+    files: [],
+  };
+  const selectedProject = selectedTopic.projects.find(
+    (p) => p.id === selectedProjectId,
+  ) ??
+    selectedTopic.projects[0] ?? {
+      id: selectedProjectId,
+      name: "Project",
+      goalType: "mastery" as const,
+      mastery: 0,
+      masteryUncertainty: 0,
+      minutesPerDay: 30,
+      daysPerWeek: 5,
+      deadline: "",
+    };
 
   return (
-    <Suspense fallback={null}>
-      <Tabs
-        value={activeTab}
-        onValueChange={(val) => {
-          void setActiveTab(val);
-          void setArtifactParam(null);
-        }}
-        className="flex h-dvh flex-col gap-0 bg-background"
-      >
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-muted"
-          >
-            <Brain className="size-5 text-primary" />
-            <span className="text-sm font-semibold">{siteConfig.name}</span>
-            {isAdmin && (
-              <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-                ADMIN
-              </Badge>
-            )}
-          </Link>
-
-          <Separator orientation="vertical" className="mx-1 h-5" />
-
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted"
-          >
-            <FolderOpen className="size-3.5" />
-            <span className="hidden sm:inline">{selectedTopic.name}</span>
-            <ChevronRight className="size-3.5" />
-            <span className="font-medium text-foreground">
-              {selectedProject.name}
-            </span>
-          </Link>
-
-          <div className="ml-auto flex items-center gap-2">
-            {/* Desktop: Nav + Connect + Audit + User */}
-            <div className="hidden items-center gap-2 lg:flex">
-              <TabsList className="mr-4 bg-muted/50">
-                <TabsTrigger value="guide" className="gap-1.5 px-3 text-sm">
-                  <Calendar className="size-3.5" />
-                  Guide
-                </TabsTrigger>
-                <TabsTrigger value="sources" className="gap-1.5 px-3 text-sm">
-                  <FileText className="size-3.5" />
-                  Sources
-                </TabsTrigger>
-                <TabsTrigger value="progress" className="gap-1.5 px-3 text-sm">
-                  <TrendingUp className="size-3.5" />
-                  Progress
-                </TabsTrigger>
-              </TabsList>
-              <ConnectDialog />
-              <CreditBadge />
-              <AuditDialog />
-              <Sheet
-                open={profileSheetOpen}
-                onOpenChange={handleSetProfileSheetOpen}
+    <TooltipProvider delay={400}>
+      <Suspense fallback={null}>
+        <Tabs
+          value={activeTab}
+          onValueChange={(val) => {
+            void setActiveTab(val);
+            void setArtifactParam(null);
+          }}
+          className="flex h-dvh flex-col gap-0 bg-background"
+        >
+          <header className="border-b">
+            <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-3 px-10">
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2.5 rounded-md transition-colors hover:bg-muted"
               >
-                <SheetTrigger
-                  render={
-                    <button
-                      type="button"
-                      className="flex items-center gap-2 rounded-full border border-transparent px-2 py-1.5 transition-colors hover:bg-muted"
-                    />
-                  }
-                >
-                  <Avatar size="sm">
-                    <AvatarFallback>
-                      <User className="h-4 w-4" />
-                    </AvatarFallback>
-                  </Avatar>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-full sm:max-w-lg">
-                  <ProfileSheetContent
-                    onRetakeAssessment={() => {
-                      handleSetAssessmentMode(true);
-                      handleSetProfileSheetOpen(false);
-                    }}
-                  />
-                </SheetContent>
-              </Sheet>
-            </div>
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <Brain className="h-4 w-4" />
+                </div>
+                <span className="text-lg font-bold tracking-tight">
+                  {siteConfig.name}
+                </span>
+                {isAdmin && (
+                  <Badge
+                    variant="destructive"
+                    className="text-[10px] px-1.5 py-0"
+                  >
+                    ADMIN
+                  </Badge>
+                )}
+              </Link>
 
-            {/* Mobile: Agent toggle */}
-            <Button
-              variant={agentOpen ? "default" : "ghost"}
-              size="icon-sm"
-              className="lg:hidden"
-              onClick={() => handleSetAgentOpen(!agentOpen)}
-            >
-              <MessageSquare className="size-4" />
-            </Button>
+              <Separator orientation="vertical" className="mx-1 h-5" />
 
-            {/* Mobile: Hamburger menu */}
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className="lg:hidden"
-                  />
-                }
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted"
               >
-                <Menu className="size-4" />
-              </SheetTrigger>
-              <SheetContent side="right">
-                <SheetHeader>
-                  <SheetTitle>Menu</SheetTitle>
-                </SheetHeader>
-                <div className="flex flex-col gap-4 p-4">
-                  {/* Mobile nav - uses regular buttons to avoid duplicate TabsList conflicts */}
-                  <div className="flex w-full rounded-4xl border bg-muted/50 p-0.5">
-                    {(
-                      [
-                        { value: "guide", label: "Guide", icon: Calendar },
-                        { value: "sources", label: "Sources", icon: FileText },
-                        {
-                          value: "progress",
-                          label: "Progress",
-                          icon: TrendingUp,
-                        },
-                      ] as const
-                    ).map((tab) => {
-                      const Icon = tab.icon;
-                      return (
-                        <button
-                          key={tab.value}
-                          type="button"
-                          onClick={() => {
-                            void setActiveTab(tab.value);
-                            void setArtifactParam(null);
-                            setMobileMenuOpen(false);
-                          }}
-                          className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition-colors ${
-                            activeTab === tab.value
-                              ? "bg-background text-foreground shadow-sm"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          <Icon className="size-3.5" />
-                          {tab.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                <FolderOpen className="size-3.5" />
+                <span className="hidden sm:inline">{selectedTopic.name}</span>
+                <ChevronRight className="size-3.5" />
+                <span className="font-medium text-foreground">
+                  {selectedProject.name}
+                </span>
+              </Link>
 
-                  <Separator />
-
-                  <div className="flex gap-2">
-                    <ConnectDialog />
-                    <AuditDialog />
-                  </div>
-
-                  <Separator />
-
+              <div className="ml-auto flex items-center gap-2">
+                {/* Desktop: Nav + Connect + Audit + User */}
+                <div className="hidden items-center gap-2 lg:flex">
+                  <TabsList className="mr-4 bg-muted/50">
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <TabsTrigger
+                            value="guide"
+                            className="gap-1.5 px-3 text-sm"
+                          />
+                        }
+                      >
+                        <Calendar className="size-3.5" />
+                        Guide
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Guide <ShortcutKbd shortcut="⌘1" />
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <TabsTrigger
+                            value="sources"
+                            className="gap-1.5 px-3 text-sm"
+                          />
+                        }
+                      >
+                        <FileText className="size-3.5" />
+                        Sources
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Sources <ShortcutKbd shortcut="⌘2" />
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <TabsTrigger
+                            value="progress"
+                            className="gap-1.5 px-3 text-sm"
+                          />
+                        }
+                      >
+                        <TrendingUp className="size-3.5" />
+                        Progress
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Progress <ShortcutKbd shortcut="⌘3" />
+                      </TooltipContent>
+                    </Tooltip>
+                  </TabsList>
+                  <ConnectDialog />
+                  <CreditBadge />
+                  <AuditDialog />
                   <Sheet
                     open={profileSheetOpen}
                     onOpenChange={handleSetProfileSheetOpen}
                   >
-                    <SheetTrigger
-                      render={
-                        <button
-                          type="button"
-                          className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted"
-                        />
-                      }
-                    >
-                      <Avatar size="sm">
-                        <AvatarFallback>
-                          <User className="h-4 w-4" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm font-medium">
-                        {session?.user?.name ?? "Account"}
-                      </span>
-                    </SheetTrigger>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <SheetTrigger
+                            render={
+                              <button
+                                type="button"
+                                className="flex items-center gap-2 rounded-full border border-transparent px-2 py-1.5 transition-colors hover:bg-muted"
+                              />
+                            }
+                          />
+                        }
+                      >
+                        <Avatar size="sm">
+                          <AvatarFallback>
+                            <User className="h-4 w-4" />
+                          </AvatarFallback>
+                        </Avatar>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Profile <ShortcutKbd shortcut="⌘U" />
+                      </TooltipContent>
+                    </Tooltip>
                     <SheetContent side="right" className="w-full sm:max-w-lg">
                       <ProfileSheetContent
                         onRetakeAssessment={() => {
                           handleSetAssessmentMode(true);
                           handleSetProfileSheetOpen(false);
-                          setMobileMenuOpen(false);
                         }}
                       />
                     </SheetContent>
                   </Sheet>
                 </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        </header>
 
-        {assessmentMode && (
-          <LearningProfileForm
-            initialData={userProfile ?? undefined}
-            onSave={(profileData) => dataStore.setLearningProfile(profileData)}
-            onCancel={() => handleSetAssessmentMode(false)}
-          />
-        )}
+                {/* Mobile: Agent toggle */}
+                <Button
+                  variant={agentOpen ? "default" : "ghost"}
+                  size="icon-sm"
+                  className="lg:hidden"
+                  onClick={() => handleSetAgentOpen(!agentOpen)}
+                >
+                  <MessageSquare className="size-4" />
+                </Button>
 
-        <div className="flex flex-1 overflow-hidden">
-          {/* Left Sidebar - Create artifacts */}
-          <aside className="hidden w-48 shrink-0 border-r lg:flex lg:flex-col">
-            <div className="flex-1 overflow-y-auto p-3">
-              <ArtifactGrid
-                onOpenType={handleOpenArtifactType}
-                activeType={activeArtifactType}
-              />
+                {/* Mobile: Hamburger menu */}
+                <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                  <SheetTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="lg:hidden"
+                      />
+                    }
+                  >
+                    <Menu className="size-4" />
+                  </SheetTrigger>
+                  <SheetContent side="right">
+                    <SheetHeader>
+                      <SheetTitle>Menu</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex flex-col gap-4 p-4">
+                      {/* Mobile nav - uses regular buttons to avoid duplicate TabsList conflicts */}
+                      <div className="flex w-full rounded-4xl border bg-muted/50 p-0.5">
+                        {(
+                          [
+                            { value: "guide", label: "Guide", icon: Calendar },
+                            {
+                              value: "sources",
+                              label: "Sources",
+                              icon: FileText,
+                            },
+                            {
+                              value: "progress",
+                              label: "Progress",
+                              icon: TrendingUp,
+                            },
+                          ] as const
+                        ).map((tab) => {
+                          const Icon = tab.icon;
+                          return (
+                            <button
+                              key={tab.value}
+                              type="button"
+                              onClick={() => {
+                                void setActiveTab(tab.value);
+                                void setArtifactParam(null);
+                                setMobileMenuOpen(false);
+                              }}
+                              className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition-colors ${
+                                activeTab === tab.value
+                                  ? "bg-background text-foreground shadow-sm"
+                                  : "text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              <Icon className="size-3.5" />
+                              {tab.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <Separator />
+
+                      <div className="flex gap-2">
+                        <ConnectDialog />
+                        <AuditDialog />
+                      </div>
+
+                      <Separator />
+
+                      <Sheet
+                        open={profileSheetOpen}
+                        onOpenChange={handleSetProfileSheetOpen}
+                      >
+                        <SheetTrigger
+                          render={
+                            <button
+                              type="button"
+                              className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted"
+                            />
+                          }
+                        >
+                          <Avatar size="sm">
+                            <AvatarFallback>
+                              <User className="h-4 w-4" />
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-medium">
+                            {session?.user?.name ?? "Account"}
+                          </span>
+                        </SheetTrigger>
+                        <SheetContent
+                          side="right"
+                          className="w-full sm:max-w-lg"
+                        >
+                          <ProfileSheetContent
+                            onRetakeAssessment={() => {
+                              handleSetAssessmentMode(true);
+                              handleSetProfileSheetOpen(false);
+                              setMobileMenuOpen(false);
+                            }}
+                          />
+                        </SheetContent>
+                      </Sheet>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
             </div>
-          </aside>
+          </header>
 
-          {/* Main Content */}
-          <main className="relative flex-1 overflow-hidden">
-            {activeArtifactType ? (
-              <ArtifactCanvas
-                activeType={activeArtifactType}
-                scrollToId={scrollToArtifactId}
-                topicSlug={slugify(selectedTopic.name)}
-                topicName={selectedTopic.name}
-                topicConcepts={selectedTopic.masteryData.map((m) => m.concept)}
-                onClose={handleCloseCanvas}
-              />
-            ) : (
-              <div className="h-full overflow-y-auto">
-                <TabsContent value="guide" className="p-4 sm:p-6">
-                  <GuideTab blocks={guideBlocks} />
-                </TabsContent>
-
-                <TabsContent value="sources" className="p-4 sm:p-6">
-                  <SourcesTab
-                    topicSlug={slugify(selectedTopic.name)}
-                    fallbackFiles={selectedTopic.files}
-                  />
-                </TabsContent>
-
-                <TabsContent value="progress" className="p-4 sm:p-6">
-                  <ProgressTab
-                    mastery={masteryScores}
-                    project={selectedProject}
-                  />
-                </TabsContent>
+          {!assessmentLoading &&
+            !latestAssessment &&
+            !assessmentMode &&
+            !bannerDismissed && (
+              <div className="border-b bg-muted/50 px-4 py-3">
+                <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <Brain className="size-5 text-primary shrink-0" />
+                    <p className="text-sm">
+                      Complete your cognitive assessment to unlock personalized
+                      tutoring.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      onClick={() => handleSetAssessmentMode(true)}
+                    >
+                      Take Assessment
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setBannerDismissed(true);
+                        localStorage.setItem(
+                          "assessment-banner-dismissed",
+                          "true",
+                        );
+                      }}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
-          </main>
 
-          {/* Agent Right Sidebar - Desktop: always visible, Mobile: toggleable */}
-          <aside
-            className={`flex w-full flex-col overflow-hidden border-l lg:w-96 lg:shrink-0 ${
-              agentOpen
-                ? "fixed inset-0 top-14 z-30 bg-background lg:static lg:z-auto"
-                : "hidden lg:flex"
-            }`}
-          >
-            <div className="flex h-10 shrink-0 items-center justify-between border-b px-4">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="size-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Agent</span>
+          {assessmentMode && (
+            <LearningProfileForm
+              initialData={userProfile ?? undefined}
+              onSave={(profileData) =>
+                dataStore.setLearningProfile(profileData)
+              }
+              onCancel={() => handleSetAssessmentMode(false)}
+            />
+          )}
+
+          <div className="flex flex-1 overflow-hidden">
+            {/* Left Sidebar - Create artifacts */}
+            <aside className="hidden w-48 shrink-0 border-r lg:flex lg:flex-col">
+              <div className="flex-1 overflow-y-auto p-3">
+                <ArtifactGrid
+                  onOpenType={handleOpenArtifactType}
+                  activeType={activeArtifactType}
+                />
               </div>
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                className="lg:hidden"
-                onClick={() => handleSetAgentOpen(false)}
-              >
-                <ChevronRight className="size-4" />
-              </Button>
-            </div>
-            <VoiceAgent />
-          </aside>
-        </div>
-      </Tabs>
-    </Suspense>
+            </aside>
+
+            {/* Main Content */}
+            <main className="relative flex-1 overflow-hidden">
+              {activeArtifactType ? (
+                <ArtifactCanvas
+                  activeType={activeArtifactType}
+                  scrollToId={scrollToArtifactId}
+                  topicSlug={slugify(selectedTopic.name)}
+                  topicName={selectedTopic.name}
+                  topicConcepts={selectedTopic.masteryData.map((m) => m.concept)}
+                  onClose={handleCloseCanvas}
+                />
+              ) : (
+                <div className="h-full overflow-y-auto">
+                  <TabsContent value="guide" className="p-4 sm:p-6">
+                    <GuideTab blocks={guideBlocks} />
+                  </TabsContent>
+
+                  <TabsContent value="sources" className="p-4 sm:p-6">
+                    <SourcesTab
+                      topicSlug={slugify(selectedTopic.name)}
+                      fallbackFiles={selectedTopic.files}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="progress" className="p-4 sm:p-6">
+                    <ProgressTab
+                      mastery={masteryScores}
+                      project={selectedProject}
+                    />
+                  </TabsContent>
+                </div>
+              )}
+            </main>
+
+            {/* Agent Right Sidebar - Desktop: always visible, Mobile: toggleable */}
+            <aside
+              className={`flex w-full flex-col overflow-hidden border-l lg:w-96 lg:shrink-0 ${
+                agentOpen
+                  ? "fixed inset-0 top-14 z-30 bg-background lg:static lg:z-auto"
+                  : "hidden lg:flex"
+              }`}
+            >
+              <div className="flex h-10 shrink-0 items-center justify-between border-b px-4">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="size-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Agent</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => setVoiceMode((v) => !v)}
+                    title={
+                      voiceMode ? "Switch to text chat" : "Switch to voice"
+                    }
+                  >
+                    {voiceMode ? (
+                      <MessageSquare className="size-4" />
+                    ) : (
+                      <Mic className="size-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    className="lg:hidden"
+                    onClick={() => handleSetAgentOpen(false)}
+                  >
+                    <ChevronRight className="size-4" />
+                  </Button>
+                </div>
+              </div>
+              {voiceMode ? (
+                <VoiceAgent />
+              ) : (
+                <AgentTab
+                  onOpenArtifact={handleOpenArtifactType}
+                  onToolResult={handleAgentToolResult}
+                />
+              )}
+            </aside>
+          </div>
+        </Tabs>
+      </Suspense>
+    </TooltipProvider>
   );
 }
 
@@ -703,9 +892,7 @@ function AuditDialog() {
       <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Audit Trail</DialogTitle>
-          <DialogDescription>
-            Observe &rarr; Analyze &rarr; Act chain for every adaptation
-          </DialogDescription>
+          <DialogDescription className="sr-only">Audit Trail</DialogDescription>
         </DialogHeader>
         <div className="flex items-center gap-1 border-b pb-2 -mx-6 px-6">
           <button
@@ -1677,14 +1864,14 @@ export function ConnectDialog() {
                   Connect {selectedInfo.label}
                 </DialogTitle>
               </div>
-              <DialogDescription>{selectedInfo.description}</DialogDescription>
+              <DialogDescription className="sr-only">
+                Connect {selectedInfo.label}
+              </DialogDescription>
             </>
           ) : (
             <>
               <DialogTitle>Connect</DialogTitle>
-              <DialogDescription>
-                Link external services and export your data
-              </DialogDescription>
+              <DialogDescription className="sr-only">Connect</DialogDescription>
             </>
           )}
         </DialogHeader>
@@ -1802,7 +1989,7 @@ function VoiceAgentUI({ onDisconnect }: { onDisconnect: () => void }) {
   const connectionState = useConnectionState();
   const room = useRoomContext();
   const [isMuted, setIsMuted] = useState(false);
-  const [vizType, setVizType] = useState<"bars" | "wave" | "aura">("bars");
+  const [vizType, setVizType] = usePreference("vizType");
   const [elapsed, setElapsed] = useState(0);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
 
@@ -1902,6 +2089,11 @@ function VoiceAgentUI({ onDisconnect }: { onDisconnect: () => void }) {
     }
   }, [room, isMuted]);
 
+  useHotkeys({
+    "mod+m": toggleMute,
+    "mod+.": onDisconnect,
+  });
+
   const formatTime = (s: number) =>
     `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
@@ -1919,46 +2111,44 @@ function VoiceAgentUI({ onDisconnect }: { onDisconnect: () => void }) {
     }
   })();
 
-  const isSpeaking = agentState === "speaking";
-
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className="relative flex flex-1 flex-col overflow-hidden">
+      {/* Background: voice visualizer — behind everything, allowed to bleed */}
+      <div className="absolute inset-0 pointer-events-none grayscale opacity-30 flex items-center justify-center z-0">
+        {vizType === "bars" && (
+          <AgentAudioVisualizerBar
+            state={agentState}
+            audioTrack={audioTrack}
+            barCount={5}
+            size="lg"
+          />
+        )}
+        {vizType === "wave" && (
+          <AgentAudioVisualizerWave
+            state={agentState}
+            audioTrack={audioTrack}
+            size="xl"
+          />
+        )}
+        {vizType === "aura" && (
+          <AgentAudioVisualizerAura
+            state={agentState}
+            audioTrack={audioTrack}
+            size="xl"
+          />
+        )}
+      </div>
+
       {/* Status */}
-      <div className="flex flex-col items-center gap-1 pt-6 shrink-0">
+      <div className="relative z-10 flex flex-col items-center gap-1 pt-6 shrink-0">
         <span className="text-xs text-muted-foreground">{statusText}</span>
         <span className="text-xs tabular-nums text-muted-foreground">
           {formatTime(elapsed)}
         </span>
       </div>
 
-      {/* Main content: visualizer background + transcript foreground */}
-      <div className="relative flex flex-1 flex-col overflow-hidden">
-        {/* Background: voice visualizer — always visible, grayscale, non-interactive */}
-        <div className="absolute inset-0 pointer-events-none grayscale opacity-30 flex items-center justify-center">
-          {vizType === "bars" && (
-            <AgentAudioVisualizerBar
-              state={agentState}
-              audioTrack={audioTrack}
-              barCount={5}
-              size="lg"
-            />
-          )}
-          {vizType === "wave" && (
-            <AgentAudioVisualizerWave
-              state={agentState}
-              audioTrack={audioTrack}
-              size="lg"
-            />
-          )}
-          {vizType === "aura" && (
-            <AgentAudioVisualizerAura
-              state={agentState}
-              audioTrack={audioTrack}
-              size="lg"
-            />
-          )}
-        </div>
-
+      {/* Main content: transcript foreground */}
+      <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
         {/* Foreground: transcript — scrollable, interactive */}
         <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
           <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden px-4">
@@ -2018,6 +2208,7 @@ function VoiceAgentUI({ onDisconnect }: { onDisconnect: () => void }) {
       >
         <div className="flex gap-2">
           <Input
+            data-chat-input
             placeholder="Type a message while in voice mode..."
             value={textInput}
             onChange={(e) => setTextInput(e.target.value)}
@@ -2040,9 +2231,16 @@ function VoiceAgentUI({ onDisconnect }: { onDisconnect: () => void }) {
 
       {/* Controls */}
       <div className="flex shrink-0 items-center justify-between border-t p-4 pb-6">
-        {/* Spacer for symmetry */}
-        <div className="w-8" />
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="destructive"
+            size="icon"
+            onClick={onDisconnect}
+            className="group"
+          >
+            <PhoneOff className="size-4 hidden group-hover:block" />
+            <Mic className="size-4 group-hover:hidden" />
+          </Button>
           <Button
             variant={isMuted ? "destructive" : "outline"}
             size="icon"
@@ -2053,21 +2251,6 @@ function VoiceAgentUI({ onDisconnect }: { onDisconnect: () => void }) {
             ) : (
               <Mic className="size-4" />
             )}
-          </Button>
-          <Button
-            variant={
-              connectionState === ConnectionState.Connected
-                ? "default"
-                : "outline"
-            }
-            size="icon-lg"
-            className={isSpeaking ? "animate-pulse" : ""}
-            disabled
-          >
-            <Mic className="size-5" />
-          </Button>
-          <Button variant="destructive" size="icon" onClick={onDisconnect}>
-            <Phone className="size-4" />
           </Button>
         </div>
         <DropdownMenu>
@@ -2105,6 +2288,7 @@ function VoiceAgent() {
   const [requesting, setRequesting] = useState(false);
   const [connection, setConnection] = useState<LiveKitConnection | null>(null);
   const [tokenError, setTokenError] = useState<string | null>(null);
+  const [userDisconnected, setUserDisconnected] = useState(false);
   const fetchingRef = useRef(false);
 
   const requestMic = () => {
@@ -2123,9 +2307,15 @@ function VoiceAgent() {
     requestMic();
   }, [requestMic]);
 
-  // Fetch token once mic is granted
+  // Fetch token once mic is granted (skip if user disconnected)
   useEffect(() => {
-    if (micAccess !== "granted" || connection || fetchingRef.current) return;
+    if (
+      micAccess !== "granted" ||
+      connection ||
+      fetchingRef.current ||
+      userDisconnected
+    )
+      return;
     fetchingRef.current = true;
     fetch("/api/livekit-token", { method: "POST" })
       .then((res) => {
@@ -2139,9 +2329,16 @@ function VoiceAgent() {
         setTokenError(err instanceof Error ? err.message : "Connection failed");
         fetchingRef.current = false;
       });
-  }, [micAccess, connection]);
+  }, [micAccess, connection, userDisconnected]);
 
   const handleDisconnect = useCallback(() => {
+    setConnection(null);
+    setUserDisconnected(true);
+    fetchingRef.current = false;
+  }, []);
+
+  const handleReconnect = useCallback(() => {
+    setUserDisconnected(false);
     setConnection(null);
     fetchingRef.current = false;
   }, []);
@@ -2210,10 +2407,25 @@ function VoiceAgent() {
   if (!connection) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">
-          Connecting to voice agent...
-        </p>
+        {userDisconnected ? (
+          <>
+            <div className="flex size-16 items-center justify-center rounded-full bg-muted">
+              <Phone className="size-7 text-muted-foreground" />
+            </div>
+            <p className="text-sm text-muted-foreground">Call ended</p>
+            <Button variant="outline" size="sm" onClick={handleReconnect}>
+              <Phone className="size-3.5" data-icon="inline-start" />
+              Reconnect
+            </Button>
+          </>
+        ) : (
+          <>
+            <Loader2 className="size-8 animate-spin text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              Connecting to voice agent...
+            </p>
+          </>
+        )}
       </div>
     );
   }
@@ -2235,32 +2447,20 @@ function VoiceAgent() {
 // ── Agent Chat Tab ──
 
 const TOOL_TYPE_TO_ARTIFACT: Record<string, ArtifactType> = {
-  // Current tool names (artifact-tools.ts)
-  create_adaptive_quiz: "quiz",
-  create_adaptive_flashcards: "flashcards",
+  create_quiz: "quiz",
+  create_flashcards: "flashcards",
   create_mind_map: "mindmap",
   create_slides: "slidedeck",
   create_spatial: "spatial",
-  // Legacy / backwards-compat aliases
-  create_quiz: "quiz",
-  create_flashcards: "flashcards",
-  create_mindmap: "mindmap",
-  create_slidedeck: "slidedeck",
   create_learning_guide: "report",
 };
 
 const TOOL_LABELS: Record<string, string> = {
-  // Current tool names
-  create_adaptive_quiz: "View Quiz",
-  create_adaptive_flashcards: "View Flashcards",
+  create_quiz: "View Quiz",
+  create_flashcards: "View Flashcards",
   create_mind_map: "View Mind Map",
   create_slides: "View Slides",
   create_spatial: "View 3D Model",
-  // Legacy aliases
-  create_quiz: "View Quiz",
-  create_flashcards: "View Flashcards",
-  create_mindmap: "View Mind Map",
-  create_slidedeck: "View Slides",
   create_learning_guide: "View Learning Guide",
   navigate_to_view: "Navigating...",
   select_topic: "Switching topic...",
@@ -2285,7 +2485,7 @@ const STATE_TOOL_NAMES = new Set([
   "get_current_state",
 ]);
 
-function _AgentTab({
+function AgentTab({
   onOpenArtifact,
   onToolResult,
 }: {
@@ -2500,6 +2700,7 @@ function _AgentTab({
       <form onSubmit={handleSubmit} className="shrink-0 border-t p-4">
         <div className="flex gap-2">
           <Input
+            data-chat-input
             placeholder="Ask your learning agent..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -2519,153 +2720,33 @@ function _AgentTab({
   );
 }
 
-// ── Adjustments Dialog ──
-
-function AdjustmentsDialog() {
-  const [dailyMinutes, setDailyMinutes] = useState([60]);
-  const [difficulty, setDifficulty] = useState([3]);
-  const [reviewFrequency, setReviewFrequency] = useState([4]);
-
-  const handleSlider =
-    (setter: (v: number[]) => void) => (value: number | readonly number[]) => {
-      setter(Array.isArray(value) ? [...value] : [value]);
-    };
-
-  return (
-    <Dialog>
-      <DialogTrigger render={<Button size="lg" variant="outline" />}>
-        Make Adjustments
-      </DialogTrigger>
-      <DialogContent className="flex max-h-[85vh] flex-col sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Adjust Your Guide</DialogTitle>
-          <DialogDescription>
-            Fine-tune your learning preferences and regenerate the guide.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="min-h-0 flex-1 overflow-y-auto -mx-6 px-6">
-          <Accordion defaultValue={["schedule", "difficulty", "focus"]}>
-            <AccordionItem value="schedule">
-              <AccordionTrigger>Schedule &amp; Pacing</AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <Label>Daily study time: {dailyMinutes[0]} min</Label>
-                  <Slider
-                    value={dailyMinutes}
-                    onValueChange={handleSlider(setDailyMinutes)}
-                    min={15}
-                    max={180}
-                    step={15}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Preferred start day</Label>
-                  <Input type="date" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Days per week</Label>
-                  <Input type="number" min={1} max={7} defaultValue={5} />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="difficulty">
-              <AccordionTrigger>Difficulty &amp; Depth</AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <Label>
-                    Challenge level:{" "}
-                    {
-                      ["Beginner", "Easy", "Moderate", "Hard", "Expert"][
-                        difficulty[0] - 1
-                      ]
-                    }
-                  </Label>
-                  <Slider
-                    value={difficulty}
-                    onValueChange={handleSlider(setDifficulty)}
-                    min={1}
-                    max={5}
-                    step={1}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>
-                    Review frequency: every {reviewFrequency[0]} blocks
-                  </Label>
-                  <Slider
-                    value={reviewFrequency}
-                    onValueChange={handleSlider(setReviewFrequency)}
-                    min={1}
-                    max={10}
-                    step={1}
-                  />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="focus">
-              <AccordionTrigger>Focus Areas</AccordionTrigger>
-              <AccordionContent className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <Label>Topics to prioritize</Label>
-                  <Input placeholder="e.g. eigenvalues, matrix decomposition" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Topics to skip or de-emphasize</Label>
-                  <Input placeholder="e.g. proofs, history" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Learning goal</Label>
-                  <Input placeholder="e.g. pass final exam, build intuition" />
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </div>
-
-        <DialogFooter>
-          <Button className="w-full" size="lg">
-            Regenerate Guide
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 // ── Guide Tab ──
 
 function GuideTab({ blocks }: { blocks: MockGuideBlock[] }) {
   const blockId = useId();
   const days = Array.from(new Set(blocks.map((b) => b.dayIndex))).sort();
 
+  if (blocks.length === 0) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <Alert>
+          <BookOpen className="size-4" />
+          <AlertTitle>No guide yet</AlertTitle>
+          <AlertDescription>
+            Upload sources and ask the agent to generate a learning guide for
+            this topic.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <div className="rounded-xl border p-6">
-        <h1 className="text-2xl font-bold tracking-tight">
-          <ShinyText
-            text="Welcome to your generated guide"
-            speed={3}
-            color="#64748b"
-            shineColor="#8b5cf6"
-            className="text-2xl font-bold tracking-tight"
-          />
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          Upload your study materials, and Core Model builds a scientific
-          profile of how you actually learn — then generates an adaptive guide
-          with evidence-traced recommendations that evolve as you do.
-        </p>
-        <div className="mt-4 flex gap-3">
-          <Button size="lg">Get Started</Button>
-          <AdjustmentsDialog />
-        </div>
-      </div>
-
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold">7-Day Learning Guide</h2>
+        <h2 className="text-base font-semibold">
+          {days.length}-Day Learning Guide
+        </h2>
         <Badge variant="outline">
           {blocks.filter((b) => b.completed).length}/{blocks.length} completed
         </Badge>
@@ -2812,98 +2893,90 @@ function SourcesTab({
         sizeBytes: f.size,
         progress: 0,
         status: "uploading" as const,
+        abortController: new AbortController(),
       }));
 
       setUploads((prev) => [...prev, ...newUploads]);
 
-      // Upload each file directly to Vercel Blob via client-side upload.
-      // The route handler issues a signed token (JSON, no FormData parsing),
-      // the browser uploads to Vercel Blob with real XHR progress events,
-      // then Vercel Blob calls onUploadCompleted to write the DB record.
-      await Promise.all(
-        files.map(async (file, idx) => {
-          const tempId = newUploads[idx].tempId;
-          const safeName =
-            file.name
-              .replace(/[/\\]/g, "_")
-              .replace(/\.\./g, "_")
-              .replace(/[\x00-\x1f]/g, "")
-              .replace(/^\.+/, "")
-              .slice(0, 255)
-              .trim() || "unnamed";
+      // Upload all files in a single request
+      const formData = new FormData();
+      formData.append("topicSlug", topicSlug);
+      for (const file of files) {
+        formData.append("files", file);
+      }
 
-          try {
-            // Append a short random suffix to avoid "blob already exists" errors
-            // when re-uploading the same filename. We do this client-side since
-            // addRandomSuffix is only available on the server-side put() API.
-            const ext = safeName.includes(".")
-              ? `.${safeName.split(".").pop()}`
-              : "";
-            const base = ext
-              ? safeName.slice(0, safeName.length - ext.length)
-              : safeName;
-            const suffix = Math.random().toString(36).slice(2, 8);
-            const uniqueName = `${base}-${suffix}${ext}`;
+      // Use a shared abort controller for the batch
+      const controller = new AbortController();
+      for (const u of newUploads) {
+        u.abortController = controller;
+      }
 
-            const blob = await upload(
-              `sources/${topicSlug}/${uniqueName}`,
-              file,
-              {
-                access: "public",
-                handleUploadUrl: "/api/sources",
-                clientPayload: JSON.stringify({ topicSlug, size: file.size }),
-                onUploadProgress: ({ percentage }) => {
-                  setUploads((prev) =>
-                    prev.map((u) =>
-                      u.tempId === tempId
-                        ? { ...u, progress: Math.round(percentage) }
-                        : u,
-                    ),
-                  );
-                },
-              },
-            );
+      try {
+        const res = await fetch("/api/sources", {
+          method: "POST",
+          body: formData,
+          signal: controller.signal,
+        });
 
-            // Register the blob in the DB immediately — don't rely on the
-            // onUploadCompleted webhook which is async and unreliable in dev.
-            const regRes = await fetch("/api/sources/register", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                blobUrl: blob.url,
-                filename: safeName,
-                mimeType: blob.contentType ?? file.type ?? "application/octet-stream",
-                sizeBytes: file.size,
-                topicSlug,
-              }),
-            });
-            if (!regRes.ok) {
-              const err = await regRes.json().catch(() => ({}));
-              throw new Error((err as { error?: string }).error ?? "Failed to register upload");
-            }
-
-            // Remove this file from the uploading list on success
-            setUploads((prev) => prev.filter((u) => u.tempId !== tempId));
-          } catch (err) {
-            const message =
-              err instanceof Error ? err.message : "Upload failed";
-            // Surface quota errors in the banner; others stay in the item
-            if (message.toLowerCase().includes("quota")) {
-              setQuotaError(message);
-            }
-            setUploads((prev) =>
-              prev.map((u) =>
-                u.tempId === tempId
-                  ? { ...u, status: "error" as const, error: message }
-                  : u,
-              ),
-            );
+        if (!res.ok) {
+          const err = await res
+            .json()
+            .catch(() => ({ error: "Upload failed" }));
+          if (res.status === 413) {
+            setQuotaError(err.error ?? "Storage quota exceeded");
           }
-        }),
-      );
+          setUploads((prev) =>
+            prev.map((u) =>
+              newUploads.some((n) => n.tempId === u.tempId)
+                ? {
+                    ...u,
+                    status: "error" as const,
+                    error: err.error ?? "Upload failed",
+                  }
+                : u,
+            ),
+          );
+          return;
+        }
 
-      // Refresh the source list after all uploads finish
-      fetchSources();
+        const data = await res.json();
+        // Remove completed uploads from the upload list
+        setUploads((prev) =>
+          prev.filter((u) => !newUploads.some((n) => n.tempId === u.tempId)),
+        );
+
+        // Check for per-file errors
+        const errors = data.results.filter((r: { error?: string }) => r.error);
+        if (errors.length > 0) {
+          setUploads((prev) => [
+            ...prev,
+            ...errors.map((e: { filename: string; error: string }) => ({
+              tempId: crypto.randomUUID(),
+              filename: e.filename,
+              sizeBytes: 0,
+              progress: 0,
+              status: "error" as const,
+              error: e.error,
+            })),
+          ]);
+        }
+
+        fetchSources();
+      } catch (err) {
+        if ((err as Error).name === "AbortError") {
+          setUploads((prev) =>
+            prev.filter((u) => !newUploads.some((n) => n.tempId === u.tempId)),
+          );
+          return;
+        }
+        setUploads((prev) =>
+          prev.map((u) =>
+            newUploads.some((n) => n.tempId === u.tempId)
+              ? { ...u, status: "error" as const, error: "Network error" }
+              : u,
+          ),
+        );
+      }
     },
     [topicSlug, fetchSources],
   );
@@ -3175,13 +3248,13 @@ function SourcesTab({
       </div>
 
       {/* Academic Resources */}
-      <AcademicResourcesList />
+      <AcademicResourcesList sourceCount={sources.length} />
     </div>
   );
 }
 
-function AcademicResourcesList() {
-  const [open, setOpen] = useState(false);
+function AcademicResourcesList({ sourceCount }: { sourceCount: number }) {
+  const [open, setOpen] = useState(sourceCount < 2);
   const resourceId = useId();
 
   return (
@@ -3191,7 +3264,7 @@ function AcademicResourcesList() {
         onClick={() => setOpen((v) => !v)}
         className="text-xs font-medium text-muted-foreground uppercase cursor-pointer hover:text-foreground transition-colors"
       >
-        Academic Resources ({ACADEMIC_RESOURCES.length})
+        Academic Resources
       </button>
       {open &&
         ACADEMIC_RESOURCES.map((resource) => (

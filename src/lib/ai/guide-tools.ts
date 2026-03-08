@@ -1,5 +1,6 @@
-import { generateObject, tool } from "ai";
+import { generateText, Output, tool } from "ai";
 import { z } from "zod";
+import { loadSourceContent } from "@/lib/sources/load-sources";
 import { getCitationBlock, getCitationGuardrails } from "./citations";
 import { openai } from "./provider";
 import { GuideBlockSchema, LearningGuideSchema } from "./schemas";
@@ -129,6 +130,11 @@ const guideGenerationInputSchema = z.object({
   metacognitiveAwareness: z.enum(["low", "medium", "high"]),
   motivationalFocus: z.enum(["autonomy", "competence", "relatedness"]),
   coachingTone: z.string(),
+  sourceIds: z
+    .array(z.string())
+    .optional()
+    .describe("IDs of uploaded source materials to use as reference content"),
+  userId: z.string().optional().describe("User ID for source content access"),
 });
 
 type GuideGenerationInput = z.infer<typeof guideGenerationInputSchema>;
@@ -143,12 +149,26 @@ export const guideTools = {
     execute: async (input: GuideGenerationInput) => {
       const totalWeeklyMinutes = input.minutesPerDay * input.daysPerWeek;
 
-      const { object } = await generateObject({
+      let sourceContent: string | undefined;
+      if (input.sourceIds?.length && input.userId) {
+        sourceContent = await loadSourceContent(input.sourceIds, input.userId);
+      }
+
+      const prompt =
+        buildGuidePrompt(input, totalWeeklyMinutes) +
+        (sourceContent
+          ? `\n\n## Reference Material\nUse this material as the primary content source for concepts and examples:\n${sourceContent}`
+          : "");
+
+      const result = await generateText({
         model: openai("gpt-4o-mini"),
-        schema: LearningGuideSchema,
-        prompt: buildGuidePrompt(input, totalWeeklyMinutes),
+        output: Output.object({ schema: LearningGuideSchema }),
+        prompt,
       });
-      return { type: "learning_guide" as const, data: object };
+      if (!result.output) {
+        throw new Error("Failed to generate learning guide");
+      }
+      return { type: "learning_guide" as const, data: result.output };
     },
   }),
 
@@ -183,9 +203,9 @@ export const guideTools = {
             ? "every other activity"
             : "once at start";
 
-      const { object } = await generateObject({
+      const result = await generateText({
         model: openai("gpt-4o-mini"),
-        schema: PracticeSessionSchema,
+        output: Output.object({ schema: PracticeSessionSchema }),
         prompt: `You are an evidence-based learning guide generating a practice session.
 
 ${getCitationGuardrails()}
@@ -234,7 +254,10 @@ ${getCitationBlock([
 - NEVER suggest passive rereading or highlighting as practice [DUNLOSKY_2013].
 - Set difficulty based on prior knowledge: ${input.priorKnowledgeLevel === "beginner" ? "foundational → standard" : input.priorKnowledgeLevel === "advanced" ? "standard → challenging" : "mix all levels"}.`,
       });
-      return { type: "practice_session" as const, data: object };
+      if (!result.output) {
+        throw new Error("Failed to generate practice session");
+      }
+      return { type: "practice_session" as const, data: result.output };
     },
   }),
 
@@ -272,9 +295,9 @@ ${getCitationBlock([
         ) /
         input.conceptsAttempted.reduce((sum, c) => sum + c.itemsAttempted, 0);
 
-      const { object } = await generateObject({
+      const result = await generateText({
         model: openai("gpt-4o-mini"),
-        schema: SessionWrapSchema,
+        output: Output.object({ schema: SessionWrapSchema }),
         prompt: `You are an evidence-based learning coach generating a session wrap-up.
 
 ${getCitationGuardrails()}
@@ -306,7 +329,10 @@ ${input.conceptsAttempted.map((c) => `- ${c.concept}: ${c.itemsAttempted} items,
    - Bad: "Great job! Keep it up!" (empty praise)
 6. Use coaching tone: ${input.coachingTone}.`,
       });
-      return { type: "session_wrap" as const, data: object };
+      if (!result.output) {
+        throw new Error("Failed to generate session wrap");
+      }
+      return { type: "session_wrap" as const, data: result.output };
     },
   }),
 
@@ -356,9 +382,9 @@ ${input.conceptsAttempted.map((c) => `- ${c.concept}: ${c.itemsAttempted} items,
           "R6: Motivation support needed → shorter sessions, immediate wins [RYAN_DECI_2000]",
       };
 
-      const { object } = await generateObject({
+      const result = await generateText({
         model: openai("gpt-4o-mini"),
-        schema: AdaptiveGuideAdjustmentSchema,
+        output: Output.object({ schema: AdaptiveGuideAdjustmentSchema }),
         prompt: `You are an evidence-based adaptive learning system adjusting a learning guide.
 
 ${getCitationGuardrails()}
@@ -418,7 +444,10 @@ ${policyRuleMap[input.triggerEvent.type] ?? "No direct rule match — use closes
 10. Reference the block IDs being modified.
 11. New blocks must conform to the GuideBlock schema.`,
       });
-      return { type: "guide_adjustment" as const, data: object };
+      if (!result.output) {
+        throw new Error("Failed to adjust guide");
+      }
+      return { type: "guide_adjustment" as const, data: result.output };
     },
   }),
 
@@ -466,9 +495,9 @@ ${policyRuleMap[input.triggerEvent.type] ?? "No direct rule match — use closes
         ),
       });
 
-      const { object } = await generateObject({
+      const result = await generateText({
         model: openai("gpt-4o-mini"),
-        schema: StrategyRecommendationSchema,
+        output: Output.object({ schema: StrategyRecommendationSchema }),
         prompt: `You are an evidence-based learning scientist recommending study strategies.
 
 ${getCitationGuardrails()}
@@ -512,9 +541,12 @@ LOW utility:
 5. Implementation instructions must be concrete and time-scoped to ${input.availableMinutesPerDay} min/day.
 6. NEVER recommend "matching to learning style" [PASHLER_2008].`,
       });
+      if (!result.output) {
+        throw new Error("Failed to generate strategy recommendations");
+      }
       return {
         type: "strategy_recommendations" as const,
-        data: object,
+        data: result.output,
       };
     },
   }),

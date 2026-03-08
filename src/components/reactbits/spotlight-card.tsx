@@ -28,12 +28,15 @@ export const SpotlightCard: React.FC<SpotlightCardProps> = ({
     setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
   };
 
-  const handleFocus = () => {
+  const handleFocus: React.FocusEventHandler<HTMLDivElement> = (e) => {
+    // Only respond to focus on this element, not bubbled from children/parent
+    if (e.target !== divRef.current) return;
     setIsFocused(true);
     setOpacity(0.6);
   };
 
-  const handleBlur = () => {
+  const handleBlur: React.FocusEventHandler<HTMLDivElement> = (e) => {
+    if (e.target !== divRef.current) return;
     setIsFocused(false);
     setOpacity(0);
   };

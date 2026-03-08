@@ -13,7 +13,8 @@ import {
   type LearningProfileData,
   MOCK_COMPLETED_PROFILE,
 } from "@/components/learning-profile-form";
-import { type MockGuideBlock, type MockMastery, TOPICS } from "@/lib/topics";
+import type { LearningProfileAnalysis } from "@/lib/ai/schemas";
+import type { MockGuideBlock, MockMastery } from "@/lib/topics";
 
 // ── Types ──
 
@@ -53,6 +54,7 @@ export type DataState = {
   calibrationTendency: CalibrationTendency;
   systemAdaptations: SystemAdaptation[];
   activeWorkflowRunId: string | null;
+  assessmentId: string | null;
 };
 
 // ── Seed values ──
@@ -121,7 +123,6 @@ const INITIAL_SYSTEM_ADAPTATIONS: SystemAdaptation[] = [
 ];
 
 function buildInitialArtifacts(): Map<string, Artifact> {
-  // Start empty — all artifacts are generated on demand via AI or agent tools
   return new Map<string, Artifact>();
 }
 
@@ -144,14 +145,15 @@ function createDataStore() {
   let state: DataState = {
     artifacts: initialArtifacts,
     artifactSeenCounts: buildInitialSeenCounts(initialArtifacts),
-    guideBlocks: TOPICS[0].guideBlocks,
+    guideBlocks: [],
     learningProfile: MOCK_COMPLETED_PROFILE,
-    masteryScores: TOPICS[0].masteryData,
+    masteryScores: [],
     profileStrengths: INITIAL_PROFILE_STRENGTHS,
     motivationProfile: INITIAL_MOTIVATION_PROFILE,
     calibrationTendency: INITIAL_CALIBRATION_TENDENCY,
     systemAdaptations: INITIAL_SYSTEM_ADAPTATIONS,
     activeWorkflowRunId: null,
+    assessmentId: null,
   };
 
   const listeners = new Set<Listener>();
@@ -245,6 +247,73 @@ function createDataStore() {
     notify();
   }
 
+  function hydrateFromAssessment(assessment: {
+    id: string;
+    responses: LearningProfileData | null;
+    fingerprint: LearningProfileAnalysis | null;
+  }) {
+    const updates: Partial<DataState> = { assessmentId: assessment.id };
+
+    if (assessment.responses) {
+      updates.learningProfile = assessment.responses;
+    }
+
+    if (assessment.fingerprint) {
+      const fp = assessment.fingerprint;
+
+      // Map strengths
+      updates.profileStrengths = fp.strengths.map((s, i) => ({
+        area: s,
+        score: 0.8 - i * 0.05,
+        label: i < 2 ? "Strong" : "Good",
+        description: s,
+      }));
+
+      // Map calibration
+      const calMap: Record<string, CalibrationTendency> = {
+        "over-confident": {
+          tendency: "Overconfident",
+          avgConfidence: 0.8,
+          avgAccuracy: 0.55,
+          gap: 0.25,
+        },
+        "well-calibrated": {
+          tendency: "Well Calibrated",
+          avgConfidence: 0.7,
+          avgAccuracy: 0.68,
+          gap: 0.02,
+        },
+        "under-confident": {
+          tendency: "Under-confident",
+          avgConfidence: 0.45,
+          avgAccuracy: 0.7,
+          gap: 0.25,
+        },
+      };
+      updates.calibrationTendency =
+        calMap[fp.cognitiveProfile.calibrationAccuracy] ??
+        calMap["well-calibrated"];
+
+      // Map motivation from responses if available
+      if (assessment.responses) {
+        updates.motivationProfile = {
+          autonomy: assessment.responses.motivationAutonomy / 100,
+          competence: assessment.responses.motivationCompetence / 100,
+          relatedness: assessment.responses.motivationRelatedness / 100,
+        };
+      }
+
+      // Map recommended strategies to system adaptations
+      updates.systemAdaptations = fp.recommendedStrategies.map((s) => ({
+        rule: s.strategy,
+        reason: s.rationale,
+      }));
+    }
+
+    state = { ...state, ...updates };
+    notify();
+  }
+
   function markArtifactTypeSeen(type: ArtifactType) {
     const currentCount = Array.from(state.artifacts.values()).filter(
       (a) => a.type === type,
@@ -289,6 +358,7 @@ function createDataStore() {
     setSystemAdaptations,
     setMotivationProfile,
     setActiveWorkflowRunId,
+    hydrateFromAssessment,
     markArtifactTypeSeen,
     // Selectors
     getArtifacts,

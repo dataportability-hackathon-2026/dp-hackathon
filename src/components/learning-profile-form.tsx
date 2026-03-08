@@ -14,7 +14,7 @@ import {
   Target,
   X,
 } from "lucide-react";
-import { useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -1453,13 +1453,99 @@ export function LearningProfileForm({
     initialData ?? DEFAULT_PROFILE,
   );
   const [saved, setSaved] = useState(false);
+  const [assessmentId, setAssessmentId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const formId = useId();
+
+  // Create assessment on mount
+  useEffect(() => {
+    async function initAssessment() {
+      try {
+        // Check for existing in-progress assessment
+        const listRes = await fetch("/api/assessments?limit=1");
+        if (listRes.ok) {
+          const list = await listRes.json();
+          const inProgress = list.find(
+            (a: { status: string }) => a.status === "in_progress",
+          );
+          if (inProgress) {
+            setAssessmentId(inProgress.id);
+            if (inProgress.responses) {
+              setData((prev) => ({ ...prev, ...inProgress.responses }));
+            }
+            if (
+              typeof inProgress.currentStep === "number" &&
+              inProgress.currentStep > 0
+            ) {
+              setScreen(inProgress.currentStep);
+            }
+            return;
+          }
+        }
+
+        // Create new assessment
+        const res = await fetch("/api/assessments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "full_onboarding" }),
+        });
+        if (res.ok) {
+          const created = await res.json();
+          setAssessmentId(created.id);
+        }
+      } catch {
+        // Silently fail — form still works without persistence
+      }
+    }
+    void initAssessment();
+  }, []);
+
+  // Auto-save on step navigation (debounced)
+  const saveProgress = useCallback(
+    (step: number, currentData: typeof data) => {
+      if (!assessmentId) return;
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = setTimeout(async () => {
+        setSaving(true);
+        try {
+          await fetch(`/api/assessments/${assessmentId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ currentStep: step, responses: currentData }),
+          });
+        } catch {
+          // Silently fail
+        } finally {
+          setSaving(false);
+        }
+      }, 500);
+    },
+    [assessmentId],
+  );
 
   const update = (partial: Partial<LearningProfileData>) => {
     setData((prev) => ({ ...prev, ...partial }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (assessmentId) {
+      try {
+        const res = await fetch(`/api/assessments/${assessmentId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "completed", responses: data }),
+        });
+        if (res.ok) {
+          const completed = await res.json();
+          // Hydrate the data store with the completed assessment
+          const { dataStore } = await import("@/lib/data-store");
+          dataStore.hydrateFromAssessment(completed);
+        }
+      } catch {
+        // Still call onSave even if DB save fails
+      }
+    }
     onSave(data);
     setSaved(true);
   };
@@ -1521,6 +1607,11 @@ export function LearningProfileForm({
         <span className="text-sm text-muted-foreground">
           Screen {screen + 1} of {TOTAL_SCREENS}: {screenLabels[screen]}
         </span>
+        {saving && (
+          <span className="text-xs text-muted-foreground animate-pulse">
+            Saving...
+          </span>
+        )}
         <button
           type="button"
           onClick={onCancel}
@@ -1544,7 +1635,10 @@ export function LearningProfileForm({
               <button
                 key={`${formId}-dot-${i}`}
                 type="button"
-                onClick={() => setScreen(i)}
+                onClick={() => {
+                  setScreen(i);
+                  saveProgress(i, data);
+                }}
                 className={`size-2 rounded-full transition-colors ${
                   i === screen
                     ? "bg-primary"
@@ -1566,19 +1660,32 @@ export function LearningProfileForm({
       {/* Footer */}
       <div className="shrink-0 border-t px-6 py-4">
         <div className="mx-auto flex max-w-2xl items-center justify-between">
-          <Button
-            variant="outline"
-            onClick={() => setScreen(Math.max(0, screen - 1))}
-            disabled={screen === 0}
-          >
-            <ChevronLeft className="size-4" data-icon="inline-start" />
-            Back
-          </Button>
+          {screen > 0 ? (
+            <Button
+              variant="outline"
+              onClick={() => {
+                const prev = screen - 1;
+                setScreen(prev);
+                saveProgress(prev, data);
+              }}
+            >
+              <ChevronLeft className="size-4" data-icon="inline-start" />
+              Back
+            </Button>
+          ) : (
+            <div />
+          )}
           <span className="text-xs text-muted-foreground">
             {screen + 1} / {TOTAL_SCREENS}
           </span>
           {screen < TOTAL_SCREENS - 1 ? (
-            <Button onClick={() => setScreen(screen + 1)}>
+            <Button
+              onClick={() => {
+                const next = screen + 1;
+                setScreen(next);
+                saveProgress(next, data);
+              }}
+            >
               Next
               <ChevronRight className="size-4" data-icon="inline-end" />
             </Button>

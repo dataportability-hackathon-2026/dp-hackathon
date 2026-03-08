@@ -15,7 +15,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const DEFAULT_SPEED = 5;
-const DEFAULT_AMPLITUDE = 0.025;
+const DEFAULT_AMPLITUDE = 0.06;
 const DEFAULT_FREQUENCY = 10;
 const DEFAULT_TRANSITION: ValueAnimationTransition = {
   duration: 0.2,

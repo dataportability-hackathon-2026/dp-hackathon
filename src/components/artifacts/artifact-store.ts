@@ -16,8 +16,8 @@ export type ArtifactType =
 
 export type VideoArtifact = {
   id: string;
-  topicSlug?: string;
   type: "video";
+  topicSlug?: string;
   title: string;
   description: string;
   videoUrl: string;
@@ -28,8 +28,8 @@ export type VideoArtifact = {
 
 export type AudioArtifact = {
   id: string;
-  topicSlug?: string;
   type: "audio";
+  topicSlug?: string;
   title: string;
   description: string;
   audioUrl: string;
@@ -45,8 +45,8 @@ export type MindMapNode = {
 
 export type MindMapArtifact = {
   id: string;
-  topicSlug?: string;
   type: "mindmap";
+  topicSlug?: string;
   title: string;
   description: string;
   nodes: MindMapNode[];
@@ -63,8 +63,8 @@ export type QuizQuestion = {
 
 export type QuizArtifact = {
   id: string;
-  topicSlug?: string;
   type: "quiz";
+  topicSlug?: string;
   title: string;
   description: string;
   questions: QuizQuestion[];
@@ -75,8 +75,8 @@ export type DataTableRow = Record<string, string | number>;
 
 export type DataTableArtifact = {
   id: string;
-  topicSlug?: string;
   type: "datatable";
+  topicSlug?: string;
   title: string;
   description: string;
   columns: { key: string; label: string }[];
@@ -92,8 +92,8 @@ export type FlashcardItem = {
 
 export type FlashcardArtifact = {
   id: string;
-  topicSlug?: string;
   type: "flashcards";
+  topicSlug?: string;
   title: string;
   description: string;
   cards: FlashcardItem[];
@@ -102,8 +102,8 @@ export type FlashcardArtifact = {
 
 export type ReportArtifact = {
   id: string;
-  topicSlug?: string;
   type: "report";
+  topicSlug?: string;
   title: string;
   description: string;
   sections: { heading: string; content: string }[];
@@ -112,8 +112,8 @@ export type ReportArtifact = {
 
 export type InfographicArtifact = {
   id: string;
-  topicSlug?: string;
   type: "infographic";
+  topicSlug?: string;
   title: string;
   description: string;
   stats: { label: string; value: string; color: string }[];
@@ -122,8 +122,8 @@ export type InfographicArtifact = {
 
 export type SlideArtifact = {
   id: string;
-  topicSlug?: string;
   type: "slidedeck";
+  topicSlug?: string;
   title: string;
   description: string;
   slides: { title: string; bullets: string[] }[];
@@ -156,8 +156,8 @@ export type SpatialConnection = {
 
 export type SpatialArtifact = {
   id: string;
-  topicSlug?: string;
   type: "spatial";
+  topicSlug?: string;
   title: string;
   description: string;
   objects: SpatialObject[];
@@ -168,8 +168,8 @@ export type SpatialArtifact = {
 
 export type ManimArtifact = {
   id: string;
-  topicSlug?: string;
   type: "manim";
+  topicSlug?: string;
   title: string;
   description: string;
   code: string;
@@ -185,8 +185,8 @@ export type GeoArcData = {
 
 export type GeoArtifact = {
   id: string;
-  topicSlug?: string;
   type: "geo";
+  topicSlug?: string;
   title: string;
   description: string;
   arcs: GeoArcData[];

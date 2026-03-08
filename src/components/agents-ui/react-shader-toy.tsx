@@ -852,7 +852,7 @@ export function ReactShaderToy({
             shaderProgramRef.current,
             name,
           );
-          if (!customUniformLocation) return;
+          if (!customUniformLocation) continue;
           processUniform(
             gl,
             customUniformLocation,
@@ -1065,7 +1065,7 @@ export function ReactShaderToy({
     observer.observe(canvas);
     return () => observer.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [animateWhenNotVisible, drawScene]);
+  }, [animateWhenNotVisible]);
 
   // Main effect for initialization and cleanup
   useEffect(() => {
@@ -1113,21 +1113,8 @@ export function ReactShaderToy({
       cancelAnimationFrame(animFrameIdRef.current ?? 0);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    addEventListeners,
-    clearColor,
-    drawScene,
-    fs,
-    initBuffers,
-    initShaders,
-    initWebGL,
-    onResize,
-    preProcessFragment,
-    processCustomUniforms,
-    processTextures,
-    removeEventListeners,
-    vs,
-  ]); // Empty dependency array to run only once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount — all mutable state is managed via refs
 
   return (
     <canvas

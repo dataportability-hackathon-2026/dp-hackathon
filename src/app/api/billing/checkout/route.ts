@@ -59,13 +59,14 @@ export async function POST(request: Request) {
   const baseUrl = process.env.BETTER_AUTH_URL ?? "http://localhost:3000";
 
   const checkoutSession = await stripe.checkout.sessions.create({
-    mode: "payment",
+    mode: "subscription",
     customer: stripeCustomerId,
     line_items: [
       {
         price_data: {
           currency: "usd",
           unit_amount: pack.priceCents,
+          recurring: { interval: "month" },
           product_data: { name: pack.label },
         },
         quantity: 1,

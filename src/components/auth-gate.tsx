@@ -1,5 +1,6 @@
 "use client";
 
+import { faker } from "@faker-js/faker";
 import {
   Brain,
   Eye,
@@ -9,6 +10,7 @@ import {
   Palette,
   Shield,
   Stethoscope,
+  UserPlus,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -29,48 +31,51 @@ const isDev = process.env.NODE_ENV === "development";
 
 type DemoPersona = {
   label: string;
-  name: string;
   email: string;
   password: string;
+  name: string;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
+  isAdmin?: boolean;
 };
 
 const DEMO_PERSONAS: DemoPersona[] = [
   {
     label: "Dr. Priya",
-    name: "Dr. Priya Ramanathan",
     email: "priya@university.edu",
     password: "password123",
+    name: "Dr. Priya Sharma",
     icon: Stethoscope,
     color: "border-border hover:bg-muted",
   },
   {
     label: "Marcus",
-    name: "Marcus Chen",
     email: "marcus@risd.edu",
     password: "password123",
+    name: "Marcus Chen",
     icon: Palette,
     color: "border-border hover:bg-muted",
   },
   {
     label: "Maya",
-    name: "Maya Chen",
     email: "maya@stanford.edu",
     password: "password123",
+    name: "Maya Johnson",
     icon: GraduationCap,
     color: "border-border hover:bg-muted",
   },
+  {
+    label: "Admin",
+    email: "admin@coremodel.ai",
+    password: "password123",
+    name: "Admin User",
+    icon: Shield,
+    color: "border-border hover:bg-muted",
+    isAdmin: true,
+  },
 ];
 
-const ADMIN_PERSONA: DemoPersona = {
-  label: "Admin",
-  name: "Admin User",
-  email: "admin@coremodel.ai",
-  password: "password123",
-  icon: Shield,
-  color: "border-border hover:bg-muted",
-};
+const DEV_PASSWORD = "password123";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = authClient.useSession();
@@ -96,61 +101,64 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }
 
   async function loginAsPersona(persona: DemoPersona) {
-    setEmail(persona.email);
-    setName(persona.name);
     setLoading(true);
     setError("");
+    setEmail(persona.email);
+    setName(persona.name);
 
-    // Try sign in first
+    // Try sign-in first (existing account)
     const { error: signInError } = await authClient.signIn.email({
       email: persona.email,
       password: persona.password,
     });
 
     if (signInError) {
-      // User doesn't exist yet — create account
+      // Account doesn't exist yet — create it
       const { error: signUpError } = await authClient.signUp.email({
         email: persona.email,
         password: persona.password,
         name: persona.name,
       });
+
       if (signUpError) {
-        // Account exists with stale password hash (e.g. from old DB).
-        // In dev mode, reset and retry.
-        if (isDev) {
-          const resetRes = await fetch("/api/dev/reset-persona", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: persona.email }),
-          });
-          if (resetRes.ok) {
-            const { error: retryError } = await authClient.signUp.email({
-              email: persona.email,
-              password: persona.password,
-              name: persona.name,
-            });
-            if (retryError) {
-              setError(retryError.message ?? "Failed to create demo account");
-              setLoading(false);
-              return;
-            }
-          } else {
-            setError(signUpError.message ?? "Failed to create demo account");
-            setLoading(false);
-            return;
-          }
-        } else {
-          setError(signUpError.message ?? "Failed to create demo account");
-          setLoading(false);
-          return;
-        }
+        setError(signUpError.message ?? "Failed to sign in as persona");
+        setLoading(false);
+        return;
       }
     }
 
-    // Set admin role and redirect if this is the admin persona
-    if (persona.email === ADMIN_PERSONA.email) {
-      await fetch("/api/admin/set-role", { method: "POST" });
+    if (persona.isAdmin) {
+      await fetch("/api/admin/set-role", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: persona.email }),
+      });
       router.push("/admin");
+    }
+  }
+
+  async function createFreshUser() {
+    setLoading(true);
+    setError("");
+
+    const firstName = faker.person.firstName();
+    const lastName = faker.person.lastName();
+    const slug = faker.string.alphanumeric(6).toLowerCase();
+    const fakeName = `${firstName} ${lastName}`;
+    const fakeEmail = `dev-${slug}@test.local`;
+
+    setEmail(fakeEmail);
+    setName(fakeName);
+
+    const { error: signUpError } = await authClient.signUp.email({
+      email: fakeEmail,
+      password: DEV_PASSWORD,
+      name: fakeName,
+    });
+
+    if (signUpError) {
+      setError(signUpError.message ?? "Failed to create fresh user");
+      setLoading(false);
     }
   }
 
@@ -311,16 +319,16 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                     </button>
                   );
                 })}
-                <button
-                  type="button"
-                  onClick={() => loginAsPersona(ADMIN_PERSONA)}
-                  disabled={loading}
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${ADMIN_PERSONA.color}`}
-                >
-                  <Shield className="size-4 shrink-0" />
-                  <span className="truncate">Admin</span>
-                </button>
               </div>
+              <button
+                type="button"
+                onClick={() => createFreshUser()}
+                disabled={loading}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted"
+              >
+                <UserPlus className="size-4 shrink-0" />
+                <span>Empty User</span>
+              </button>
             </div>
           )}
         </CardContent>
