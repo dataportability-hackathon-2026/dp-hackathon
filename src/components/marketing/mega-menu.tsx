@@ -236,12 +236,12 @@ function DesktopNav({ landingAnchors }: MegaMenuProps) {
                   <NavigationMenuLink
                     key={post.slug}
                     render={<Link href={`/blog/${post.slug}`} />}
-                    className="flex flex-col gap-0.5 rounded-xl p-3 hover:bg-muted transition-colors"
+                    className="flex flex-col items-start gap-0.5 rounded-xl p-3 hover:bg-muted transition-colors"
                   >
                     <p className="text-sm font-medium leading-tight">
                       {post.title}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground text-left">
                       {post.readingTime} min read
                     </p>
                   </NavigationMenuLink>
@@ -284,31 +284,27 @@ function DesktopNav({ landingAnchors }: MegaMenuProps) {
           </NavigationMenuContent>
         </NavigationMenuItem>
 
-        {/* Landing page anchor links */}
-        {landingAnchors && (
-          <>
-            <NavigationMenuItem>
-              <NavigationMenuLink
-                render={<a href="#features" />}
-                className={cn(
-                  "inline-flex h-9 items-center justify-center rounded-2xl bg-transparent px-4.5 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:bg-muted hover:text-foreground",
-                )}
-              >
-                Features
-              </NavigationMenuLink>
-            </NavigationMenuItem>
-            <NavigationMenuItem>
-              <NavigationMenuLink
-                render={<a href="#pricing" />}
-                className={cn(
-                  "inline-flex h-9 items-center justify-center rounded-2xl bg-transparent px-4.5 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:bg-muted hover:text-foreground",
-                )}
-              >
-                Pricing
-              </NavigationMenuLink>
-            </NavigationMenuItem>
-          </>
-        )}
+        {/* Features & Pricing links */}
+        <NavigationMenuItem>
+          <NavigationMenuLink
+            render={<a href={landingAnchors ? "#features" : "/#features"} />}
+            className={cn(
+              "inline-flex h-9 items-center justify-center rounded-2xl bg-transparent px-4.5 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:bg-muted hover:text-foreground",
+            )}
+          >
+            Features
+          </NavigationMenuLink>
+        </NavigationMenuItem>
+        <NavigationMenuItem>
+          <NavigationMenuLink
+            render={<a href={landingAnchors ? "#pricing" : "/#pricing"} />}
+            className={cn(
+              "inline-flex h-9 items-center justify-center rounded-2xl bg-transparent px-4.5 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:bg-muted hover:text-foreground",
+            )}
+          >
+            Pricing
+          </NavigationMenuLink>
+        </NavigationMenuItem>
       </NavigationMenuList>
     </NavigationMenu>
   );
@@ -443,25 +439,21 @@ function MobileNav({
         </div>
       )}
 
-      {/* Landing anchors on mobile */}
-      {landingAnchors && (
-        <>
-          <a
-            href="#features"
-            className="block rounded-lg px-3 py-2.5 text-sm hover:bg-muted"
-            onClick={onClose}
-          >
-            Features
-          </a>
-          <a
-            href="#pricing"
-            className="block rounded-lg px-3 py-2.5 text-sm hover:bg-muted"
-            onClick={onClose}
-          >
-            Pricing
-          </a>
-        </>
-      )}
+      {/* Features & Pricing links */}
+      <a
+        href={landingAnchors ? "#features" : "/#features"}
+        className="block rounded-lg px-3 py-2.5 text-sm hover:bg-muted"
+        onClick={onClose}
+      >
+        Features
+      </a>
+      <a
+        href={landingAnchors ? "#pricing" : "/#pricing"}
+        className="block rounded-lg px-3 py-2.5 text-sm hover:bg-muted"
+        onClick={onClose}
+      >
+        Pricing
+      </a>
 
       <div className="space-y-2 pt-3">
         {!isSignedIn && (

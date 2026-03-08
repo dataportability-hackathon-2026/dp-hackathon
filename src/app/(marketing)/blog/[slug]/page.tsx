@@ -115,27 +115,6 @@ export default async function BlogPostPage({ params }: Props) {
       <MarketingNav />
 
       <article className="max-w-3xl mx-auto px-6 pt-12 pb-20">
-        {/* Breadcrumbs */}
-        <nav className="text-sm text-neutral-500 dark:text-neutral-400 mb-8">
-          <a
-            href="/"
-            className="hover:text-neutral-700 dark:hover:text-neutral-300"
-          >
-            Home
-          </a>
-          <span className="mx-2">/</span>
-          <a
-            href="/blog"
-            className="hover:text-neutral-700 dark:hover:text-neutral-300"
-          >
-            Blog
-          </a>
-          <span className="mx-2">/</span>
-          <span className="text-neutral-700 dark:text-neutral-300">
-            {post.title}
-          </span>
-        </nav>
-
         {/* Header */}
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-4">

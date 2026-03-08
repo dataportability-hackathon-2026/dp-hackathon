@@ -364,22 +364,22 @@ const pricingPlans = [
 const layers = [
   {
     step: "01",
-    title: "Evidence Layer",
-    subtitle: "What happened",
+    title: "Take Assessment",
+    subtitle: "Answer questions about your decision context",
     icon: Target,
     color: "from-emerald-500 to-emerald-600",
   },
   {
     step: "02",
-    title: "Inference Layer",
-    subtitle: "What we estimate",
+    title: "Add Sources",
+    subtitle: "Upload evidence and data to ground your analysis",
     icon: TrendingUp,
     color: "from-violet-500 to-violet-600",
   },
   {
     step: "03",
-    title: "Policy Layer",
-    subtitle: "What to do next",
+    title: "Agent Build Guide",
+    subtitle: "Get an AI-powered action plan tailored to you",
     icon: Zap,
     color: "from-amber-500 to-amber-600",
   },
@@ -530,53 +530,6 @@ export function LandingPage() {
       </section>
 
       <div className="grayscale">
-        {/* ── Features ── */}
-        <section id="features" className="py-24 sm:py-32">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <FadeInOnScroll className="text-center mb-16">
-              <Badge variant="secondary" className="mb-4">
-                Features
-              </Badge>
-              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight mb-4">
-                What you get.
-              </h2>
-              <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-                Research-backed tools that help you learn better. No fluff.
-              </p>
-            </FadeInOnScroll>
-
-            <StaggerChildren className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {features.map((feature) => (
-                <StaggerItem key={`${listId}-feat-${feature.title}`}>
-                  <motion.div
-                    className="rounded-2xl overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-white/5 p-6"
-                    whileHover={{ y: -6, scale: 1.02 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  >
-                    <feature.icon className="h-10 w-10 text-primary mb-4" />
-                    <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {feature.description}
-                    </p>
-                    {feature.formats && (
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {feature.formats.map((fmt) => (
-                          <span
-                            key={fmt.label}
-                            className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground"
-                          >
-                            <fmt.icon className="h-3 w-3" /> {fmt.label}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </motion.div>
-                </StaggerItem>
-              ))}
-            </StaggerChildren>
-          </div>
-        </section>
-
         {/* ── How It Works ── */}
         <section
           id="how-it-works"
@@ -623,6 +576,53 @@ export function LandingPage() {
                 </FadeInOnScroll>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* ── Features ── */}
+        <section id="features" className="py-24 sm:py-32">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <FadeInOnScroll className="text-center mb-16">
+              <Badge variant="secondary" className="mb-4">
+                Features
+              </Badge>
+              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight mb-4">
+                What you get.
+              </h2>
+              <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+                Research-backed tools that help you learn better. No fluff.
+              </p>
+            </FadeInOnScroll>
+
+            <StaggerChildren className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {features.map((feature) => (
+                <StaggerItem key={`${listId}-feat-${feature.title}`}>
+                  <motion.div
+                    className="rounded-2xl overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-white/5 p-6"
+                    whileHover={{ y: -6, scale: 1.02 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  >
+                    <feature.icon className="h-10 w-10 text-primary mb-4" />
+                    <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {feature.description}
+                    </p>
+                    {feature.formats && (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {feature.formats.map((fmt) => (
+                          <span
+                            key={fmt.label}
+                            className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground"
+                          >
+                            <fmt.icon className="h-3 w-3" /> {fmt.label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                </StaggerItem>
+              ))}
+            </StaggerChildren>
           </div>
         </section>
 
@@ -760,11 +760,6 @@ export function LandingPage() {
                     whileHover={{ y: -8, scale: 1.02 }}
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   >
-                    {plan.highlighted && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <Badge className="shadow-lg">Most Popular</Badge>
-                      </div>
-                    )}
                     <h3 className="text-lg font-bold mb-1">{plan.name}</h3>
                     <p className="text-sm text-muted-foreground mb-4">
                       {plan.description}
