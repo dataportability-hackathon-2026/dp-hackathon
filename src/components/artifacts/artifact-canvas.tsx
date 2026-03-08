@@ -73,14 +73,27 @@ function HeavyArtifactFallback({ label }: { label: string }) {
 export function ArtifactCanvas({
   activeType,
   scrollToId,
+  topicSlug,
+  topicName,
+  topicConcepts,
   onClose,
 }: {
   activeType: ArtifactType;
   scrollToId?: string | null;
+  /** Slug of the current topic — used to fetch uploaded sources for generation */
+  topicSlug?: string;
+  /** Human-readable topic name passed to the AI generator */
+  topicName?: string;
+  /** Mastery concept list for the topic */
+  topicConcepts?: string[];
   onClose: () => void;
 }) {
   const artifacts = useDataStore((s) =>
-    Array.from(s.artifacts.values()).filter((a) => a.type === activeType),
+    Array.from(s.artifacts.values()).filter(
+      (a) =>
+        a.type === activeType &&
+        (!a.topicSlug || !topicSlug || a.topicSlug === topicSlug),
+    ),
   );
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -114,9 +127,12 @@ export function ArtifactCanvas({
         </Badge>
       </div>
 
-      {process.env.NODE_ENV === "development" && (
-        <DevArtifactToolbar activeType={activeType} />
-      )}
+      <DevArtifactToolbar
+        activeType={activeType}
+        topicSlug={topicSlug}
+        topicName={topicName}
+        topicConcepts={topicConcepts}
+      />
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6">
         <div className="mx-auto max-w-3xl space-y-6">

@@ -176,6 +176,7 @@ const AgentAudioVisualizerAura = dynamic(
   { ssr: false },
 );
 
+import { upload } from "@vercel/blob/client";
 import { useChat } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import { conversationStore, type MessageEntry } from "@/lib/conversation-store";
@@ -627,6 +628,9 @@ export function SinglePageApp({
               <ArtifactCanvas
                 activeType={activeArtifactType}
                 scrollToId={scrollToArtifactId}
+                topicSlug={slugify(selectedTopic.name)}
+                topicName={selectedTopic.name}
+                topicConcepts={selectedTopic.masteryData.map((m) => m.concept)}
                 onClose={handleCloseCanvas}
               />
             ) : (
@@ -2231,20 +2235,32 @@ function VoiceAgent() {
 // ── Agent Chat Tab ──
 
 const TOOL_TYPE_TO_ARTIFACT: Record<string, ArtifactType> = {
-  create_quiz: "quiz",
-  create_flashcards: "flashcards",
+  // Current tool names (artifact-tools.ts)
+  create_adaptive_quiz: "quiz",
+  create_adaptive_flashcards: "flashcards",
   create_mind_map: "mindmap",
   create_slides: "slidedeck",
   create_spatial: "spatial",
+  // Legacy / backwards-compat aliases
+  create_quiz: "quiz",
+  create_flashcards: "flashcards",
+  create_mindmap: "mindmap",
+  create_slidedeck: "slidedeck",
   create_learning_guide: "report",
 };
 
 const TOOL_LABELS: Record<string, string> = {
-  create_quiz: "View Quiz",
-  create_flashcards: "View Flashcards",
+  // Current tool names
+  create_adaptive_quiz: "View Quiz",
+  create_adaptive_flashcards: "View Flashcards",
   create_mind_map: "View Mind Map",
   create_slides: "View Slides",
   create_spatial: "View 3D Model",
+  // Legacy aliases
+  create_quiz: "View Quiz",
+  create_flashcards: "View Flashcards",
+  create_mindmap: "View Mind Map",
+  create_slidedeck: "View Slides",
   create_learning_guide: "View Learning Guide",
   navigate_to_view: "Navigating...",
   select_topic: "Switching topic...",
@@ -2796,90 +2812,98 @@ function SourcesTab({
         sizeBytes: f.size,
         progress: 0,
         status: "uploading" as const,
-        abortController: new AbortController(),
       }));
 
       setUploads((prev) => [...prev, ...newUploads]);
 
-      // Upload all files in a single request
-      const formData = new FormData();
-      formData.append("topicSlug", topicSlug);
-      for (const file of files) {
-        formData.append("files", file);
-      }
+      // Upload each file directly to Vercel Blob via client-side upload.
+      // The route handler issues a signed token (JSON, no FormData parsing),
+      // the browser uploads to Vercel Blob with real XHR progress events,
+      // then Vercel Blob calls onUploadCompleted to write the DB record.
+      await Promise.all(
+        files.map(async (file, idx) => {
+          const tempId = newUploads[idx].tempId;
+          const safeName =
+            file.name
+              .replace(/[/\\]/g, "_")
+              .replace(/\.\./g, "_")
+              .replace(/[\x00-\x1f]/g, "")
+              .replace(/^\.+/, "")
+              .slice(0, 255)
+              .trim() || "unnamed";
 
-      // Use a shared abort controller for the batch
-      const controller = new AbortController();
-      for (const u of newUploads) {
-        u.abortController = controller;
-      }
+          try {
+            // Append a short random suffix to avoid "blob already exists" errors
+            // when re-uploading the same filename. We do this client-side since
+            // addRandomSuffix is only available on the server-side put() API.
+            const ext = safeName.includes(".")
+              ? `.${safeName.split(".").pop()}`
+              : "";
+            const base = ext
+              ? safeName.slice(0, safeName.length - ext.length)
+              : safeName;
+            const suffix = Math.random().toString(36).slice(2, 8);
+            const uniqueName = `${base}-${suffix}${ext}`;
 
-      try {
-        const res = await fetch("/api/sources", {
-          method: "POST",
-          body: formData,
-          signal: controller.signal,
-        });
+            const blob = await upload(
+              `sources/${topicSlug}/${uniqueName}`,
+              file,
+              {
+                access: "public",
+                handleUploadUrl: "/api/sources",
+                clientPayload: JSON.stringify({ topicSlug, size: file.size }),
+                onUploadProgress: ({ percentage }) => {
+                  setUploads((prev) =>
+                    prev.map((u) =>
+                      u.tempId === tempId
+                        ? { ...u, progress: Math.round(percentage) }
+                        : u,
+                    ),
+                  );
+                },
+              },
+            );
 
-        if (!res.ok) {
-          const err = await res
-            .json()
-            .catch(() => ({ error: "Upload failed" }));
-          if (res.status === 413) {
-            setQuotaError(err.error ?? "Storage quota exceeded");
+            // Register the blob in the DB immediately — don't rely on the
+            // onUploadCompleted webhook which is async and unreliable in dev.
+            const regRes = await fetch("/api/sources/register", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                blobUrl: blob.url,
+                filename: safeName,
+                mimeType: blob.contentType ?? file.type ?? "application/octet-stream",
+                sizeBytes: file.size,
+                topicSlug,
+              }),
+            });
+            if (!regRes.ok) {
+              const err = await regRes.json().catch(() => ({}));
+              throw new Error((err as { error?: string }).error ?? "Failed to register upload");
+            }
+
+            // Remove this file from the uploading list on success
+            setUploads((prev) => prev.filter((u) => u.tempId !== tempId));
+          } catch (err) {
+            const message =
+              err instanceof Error ? err.message : "Upload failed";
+            // Surface quota errors in the banner; others stay in the item
+            if (message.toLowerCase().includes("quota")) {
+              setQuotaError(message);
+            }
+            setUploads((prev) =>
+              prev.map((u) =>
+                u.tempId === tempId
+                  ? { ...u, status: "error" as const, error: message }
+                  : u,
+              ),
+            );
           }
-          setUploads((prev) =>
-            prev.map((u) =>
-              newUploads.some((n) => n.tempId === u.tempId)
-                ? {
-                    ...u,
-                    status: "error" as const,
-                    error: err.error ?? "Upload failed",
-                  }
-                : u,
-            ),
-          );
-          return;
-        }
+        }),
+      );
 
-        const data = await res.json();
-        // Remove completed uploads from the upload list
-        setUploads((prev) =>
-          prev.filter((u) => !newUploads.some((n) => n.tempId === u.tempId)),
-        );
-
-        // Check for per-file errors
-        const errors = data.results.filter((r: { error?: string }) => r.error);
-        if (errors.length > 0) {
-          setUploads((prev) => [
-            ...prev,
-            ...errors.map((e: { filename: string; error: string }) => ({
-              tempId: crypto.randomUUID(),
-              filename: e.filename,
-              sizeBytes: 0,
-              progress: 0,
-              status: "error" as const,
-              error: e.error,
-            })),
-          ]);
-        }
-
-        fetchSources();
-      } catch (err) {
-        if ((err as Error).name === "AbortError") {
-          setUploads((prev) =>
-            prev.filter((u) => !newUploads.some((n) => n.tempId === u.tempId)),
-          );
-          return;
-        }
-        setUploads((prev) =>
-          prev.map((u) =>
-            newUploads.some((n) => n.tempId === u.tempId)
-              ? { ...u, status: "error" as const, error: "Network error" }
-              : u,
-          ),
-        );
-      }
+      // Refresh the source list after all uploads finish
+      fetchSources();
     },
     [topicSlug, fetchSources],
   );

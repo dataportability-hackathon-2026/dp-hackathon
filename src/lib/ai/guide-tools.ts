@@ -1,4 +1,4 @@
-import { generateText, Output, tool } from "ai";
+import { generateObject, tool } from "ai";
 import { z } from "zod";
 import { getCitationBlock, getCitationGuardrails } from "./citations";
 import { openai } from "./provider";
@@ -143,15 +143,12 @@ export const guideTools = {
     execute: async (input: GuideGenerationInput) => {
       const totalWeeklyMinutes = input.minutesPerDay * input.daysPerWeek;
 
-      const result = await generateText({
+      const { object } = await generateObject({
         model: openai("gpt-4o-mini"),
-        output: Output.object({ schema: LearningGuideSchema }),
+        schema: LearningGuideSchema,
         prompt: buildGuidePrompt(input, totalWeeklyMinutes),
       });
-      if (!result.output) {
-        throw new Error("Failed to generate learning guide");
-      }
-      return { type: "learning_guide" as const, data: result.output };
+      return { type: "learning_guide" as const, data: object };
     },
   }),
 
@@ -186,9 +183,9 @@ export const guideTools = {
             ? "every other activity"
             : "once at start";
 
-      const result = await generateText({
+      const { object } = await generateObject({
         model: openai("gpt-4o-mini"),
-        output: Output.object({ schema: PracticeSessionSchema }),
+        schema: PracticeSessionSchema,
         prompt: `You are an evidence-based learning guide generating a practice session.
 
 ${getCitationGuardrails()}
@@ -237,10 +234,7 @@ ${getCitationBlock([
 - NEVER suggest passive rereading or highlighting as practice [DUNLOSKY_2013].
 - Set difficulty based on prior knowledge: ${input.priorKnowledgeLevel === "beginner" ? "foundational → standard" : input.priorKnowledgeLevel === "advanced" ? "standard → challenging" : "mix all levels"}.`,
       });
-      if (!result.output) {
-        throw new Error("Failed to generate practice session");
-      }
-      return { type: "practice_session" as const, data: result.output };
+      return { type: "practice_session" as const, data: object };
     },
   }),
 
@@ -278,9 +272,9 @@ ${getCitationBlock([
         ) /
         input.conceptsAttempted.reduce((sum, c) => sum + c.itemsAttempted, 0);
 
-      const result = await generateText({
+      const { object } = await generateObject({
         model: openai("gpt-4o-mini"),
-        output: Output.object({ schema: SessionWrapSchema }),
+        schema: SessionWrapSchema,
         prompt: `You are an evidence-based learning coach generating a session wrap-up.
 
 ${getCitationGuardrails()}
@@ -312,10 +306,7 @@ ${input.conceptsAttempted.map((c) => `- ${c.concept}: ${c.itemsAttempted} items,
    - Bad: "Great job! Keep it up!" (empty praise)
 6. Use coaching tone: ${input.coachingTone}.`,
       });
-      if (!result.output) {
-        throw new Error("Failed to generate session wrap");
-      }
-      return { type: "session_wrap" as const, data: result.output };
+      return { type: "session_wrap" as const, data: object };
     },
   }),
 
@@ -365,9 +356,9 @@ ${input.conceptsAttempted.map((c) => `- ${c.concept}: ${c.itemsAttempted} items,
           "R6: Motivation support needed → shorter sessions, immediate wins [RYAN_DECI_2000]",
       };
 
-      const result = await generateText({
+      const { object } = await generateObject({
         model: openai("gpt-4o-mini"),
-        output: Output.object({ schema: AdaptiveGuideAdjustmentSchema }),
+        schema: AdaptiveGuideAdjustmentSchema,
         prompt: `You are an evidence-based adaptive learning system adjusting a learning guide.
 
 ${getCitationGuardrails()}
@@ -427,10 +418,7 @@ ${policyRuleMap[input.triggerEvent.type] ?? "No direct rule match — use closes
 10. Reference the block IDs being modified.
 11. New blocks must conform to the GuideBlock schema.`,
       });
-      if (!result.output) {
-        throw new Error("Failed to adjust guide");
-      }
-      return { type: "guide_adjustment" as const, data: result.output };
+      return { type: "guide_adjustment" as const, data: object };
     },
   }),
 
@@ -478,9 +466,9 @@ ${policyRuleMap[input.triggerEvent.type] ?? "No direct rule match — use closes
         ),
       });
 
-      const result = await generateText({
+      const { object } = await generateObject({
         model: openai("gpt-4o-mini"),
-        output: Output.object({ schema: StrategyRecommendationSchema }),
+        schema: StrategyRecommendationSchema,
         prompt: `You are an evidence-based learning scientist recommending study strategies.
 
 ${getCitationGuardrails()}
@@ -524,12 +512,9 @@ LOW utility:
 5. Implementation instructions must be concrete and time-scoped to ${input.availableMinutesPerDay} min/day.
 6. NEVER recommend "matching to learning style" [PASHLER_2008].`,
       });
-      if (!result.output) {
-        throw new Error("Failed to generate strategy recommendations");
-      }
       return {
         type: "strategy_recommendations" as const,
-        data: result.output,
+        data: object,
       };
     },
   }),

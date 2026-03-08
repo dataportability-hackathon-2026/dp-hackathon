@@ -1,4 +1,4 @@
-import { generateText, Output } from "ai";
+import { generateObject } from "ai";
 import { openai } from "./provider";
 import type { LearningGuide, LearningProfileAnalysis } from "./schemas";
 import { LearningGuideSchema } from "./schemas";
@@ -20,15 +20,12 @@ type GuideInput = {
 export async function generateLearningGuide(
   input: GuideInput,
 ): Promise<LearningGuide> {
-  const result = await generateText({
+  const { object } = await generateObject({
     model: openai("gpt-4o-mini"),
-    output: Output.object({ schema: LearningGuideSchema }),
+    schema: LearningGuideSchema,
     prompt: buildGuidePrompt(input),
   });
-  if (!result.output) {
-    throw new Error("Failed to generate learning guide");
-  }
-  return result.output;
+  return object;
 }
 
 function buildGuidePrompt(input: GuideInput): string {

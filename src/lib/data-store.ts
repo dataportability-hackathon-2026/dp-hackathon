@@ -10,20 +10,6 @@ import type {
   ArtifactType,
 } from "@/components/artifacts/artifact-store";
 import {
-  MOCK_AUDIO,
-  MOCK_DATATABLES,
-  MOCK_FLASHCARDS,
-  MOCK_GEOS,
-  MOCK_INFOGRAPHICS,
-  MOCK_MANIMS,
-  MOCK_MINDMAPS,
-  MOCK_QUIZZES,
-  MOCK_REPORTS,
-  MOCK_SLIDEDECKS,
-  MOCK_SPATIALS,
-  MOCK_VIDEOS,
-} from "@/components/artifacts/artifact-store";
-import {
   type LearningProfileData,
   MOCK_COMPLETED_PROFILE,
 } from "@/components/learning-profile-form";
@@ -135,25 +121,8 @@ const INITIAL_SYSTEM_ADAPTATIONS: SystemAdaptation[] = [
 ];
 
 function buildInitialArtifacts(): Map<string, Artifact> {
-  const map = new Map<string, Artifact>();
-  const allMocks: Artifact[] = [
-    ...MOCK_VIDEOS,
-    ...MOCK_AUDIO,
-    ...MOCK_MINDMAPS,
-    ...MOCK_QUIZZES,
-    ...MOCK_DATATABLES,
-    ...MOCK_FLASHCARDS,
-    ...MOCK_REPORTS,
-    ...MOCK_INFOGRAPHICS,
-    ...MOCK_SLIDEDECKS,
-    ...MOCK_SPATIALS,
-    ...MOCK_MANIMS,
-    ...MOCK_GEOS,
-  ];
-  for (const a of allMocks) {
-    map.set(a.id, a);
-  }
-  return map;
+  // Start empty — all artifacts are generated on demand via AI or agent tools
+  return new Map<string, Artifact>();
 }
 
 function buildInitialSeenCounts(
