@@ -16,6 +16,7 @@ export type ArtifactType =
 
 export type VideoArtifact = {
   id: string;
+  topicSlug?: string;
   type: "video";
   title: string;
   description: string;
@@ -27,6 +28,7 @@ export type VideoArtifact = {
 
 export type AudioArtifact = {
   id: string;
+  topicSlug?: string;
   type: "audio";
   title: string;
   description: string;
@@ -43,6 +45,7 @@ export type MindMapNode = {
 
 export type MindMapArtifact = {
   id: string;
+  topicSlug?: string;
   type: "mindmap";
   title: string;
   description: string;
@@ -60,6 +63,7 @@ export type QuizQuestion = {
 
 export type QuizArtifact = {
   id: string;
+  topicSlug?: string;
   type: "quiz";
   title: string;
   description: string;
@@ -71,6 +75,7 @@ export type DataTableRow = Record<string, string | number>;
 
 export type DataTableArtifact = {
   id: string;
+  topicSlug?: string;
   type: "datatable";
   title: string;
   description: string;
@@ -87,6 +92,7 @@ export type FlashcardItem = {
 
 export type FlashcardArtifact = {
   id: string;
+  topicSlug?: string;
   type: "flashcards";
   title: string;
   description: string;
@@ -96,6 +102,7 @@ export type FlashcardArtifact = {
 
 export type ReportArtifact = {
   id: string;
+  topicSlug?: string;
   type: "report";
   title: string;
   description: string;
@@ -105,6 +112,7 @@ export type ReportArtifact = {
 
 export type InfographicArtifact = {
   id: string;
+  topicSlug?: string;
   type: "infographic";
   title: string;
   description: string;
@@ -114,6 +122,7 @@ export type InfographicArtifact = {
 
 export type SlideArtifact = {
   id: string;
+  topicSlug?: string;
   type: "slidedeck";
   title: string;
   description: string;
@@ -147,6 +156,7 @@ export type SpatialConnection = {
 
 export type SpatialArtifact = {
   id: string;
+  topicSlug?: string;
   type: "spatial";
   title: string;
   description: string;
@@ -158,6 +168,7 @@ export type SpatialArtifact = {
 
 export type ManimArtifact = {
   id: string;
+  topicSlug?: string;
   type: "manim";
   title: string;
   description: string;
@@ -174,6 +185,7 @@ export type GeoArcData = {
 
 export type GeoArtifact = {
   id: string;
+  topicSlug?: string;
   type: "geo";
   title: string;
   description: string;

@@ -1,4 +1,4 @@
-import { generateText, Output, tool } from "ai";
+import { generateObject, tool } from "ai";
 import { z } from "zod";
 import {
   type CitationKey,
@@ -175,15 +175,12 @@ export const profileTools = {
       "Generate a comprehensive learning profile analysis from intake data. Uses validated constructs (CRT, MAI, SDT, LASSI) with uncertainty quantification. NEVER labels learners by style — measures what predicts outcomes [PASHLER_2008]. Returns structured analysis with strengths, risks, strategies, and coaching approach.",
     inputSchema: profileAssessmentInputSchema,
     execute: async (input: ProfileAssessmentInput) => {
-      const result = await generateText({
+      const { object } = await generateObject({
         model: openai("gpt-4o-mini"),
-        output: Output.object({ schema: LearningProfileAnalysisSchema }),
+        schema: LearningProfileAnalysisSchema,
         prompt: buildProfileAnalysisPrompt(input),
       });
-      if (!result.output) {
-        throw new Error("Failed to generate profile analysis");
-      }
-      return { type: "profile_analysis" as const, data: result.output };
+      return { type: "profile_analysis" as const, data: object };
     },
   }),
 
@@ -230,9 +227,9 @@ export const profileTools = {
           return sum + (predicted - actual) ** 2;
         }, 0) / input.confidencePredictions.length;
 
-      const result = await generateText({
+      const { object } = await generateObject({
         model: openai("gpt-4o-mini"),
-        output: Output.object({ schema: CalibrationAnalysisSchema }),
+        schema: CalibrationAnalysisSchema,
         prompt: `You are an evidence-based learning scientist analyzing metacognitive calibration.
 
 ${getCitationGuardrails()}
@@ -258,13 +255,10 @@ ${getCitationBlock(["SCHRAW_1994", "DUNLOSKY_2013", "BJORK_2011"])}
 5. Recommend prediction-reflection-repair loops for poor calibration [SCHRAW_1994].
 6. NEVER claim the learner "should feel" a certain confidence — calibration is empirical.`,
       });
-      if (!result.output) {
-        throw new Error("Failed to assess calibration");
-      }
       return {
         type: "calibration_analysis" as const,
         data: {
-          ...result.output,
+          ...object,
           metrics: {
             avgConfidence,
             accuracy: accuracy * 100,
@@ -298,9 +292,9 @@ ${getCitationBlock(["SCHRAW_1994", "DUNLOSKY_2013", "BJORK_2011"])}
         .describe("Concepts attempted recently"),
     }),
     execute: async (input) => {
-      const result = await generateText({
+      const { object } = await generateObject({
         model: openai("gpt-4o-mini"),
-        output: Output.object({ schema: CognitiveLoadRiskSchema }),
+        schema: CognitiveLoadRiskSchema,
         prompt: `You are an evidence-based learning scientist assessing cognitive load risk.
 
 ${getCitationGuardrails()}
@@ -326,10 +320,7 @@ ${getCitationBlock(["SWELLER_1988", "BJORK_2011"])}
 6. DO NOT recommend "matching to learning style" — this is not evidence-based [PASHLER_2008].
 7. Recommend desirable difficulties only when load is manageable [BJORK_2011].`,
       });
-      if (!result.output) {
-        throw new Error("Failed to assess cognitive load risk");
-      }
-      return { type: "cognitive_load_risk" as const, data: result.output };
+      return { type: "cognitive_load_risk" as const, data: object };
     },
   }),
 
@@ -369,9 +360,9 @@ ${getCitationBlock(["SWELLER_1988", "BJORK_2011"])}
         { need: "relatedness" as const, score: input.motivationRelatedness },
       ].sort((a, b) => a.score - b.score)[0];
 
-      const result = await generateText({
+      const { object } = await generateObject({
         model: openai("gpt-4o-mini"),
-        output: Output.object({ schema: DropoutRiskSchema }),
+        schema: DropoutRiskSchema,
         prompt: `You are an evidence-based learning scientist assessing dropout risk using Self-Determination Theory.
 
 ${getCitationGuardrails()}
@@ -408,13 +399,10 @@ ${getCitationBlock(["RYAN_DECI_2000", "PINTRICH_1991", "ZIMMERMAN_2002"])}
 8. NEVER use personality to gate difficulty [VEDEL_2014].
 9. Motivational support is policy, not vibe [RYAN_DECI_2000].`,
       });
-      if (!result.output) {
-        throw new Error("Failed to assess dropout risk");
-      }
       return {
         type: "dropout_risk" as const,
         data: {
-          ...result.output,
+          ...object,
           metrics: {
             adherenceRate: adherenceRate * 100,
             lowestSdtNeed: lowestSdtNeed.need,
@@ -506,9 +494,9 @@ ${getCitationBlock(["RYAN_DECI_2000", "PINTRICH_1991", "ZIMMERMAN_2002"])}
         lowUtilityStrategies.some((l) => s.toLowerCase().includes(l)),
       );
 
-      const result = await generateText({
+      const { object } = await generateObject({
         model: openai("gpt-4o-mini"),
-        output: Output.object({ schema: SelfRegulationSchema }),
+        schema: SelfRegulationSchema,
         prompt: `You are an evidence-based learning scientist assessing self-regulation capacity.
 
 ${getCitationGuardrails()}
@@ -547,10 +535,7 @@ ${getCitationBlock(["ZIMMERMAN_2002", "SCHRAW_1994", "DUNLOSKY_2013", "WEINSTEIN
 6. If monitoring is "rarely", performance phase is weak — recommend self-testing prompts.
 7. Strategy quality: learners often prefer ineffective strategies [BJORK_2011] — guide toward high-utility alternatives.`,
       });
-      if (!result.output) {
-        throw new Error("Failed to assess self-regulation");
-      }
-      return { type: "self_regulation" as const, data: result.output };
+      return { type: "self_regulation" as const, data: object };
     },
   }),
 };
