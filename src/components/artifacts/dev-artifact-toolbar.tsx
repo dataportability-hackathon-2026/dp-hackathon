@@ -123,27 +123,26 @@ export function DevArtifactToolbar({
   }
 
   return (
-    <div className="flex items-center gap-2 border-b border-dashed border-amber-500/40 bg-amber-50/50 px-4 py-2 dark:bg-amber-950/20">
-      <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
-        DEV
-      </span>
+    <div className="flex items-center gap-2 border-b bg-muted/30 px-4 py-2">
       <Button
         variant="outline"
         size="sm"
         disabled={loading}
         onClick={handleGenerate}
-        className="h-7 gap-1.5 border-amber-300 text-xs dark:border-amber-700"
+        className="h-7 gap-1.5 text-xs"
       >
         {loading ? (
           <Loader2 className="size-3 animate-spin" />
         ) : (
           <Sparkles className="size-3" />
         )}
-        {TYPE_LABEL[activeType] ?? `Generate ${activeType}`}
+        {loading
+          ? "Generating…"
+          : TYPE_LABEL[activeType] ?? `Generate ${activeType}`}
       </Button>
       {topicName && (
-        <span className="truncate text-xs text-amber-600 dark:text-amber-500">
-          {topicName}
+        <span className="truncate text-xs text-muted-foreground">
+          from <span className="font-medium text-foreground">{topicName}</span>
         </span>
       )}
       {error && (
