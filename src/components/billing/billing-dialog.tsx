@@ -33,7 +33,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
 import { useCredits } from "@/hooks/use-credits";
-import { CREDIT_PACKS, type CreditPackSlug } from "@/lib/credit-packs";
+import type { CreditPackSlug } from "@/lib/credit-packs";
 
 type CheckoutResponse = {
   checkoutUrl: string;
@@ -57,8 +57,6 @@ const EXHAUSTION_OPTIONS = [
   },
 ] as const;
 
-const PACKS = Object.values(CREDIT_PACKS);
-
 type BillingDialogProps = {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -70,7 +68,6 @@ export function BillingDialog({
   onOpenChange,
   trigger,
 }: BillingDialogProps = {}) {
-  const packId = useId();
   const optionId = useId();
   const { displayCredits, loading: creditsLoading, refresh } = useCredits();
   const [loadingPack, setLoadingPack] = useState<CreditPackSlug | null>(null);
@@ -174,9 +171,7 @@ export function BillingDialog({
       <DialogContent className="flex max-h-[80dvh] flex-col sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Billing</DialogTitle>
-          <DialogDescription>
-            Manage your subscription, credits, and payment method
-          </DialogDescription>
+          <DialogDescription className="sr-only">Billing</DialogDescription>
         </DialogHeader>
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto -mx-6 px-6">
           {creditsLoading ? (
@@ -246,42 +241,30 @@ export function BillingDialog({
                 </CardContent>
               </Card>
 
-              {/* Buy more credits */}
+              {/* Upgrade to Pro */}
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base">
-                    Need More Credits?
-                  </CardTitle>
+                  <CardTitle className="text-base">Upgrade to Pro</CardTitle>
                   <CardDescription>
-                    Purchase additional credit packs
+                    Unlimited access for $5/month
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="grid grid-cols-3 gap-2">
-                    {PACKS.map((pack) => (
-                      <button
-                        type="button"
-                        key={`${packId}-${pack.slug}`}
-                        disabled={loadingPack !== null}
-                        onClick={() => handlePurchase(pack.slug)}
-                        className="flex flex-col items-center gap-1 rounded-xl border border-border p-3 transition-colors hover:border-primary hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {loadingPack === pack.slug ? (
-                          <Loader2 className="size-5 animate-spin text-primary" />
-                        ) : (
-                          <span className="text-lg font-bold">
-                            {pack.credits / 1000}
-                          </span>
-                        )}
-                        <span className="text-xs text-muted-foreground">
-                          credits
-                        </span>
-                        <span className="text-xs font-medium text-primary">
-                          {pack.priceLabel}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+                <CardContent>
+                  <Button
+                    className="w-full"
+                    disabled={loadingPack !== null}
+                    onClick={() => handlePurchase("pro_monthly")}
+                  >
+                    {loadingPack === "pro_monthly" ? (
+                      <Loader2
+                        className="size-4 animate-spin"
+                        data-icon="inline-start"
+                      />
+                    ) : (
+                      <CreditCard className="size-4" data-icon="inline-start" />
+                    )}
+                    Subscribe — $5/mo
+                  </Button>
                 </CardContent>
               </Card>
 

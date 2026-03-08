@@ -13,7 +13,7 @@ import {
 } from "@/lib/ai/generate-artifact";
 import { sendEmail } from "@/lib/email";
 
-const ARTIFACT_TYPES = [
+const VALID_ARTIFACT_TYPES = [
   "quiz",
   "flashcards",
   "mindmap",
@@ -21,26 +21,62 @@ const ARTIFACT_TYPES = [
   "spatial",
 ] as const;
 
-type GenerateAllParams = {
+type ValidArtifactType = (typeof VALID_ARTIFACT_TYPES)[number];
+
+/** Per-artifact request with optional overrides on top of shared config. */
+type ArtifactRequest = {
+  type: ValidArtifactType;
+  subject?: string;
+  concepts?: string[];
+  priorKnowledgeLevel?: string;
+  goalType?: string;
+  sourceIds?: string[];
+  sourceContent?: string;
+  instructions?: string;
+};
+
+type GenerateArtifactsParams = {
   userId: string;
   workflowRunId: string;
-  input: ArtifactInput;
+  /** Shared base config — each artifact inherits unless it overrides. */
+  shared: ArtifactInput;
+  /** List of artifacts to generate. Each can override shared fields. */
+  artifacts: ArtifactRequest[];
   notifyEmail?: string;
 };
 
-async function recordBatchStart(params: GenerateAllParams) {
+function mergeInput(
+  shared: ArtifactInput,
+  request: ArtifactRequest,
+): ArtifactInput {
+  return {
+    subject: request.subject ?? shared.subject,
+    concepts: request.concepts ?? shared.concepts,
+    priorKnowledgeLevel:
+      request.priorKnowledgeLevel ?? shared.priorKnowledgeLevel,
+    goalType: request.goalType ?? shared.goalType,
+    sourceIds: request.sourceIds ?? shared.sourceIds,
+    sourceContent: request.sourceContent ?? shared.sourceContent,
+    instructions: request.instructions ?? shared.instructions,
+  };
+}
+
+async function recordBatchStart(params: GenerateArtifactsParams) {
   "use step";
   await db.insert(workflowRun).values({
     id: params.workflowRunId,
     userId: params.userId,
     workflowType: "batch_artifacts",
     status: "running",
-    input: JSON.stringify(params.input),
+    input: JSON.stringify({
+      shared: params.shared,
+      artifacts: params.artifacts,
+    }),
   });
 }
 
 async function generateSingleArtifact(
-  artifactType: string,
+  artifactType: ValidArtifactType,
   input: ArtifactInput,
 ) {
   "use step";
@@ -55,8 +91,6 @@ async function generateSingleArtifact(
       return await generateSlides(input);
     case "spatial":
       return await generateSpatial(input);
-    default:
-      throw new Error(`Unknown artifact type: ${artifactType}`);
   }
 }
 
@@ -64,11 +98,12 @@ async function persistArtifact(
   userId: string,
   workflowRunId: string,
   artifactType: string,
+  index: number,
   data: unknown,
 ) {
   "use step";
   const blob = await put(
-    `artifacts/${userId}/${artifactType}-${Date.now()}.json`,
+    `artifacts/${userId}/${artifactType}-${index}-${Date.now()}.json`,
     JSON.stringify(data),
     { access: "public", contentType: "application/json" },
   );
@@ -102,7 +137,7 @@ async function updateProgress(
 
 async function markBatchCompleted(
   workflowRunId: string,
-  results: Array<{ type: string; blobUrl: string }>,
+  results: Array<{ type: string; index: number; blobUrl: string }>,
 ) {
   "use step";
   await db
@@ -125,43 +160,49 @@ async function markBatchFailed(workflowRunId: string, error: string) {
 
 async function sendBatchCompletionEmail(
   email: string,
-  results: Array<{ type: string; blobUrl: string }>,
+  results: Array<{ type: string; index: number; blobUrl: string }>,
 ) {
   "use step";
   const artifactList = results
-    .map((r) => `<li><strong>${r.type}</strong></li>`)
+    .map((r) => `<li><strong>${r.type}</strong> (#${r.index + 1})</li>`)
     .join("");
 
   await sendEmail({
     to: email,
-    subject: "All artifacts generated — CoreModel",
+    subject: "Your artifacts are ready — CoreModel",
     html: `<p>Your batch artifact generation is complete! Here's what was created:</p>
 <ul>${artifactList}</ul>
 <p>${results.length} artifacts are now available in your CoreModel dashboard.</p>`,
   });
 }
 
-export async function generateAllArtifactsWorkflow(params: GenerateAllParams) {
+export async function generateArtifactsWorkflow(
+  params: GenerateArtifactsParams,
+) {
   "use workflow";
 
   await recordBatchStart(params);
 
-  const results: Array<{ type: string; blobUrl: string }> = [];
+  const results: Array<{ type: string; index: number; blobUrl: string }> = [];
 
   try {
-    for (const artifactType of ARTIFACT_TYPES) {
-      const data = await generateSingleArtifact(artifactType, params.input);
+    for (let i = 0; i < params.artifacts.length; i++) {
+      const request = params.artifacts[i];
+      const input = mergeInput(params.shared, request);
+
+      const data = await generateSingleArtifact(request.type, input);
       const blobUrl = await persistArtifact(
         params.userId,
         params.workflowRunId,
-        artifactType,
+        request.type,
+        i,
         data,
       );
-      results.push({ type: artifactType, blobUrl });
+      results.push({ type: request.type, index: i, blobUrl });
       await updateProgress(
         params.workflowRunId,
         results.length,
-        ARTIFACT_TYPES.length,
+        params.artifacts.length,
       );
       await sleep("2s");
     }

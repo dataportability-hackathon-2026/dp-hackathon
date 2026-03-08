@@ -80,7 +80,7 @@ export function ArtifactCanvas({
 }: {
   activeType: ArtifactType;
   scrollToId?: string | null;
-  /** Slug of the current topic — used to fetch uploaded sources for generation */
+  /** Slug of the current topic — used to scope artifacts per topic */
   topicSlug?: string;
   /** Human-readable topic name passed to the AI generator */
   topicName?: string;

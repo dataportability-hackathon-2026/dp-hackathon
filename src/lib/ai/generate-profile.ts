@@ -1,4 +1,4 @@
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { openai } from "./provider";
 import type { LearningProfileAnalysis } from "./schemas";
 import { LearningProfileAnalysisSchema } from "./schemas";
@@ -45,12 +45,15 @@ type LearningProfileInput = {
 export async function generateLearningProfile(
   profile: LearningProfileInput,
 ): Promise<LearningProfileAnalysis> {
-  const { object } = await generateObject({
+  const result = await generateText({
     model: openai("gpt-4o-mini"),
-    schema: LearningProfileAnalysisSchema,
+    output: Output.object({ schema: LearningProfileAnalysisSchema }),
     prompt: buildProfilePrompt(profile),
   });
-  return object;
+  if (!result.output) {
+    throw new Error("Failed to generate learning profile analysis");
+  }
+  return result.output;
 }
 
 function buildProfilePrompt(p: LearningProfileInput): string {

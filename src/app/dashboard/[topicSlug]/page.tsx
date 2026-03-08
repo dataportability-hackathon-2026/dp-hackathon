@@ -1,5 +1,8 @@
-import { notFound, redirect } from "next/navigation";
-import { findTopicBySlug, slugify } from "@/lib/topics";
+import { eq } from "drizzle-orm";
+import { notFound } from "next/navigation";
+import { SinglePageApp } from "@/components/single-page-app";
+import { db } from "@/db";
+import { topic } from "@/db/schema";
 
 export default async function TopicPage({
   params,
@@ -7,9 +10,13 @@ export default async function TopicPage({
   params: Promise<{ topicSlug: string }>;
 }) {
   const { topicSlug } = await params;
-  const topic = findTopicBySlug(topicSlug);
-  if (!topic) notFound();
-  const firstProject = topic.projects[0];
-  if (!firstProject) notFound();
-  redirect(`/dashboard/${topicSlug}/${slugify(firstProject.name)}`);
+
+  const [topicRow] = await db
+    .select()
+    .from(topic)
+    .where(eq(topic.slug, topicSlug));
+
+  if (!topicRow) notFound();
+
+  return <SinglePageApp topicId={topicRow.id} />;
 }

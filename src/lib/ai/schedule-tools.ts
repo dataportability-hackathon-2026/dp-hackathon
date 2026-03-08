@@ -4,7 +4,7 @@ import { start } from "workflow/api";
 import { z } from "zod";
 import { db } from "@/db";
 import { scheduledTask } from "@/db/schema";
-import { generateAllArtifactsWorkflow } from "@/workflows/generate-all-artifacts";
+import { generateArtifactsWorkflow } from "@/workflows/generate-all-artifacts";
 import { scheduledTaskWorkflow } from "@/workflows/scheduled-task";
 
 export const scheduleTools = {
@@ -200,16 +200,66 @@ export const scheduleTools = {
     },
   }),
 
-  generate_all_artifacts: tool({
+  generate_artifacts: tool({
     description:
-      "Start a batch workflow to generate all artifact types (quiz, flashcards, mindmap, slides, spatial) for a given subject. Runs in the background and optionally sends an email when complete.",
+      "Start a batch workflow to generate one or many learning artifacts. " +
+      "Supports multiple of the same type with different configs. " +
+      "Shared fields apply to all artifacts unless overridden per-artifact. " +
+      "Runs in the background via Vercel Workflows.",
     inputSchema: z.object({
-      subject: z.string().describe("The subject or topic"),
-      concepts: z.array(z.string()).min(1).describe("Key concepts to cover"),
+      subject: z.string().describe("Shared subject or topic"),
+      concepts: z
+        .array(z.string())
+        .min(1)
+        .describe("Shared key concepts to cover"),
       priorKnowledgeLevel: z
         .enum(["beginner", "intermediate", "advanced"])
-        .describe("Learner's knowledge level"),
-      goalType: z.string().describe("Learning goal"),
+        .describe("Shared learner knowledge level"),
+      goalType: z.string().describe("Shared learning goal"),
+      sourceIds: z
+        .array(z.string())
+        .optional()
+        .describe("Shared source IDs to include as reference material"),
+      instructions: z
+        .string()
+        .optional()
+        .describe("Shared additional instructions for generation"),
+      artifacts: z
+        .array(
+          z.object({
+            type: z
+              .enum(["quiz", "flashcards", "mindmap", "slidedeck", "spatial"])
+              .describe("Artifact type to generate"),
+            subject: z
+              .string()
+              .optional()
+              .describe("Override shared subject for this artifact"),
+            concepts: z
+              .array(z.string())
+              .optional()
+              .describe("Override shared concepts for this artifact"),
+            priorKnowledgeLevel: z
+              .enum(["beginner", "intermediate", "advanced"])
+              .optional()
+              .describe("Override shared level for this artifact"),
+            goalType: z
+              .string()
+              .optional()
+              .describe("Override shared goal for this artifact"),
+            sourceIds: z
+              .array(z.string())
+              .optional()
+              .describe("Override shared source IDs for this artifact"),
+            instructions: z
+              .string()
+              .optional()
+              .describe("Override shared instructions for this artifact"),
+          }),
+        )
+        .min(1)
+        .describe(
+          "List of artifacts to generate. Each inherits shared config unless it provides overrides.",
+        ),
       notifyEmail: z
         .string()
         .email()
@@ -219,32 +269,43 @@ export const scheduleTools = {
     execute: async (input) => {
       const workflowRunId = crypto.randomUUID();
 
-      const run = await start(generateAllArtifactsWorkflow, [
+      const run = await start(generateArtifactsWorkflow, [
         {
           userId: "current-user", // Replaced at API layer
           workflowRunId,
-          input: {
+          shared: {
             subject: input.subject,
             concepts: input.concepts,
             priorKnowledgeLevel: input.priorKnowledgeLevel,
             goalType: input.goalType,
+            sourceIds: input.sourceIds,
+            instructions: input.instructions,
           },
+          artifacts: input.artifacts,
           notifyEmail: input.notifyEmail,
         },
       ]);
+
+      const typeSummary = input.artifacts
+        .map((a) => a.type)
+        .reduce(
+          (acc, t) => {
+            acc[t] = (acc[t] || 0) + 1;
+            return acc;
+          },
+          {} as Record<string, number>,
+        );
+      const summaryStr = Object.entries(typeSummary)
+        .map(([t, n]) => (n > 1 ? `${n}x ${t}` : t))
+        .join(", ");
 
       return {
         workflowRunId,
         wdkRunId: run.runId,
         status: "running",
-        artifactTypes: [
-          "quiz",
-          "flashcards",
-          "mindmap",
-          "slidedeck",
-          "spatial",
-        ],
-        message: `Generating all 5 artifact types for "${input.subject}". This may take a few minutes. ${input.notifyEmail ? `You'll be emailed at ${input.notifyEmail} when complete.` : "Check back in the artifacts panel."}`,
+        totalArtifacts: input.artifacts.length,
+        artifacts: input.artifacts.map((a) => a.type),
+        message: `Generating ${input.artifacts.length} artifact(s) (${summaryStr}) for "${input.subject}". ${input.notifyEmail ? `You'll be emailed at ${input.notifyEmail} when complete.` : "Check back in the artifacts panel."}`,
       };
     },
   }),

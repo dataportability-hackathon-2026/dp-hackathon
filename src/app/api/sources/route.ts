@@ -1,13 +1,15 @@
-import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
+import { put } from "@vercel/blob";
 import { and, eq, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { source } from "@/db/schema";
+import { source, topic } from "@/db/schema";
 import { getEffectiveUserId } from "@/lib/impersonate";
 
 // ─── Limits ─────────────────────────────────────────────────────────────────
 
+const MAX_FILE_SIZE_DEFAULT = 50 * 1024 * 1024; // 50 MB
 const MAX_FILE_SIZE_MEDIA = 500 * 1024 * 1024; // 500 MB for audio/video
+const MAX_FILES_PER_REQUEST = 20;
 const MAX_STORAGE_PER_USER = 2 * 1024 * 1024 * 1024; // 2 GB total
 const MAX_FILENAME_LENGTH = 255;
 
@@ -54,8 +56,62 @@ const BLOCKED_EXTENSIONS = new Set([
   "war",
 ]);
 
+// ─── Magic bytes for content-type validation ────────────────────────────────
+
+const _MAGIC_BYTES: Array<{ ext: string; bytes: number[] }> = [
+  { ext: "pdf", bytes: [0x25, 0x50, 0x44, 0x46] }, // %PDF
+  { ext: "png", bytes: [0x89, 0x50, 0x4e, 0x47] }, // .PNG
+  { ext: "jpg", bytes: [0xff, 0xd8, 0xff] }, // JPEG
+  { ext: "gif", bytes: [0x47, 0x49, 0x46] }, // GIF
+  { ext: "zip", bytes: [0x50, 0x4b, 0x03, 0x04] }, // ZIP (also docx/xlsx/pptx)
+  { ext: "mp3", bytes: [0x49, 0x44, 0x33] }, // ID3
+  { ext: "mp4", bytes: [0x00, 0x00, 0x00] }, // ftyp (partial)
+  { ext: "wav", bytes: [0x52, 0x49, 0x46, 0x46] }, // RIFF
+];
+
+// Extensions that are Office Open XML (zip-based) — skip exe-in-zip check
+const ZIP_BASED_EXTENSIONS = new Set([
+  "docx",
+  "xlsx",
+  "pptx",
+  "odt",
+  "ods",
+  "odp",
+  "epub",
+  "ipynb",
+]);
+
+// ─── Dangerous content patterns (embedded in files) ─────────────────────────
+
+const DANGEROUS_PATTERNS = [
+  /\x00\x00\x00\x00MZPE/, // PE executable embedded
+  /<script[\s>]/i, // HTML script injection
+  /javascript:/i, // JS protocol
+  /\beval\s*\(/, // eval() in text files
+];
+
 function extFromName(filename: string): string {
   return filename.split(".").pop()?.toLowerCase() ?? "";
+}
+
+function isMediaFile(filename: string): boolean {
+  const ext = extFromName(filename);
+  return [
+    "mp3",
+    "m4a",
+    "wav",
+    "ogg",
+    "flac",
+    "aac",
+    "wma",
+    "mp4",
+    "webm",
+    "mov",
+    "avi",
+    "mkv",
+    "m4v",
+    "wmv",
+  ].includes(ext);
 }
 
 /** Sanitize filename — strip path traversal, null bytes, control chars */
@@ -69,6 +125,85 @@ function sanitizeFilename(name: string): string {
       .slice(0, MAX_FILENAME_LENGTH)
       .trim() || "unnamed"
   );
+}
+
+/** Check if file content matches a known dangerous executable signature */
+async function scanFileContent(
+  file: File,
+  ext: string,
+): Promise<string | null> {
+  const slice = await file.slice(0, 8192).arrayBuffer();
+  const header = new Uint8Array(slice);
+
+  // Check for PE executable magic bytes (MZ header) regardless of extension
+  if (header[0] === 0x4d && header[1] === 0x5a) {
+    return "File contains executable content";
+  }
+
+  // Check for ELF executable (Linux)
+  if (
+    header[0] === 0x7f &&
+    header[1] === 0x45 &&
+    header[2] === 0x4c &&
+    header[3] === 0x46
+  ) {
+    return "File contains executable content";
+  }
+
+  // Check for Mach-O executable (macOS)
+  if (
+    (header[0] === 0xfe && header[1] === 0xed && header[2] === 0xfa) ||
+    (header[0] === 0xcf && header[1] === 0xfa && header[2] === 0xed)
+  ) {
+    return "File contains executable content";
+  }
+
+  // For text-like files, scan for dangerous patterns
+  const textExts = new Set([
+    "txt",
+    "md",
+    "csv",
+    "tex",
+    "bib",
+    "r",
+    "rmd",
+    "svg",
+    "html",
+    "xml",
+    "json",
+    "yaml",
+    "yml",
+  ]);
+  if (textExts.has(ext)) {
+    const text = new TextDecoder("utf-8", { fatal: false }).decode(header);
+    for (const pattern of DANGEROUS_PATTERNS) {
+      if (pattern.test(text)) {
+        return "File contains potentially dangerous content";
+      }
+    }
+  }
+
+  // For files claiming to be ZIP-based (docx etc), verify they actually start with PK
+  if (ZIP_BASED_EXTENSIONS.has(ext)) {
+    if (header[0] !== 0x50 || header[1] !== 0x4b) {
+      return `File does not match expected .${ext} format`;
+    }
+  }
+
+  // Verify PDF files actually start with %PDF
+  if (
+    ext === "pdf" &&
+    !(
+      header[0] === 0x25 &&
+      header[1] === 0x50 &&
+      header[2] === 0x44 &&
+      header[3] === 0x46
+    )
+  ) {
+    return "File does not match expected PDF format";
+  }
+
+  return null; // clean
 }
 
 /** Get total storage used by a user */
@@ -101,105 +236,162 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ sources: rows });
 }
 
-/**
- * POST /api/sources
- *
- * Uses Vercel Blob client-side upload pattern to avoid multipart body
- * parsing issues in Next.js App Router. The browser uploads the file
- * directly to Vercel Blob; this route only handles:
- *   1. Token generation  (type: "blob.generate-client-token")
- *   2. Upload completion (type: "blob.upload-completed") → creates DB record
- */
-export async function POST(req: NextRequest): Promise<NextResponse> {
+/** POST /api/sources — multipart upload */
+export async function POST(req: NextRequest) {
   const userId = await getEffectiveUserId();
   if (!userId)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = (await req.json()) as HandleUploadBody;
+  const formData = await req.formData();
+  const topicSlug = formData.get("topicSlug") as string | null;
+  const projectId = (formData.get("projectId") as string | null) || null;
 
-  try {
-    const jsonResponse = await handleUpload({
-      body,
-      request: req,
-      onBeforeGenerateToken: async (pathname, clientPayload) => {
-        const payload = JSON.parse(clientPayload ?? "{}") as {
-          topicSlug?: string;
-          projectId?: string;
-          size?: number;
-        };
-
-        const topicSlug = payload.topicSlug;
-        if (!topicSlug) throw new Error("topicSlug is required");
-
-        const safeName = sanitizeFilename(
-          pathname.split("/").pop() ?? pathname,
-        );
-        const ext = extFromName(safeName);
-
-        // Block dangerous extensions
-        if (BLOCKED_EXTENSIONS.has(ext))
-          throw new Error(`Blocked file type: .${ext}`);
-
-        // Check double extensions (e.g. "report.pdf.exe")
-        const parts = safeName.split(".");
-        if (parts.length > 2) {
-          const hasBlockedInner = parts
-            .slice(1, -1)
-            .some((p) => BLOCKED_EXTENSIONS.has(p.toLowerCase()));
-          if (hasBlockedInner) throw new Error("Suspicious double extension");
-        }
-
-        // Check storage quota
-        const fileSize = payload.size ?? 0;
-        const storageUsed = await getUserStorageUsed(userId);
-        if (storageUsed + fileSize > MAX_STORAGE_PER_USER) {
-          const usedMB = Math.round(storageUsed / 1024 / 1024);
-          const limitMB = Math.round(MAX_STORAGE_PER_USER / 1024 / 1024);
-          throw new Error(
-            `Storage quota exceeded (${usedMB} MB used of ${limitMB} MB)`,
-          );
-        }
-
-        return {
-          maximumSizeInBytes: MAX_FILE_SIZE_MEDIA,
-          // tokenPayload is passed through to onUploadCompleted — used to
-          // carry userId and file metadata since the completion callback
-          // runs outside the user's request context in production.
-          tokenPayload: JSON.stringify({
-            userId,
-            topicSlug,
-            projectId: payload.projectId ?? null,
-            filename: safeName,
-            sizeBytes: fileSize,
-          }),
-        };
-      },
-      onUploadCompleted: async ({ blob, tokenPayload }) => {
-        const parsed = JSON.parse(tokenPayload ?? "{}") as {
-          userId: string;
-          topicSlug: string;
-          projectId: string | null;
-          filename: string;
-          sizeBytes: number;
-        };
-
-        await db.insert(source).values({
-          userId: parsed.userId,
-          projectId: parsed.projectId,
-          topicSlug: parsed.topicSlug,
-          filename: parsed.filename,
-          mimeType: blob.contentType ?? "application/octet-stream",
-          sizeBytes: parsed.sizeBytes,
-          blobUrl: blob.url,
-        });
-      },
-    });
-
-    return NextResponse.json(jsonResponse);
-  } catch (err) {
+  if (!topicSlug)
     return NextResponse.json(
-      { error: (err as Error).message ?? "Upload failed" },
+      { error: "topicSlug is required" },
       { status: 400 },
     );
+
+  const files = formData.getAll("files") as File[];
+  if (files.length === 0)
+    return NextResponse.json({ error: "No files provided" }, { status: 400 });
+  if (files.length > MAX_FILES_PER_REQUEST)
+    return NextResponse.json(
+      { error: `Too many files (max ${MAX_FILES_PER_REQUEST} per upload)` },
+      { status: 400 },
+    );
+
+  // Check user storage quota before uploading
+  const storageUsed = await getUserStorageUsed(userId);
+  const batchSize = files.reduce((sum, f) => sum + f.size, 0);
+  if (storageUsed + batchSize > MAX_STORAGE_PER_USER) {
+    const usedMB = Math.round(storageUsed / 1024 / 1024);
+    const limitMB = Math.round(MAX_STORAGE_PER_USER / 1024 / 1024);
+    return NextResponse.json(
+      { error: `Storage quota exceeded (${usedMB} MB used of ${limitMB} MB)` },
+      { status: 413 },
+    );
   }
+
+  const results: Array<{ id: string; filename: string; error?: string }> = [];
+
+  for (const file of files) {
+    const safeName = sanitizeFilename(file.name);
+    const ext = extFromName(safeName);
+
+    // 1. Block dangerous extensions
+    if (BLOCKED_EXTENSIONS.has(ext)) {
+      results.push({
+        id: "",
+        filename: safeName,
+        error: `Blocked file type: .${ext}`,
+      });
+      continue;
+    }
+
+    // 2. Check double extensions (e.g. "report.pdf.exe")
+    const parts = safeName.split(".");
+    if (parts.length > 2) {
+      const hasBlockedInner = parts
+        .slice(1, -1)
+        .some((p) => BLOCKED_EXTENSIONS.has(p.toLowerCase()));
+      if (hasBlockedInner) {
+        results.push({
+          id: "",
+          filename: safeName,
+          error: "Suspicious double extension",
+        });
+        continue;
+      }
+    }
+
+    // 3. Check file size
+    const maxSize = isMediaFile(safeName)
+      ? MAX_FILE_SIZE_MEDIA
+      : MAX_FILE_SIZE_DEFAULT;
+    if (file.size > maxSize) {
+      results.push({
+        id: "",
+        filename: safeName,
+        error: `File too large (max ${maxSize / 1024 / 1024} MB)`,
+      });
+      continue;
+    }
+
+    // 4. Reject empty files
+    if (file.size === 0) {
+      results.push({ id: "", filename: safeName, error: "Empty file" });
+      continue;
+    }
+
+    // 5. Scan file content for malicious signatures
+    const scanResult = await scanFileContent(file, ext);
+    if (scanResult) {
+      results.push({ id: "", filename: safeName, error: scanResult });
+      continue;
+    }
+
+    // All checks passed — upload to blob storage
+    const mime = file.type || "application/octet-stream";
+    const pathname = `sources/${userId}/${topicSlug}/${safeName}`;
+    const blob = await put(pathname, file, { access: "public" });
+
+    const [row] = await db
+      .insert(source)
+      .values({
+        userId: userId,
+        projectId,
+        topicSlug,
+        filename: safeName,
+        mimeType: mime,
+        sizeBytes: file.size,
+        blobUrl: blob.url,
+      })
+      .returning();
+
+    results.push({ id: row.id, filename: safeName });
+  }
+
+  // Auto-generate title if topic is still "Untitled"
+  let generatedTitle: string | undefined;
+  const successfulUploads = results.filter((r) => r.id);
+  if (successfulUploads.length > 0) {
+    const [topicRow] = await db
+      .select()
+      .from(topic)
+      .where(eq(topic.slug, topicSlug));
+    if (topicRow && topicRow.name === "Untitled") {
+      try {
+        const titleRes = await fetch(
+          new URL(
+            `/api/topics/${topicRow.id}/generate-title`,
+            process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+          ),
+          { method: "POST", headers: { cookie: "" } },
+        );
+        if (titleRes.ok) {
+          const titleData = (await titleRes.json()) as {
+            generatedName: string;
+          };
+          generatedTitle = titleData.generatedName;
+        }
+      } catch {
+        // Non-critical — title generation failure shouldn't break upload
+      }
+    }
+
+    // Update source count on topic
+    if (topicRow) {
+      const [countResult] = await db
+        .select({ total: sql<number>`count(*)` })
+        .from(source)
+        .where(and(eq(source.userId, userId), eq(source.topicSlug, topicSlug)));
+      await db
+        .update(topic)
+        .set({ sourceCount: Number(countResult.total), updatedAt: new Date() })
+        .where(eq(topic.id, topicRow.id));
+    }
+  }
+
+  return NextResponse.json({ results, generatedTitle });
 }

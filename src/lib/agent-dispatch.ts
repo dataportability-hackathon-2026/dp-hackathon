@@ -29,19 +29,7 @@ export function dispatchAgentResult(
 
   // Domain tool routing
   switch (toolName) {
-    // ── Artifact generation tools ──
-    // All tools return { type: string, data: {...} }.
-    // We build a full Artifact (adding id + createdAt) and add it to the store.
     case "create_adaptive_quiz":
-    case "create_adaptive_flashcards":
-    case "create_mind_map":
-    case "create_slides":
-    case "create_spatial":
-    case "create_worked_example":
-    case "create_elaborative_interrogation":
-    case "create_prediction_reflection":
-    case "create_interleaved_problem_set":
-    // Legacy / direct-artifact names (kept for backwards compat)
     case "create_flashcards":
     case "create_mindmap":
     case "create_video":
@@ -50,63 +38,13 @@ export function dispatchAgentResult(
     case "create_report":
     case "create_infographic":
     case "create_slidedeck":
+    case "create_spatial":
     case "create_manim":
     case "create_geo": {
-      // Tools return { type, data } — extract and build a proper Artifact
-      const toolResult = result as { type?: string; data?: Record<string, unknown> };
-      const type = toolResult.type;
-      const raw = toolResult.data;
-
-      // Fallback: if result is already an artifact shape (legacy tools)
-      const legacyArtifact = result as unknown as Artifact;
-
-      if (type && raw) {
-        let data = { ...raw };
-
-        // Spatial: schema emits x/y/z fields; renderer expects position:[x,y,z]
-        if (type === "spatial" && Array.isArray(data.objects)) {
-          data = {
-            ...data,
-            objects: (data.objects as Array<Record<string, unknown>>).map(
-              (obj) => ({
-                ...obj,
-                position: [
-                  Number(obj.x ?? 0),
-                  Number(obj.y ?? 0),
-                  Number(obj.z ?? 0),
-                ] as [number, number, number],
-              }),
-            ),
-          };
-        }
-
-        // MindMap: schema emits parentId: string|null; renderer expects parentId?: string
-        if (type === "mindmap" && Array.isArray(data.nodes)) {
-          data = {
-            ...data,
-            nodes: (data.nodes as Array<Record<string, unknown>>).map(
-              (node) => ({
-                ...node,
-                parentId: node.parentId ?? undefined,
-              }),
-            ),
-          };
-        }
-
-        const artifact = {
-          id: `${type}-${Date.now()}`,
-          type,
-          createdAt: new Date().toISOString().slice(0, 10),
-          ...data,
-        } as Artifact;
-
+      const artifact = result as unknown as Artifact;
+      if (artifact.id && artifact.type) {
         dataStore.addArtifact(artifact);
-        ctx.setArtifactParam(type);
-        ctx.setActiveTab("");
-      } else if (legacyArtifact.id && legacyArtifact.type) {
-        // Legacy: result is already a full Artifact
-        dataStore.addArtifact(legacyArtifact);
-        ctx.setArtifactParam(legacyArtifact.type);
+        ctx.setArtifactParam(artifact.type);
         ctx.setActiveTab("");
       }
       break;
@@ -146,7 +84,7 @@ export function dispatchAgentResult(
       break;
     }
 
-    case "generate_all_artifacts": {
+    case "generate_artifacts": {
       // Batch generation started — store workflowRunId for progress polling
       const workflowRunId = result.workflowRunId as string | undefined;
       if (workflowRunId) {

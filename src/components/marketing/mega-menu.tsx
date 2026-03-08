@@ -41,6 +41,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+import { authClient } from "@/lib/auth-client";
 import {
   blogPosts,
   industryPages,
@@ -235,12 +236,12 @@ function DesktopNav({ landingAnchors }: MegaMenuProps) {
                   <NavigationMenuLink
                     key={post.slug}
                     render={<Link href={`/blog/${post.slug}`} />}
-                    className="flex flex-col gap-0.5 rounded-xl p-3 hover:bg-muted transition-colors"
+                    className="flex flex-col items-start gap-0.5 rounded-xl p-3 hover:bg-muted transition-colors"
                   >
                     <p className="text-sm font-medium leading-tight">
                       {post.title}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground text-left">
                       {post.readingTime} min read
                     </p>
                   </NavigationMenuLink>
@@ -283,31 +284,27 @@ function DesktopNav({ landingAnchors }: MegaMenuProps) {
           </NavigationMenuContent>
         </NavigationMenuItem>
 
-        {/* Landing page anchor links */}
-        {landingAnchors && (
-          <>
-            <NavigationMenuItem>
-              <NavigationMenuLink
-                render={<a href="#features" />}
-                className={cn(
-                  "inline-flex h-9 items-center justify-center rounded-2xl bg-transparent px-4.5 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:bg-muted hover:text-foreground",
-                )}
-              >
-                Features
-              </NavigationMenuLink>
-            </NavigationMenuItem>
-            <NavigationMenuItem>
-              <NavigationMenuLink
-                render={<a href="#pricing" />}
-                className={cn(
-                  "inline-flex h-9 items-center justify-center rounded-2xl bg-transparent px-4.5 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:bg-muted hover:text-foreground",
-                )}
-              >
-                Pricing
-              </NavigationMenuLink>
-            </NavigationMenuItem>
-          </>
-        )}
+        {/* Features & Pricing links */}
+        <NavigationMenuItem>
+          <NavigationMenuLink
+            render={<a href={landingAnchors ? "#features" : "/#features"} />}
+            className={cn(
+              "inline-flex h-9 items-center justify-center rounded-2xl bg-transparent px-4.5 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:bg-muted hover:text-foreground",
+            )}
+          >
+            Features
+          </NavigationMenuLink>
+        </NavigationMenuItem>
+        <NavigationMenuItem>
+          <NavigationMenuLink
+            render={<a href={landingAnchors ? "#pricing" : "/#pricing"} />}
+            className={cn(
+              "inline-flex h-9 items-center justify-center rounded-2xl bg-transparent px-4.5 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:bg-muted hover:text-foreground",
+            )}
+          >
+            Pricing
+          </NavigationMenuLink>
+        </NavigationMenuItem>
       </NavigationMenuList>
     </NavigationMenu>
   );
@@ -318,7 +315,8 @@ type MobileSection = "solutions" | "personas" | "learn" | null;
 function MobileNav({
   landingAnchors,
   onClose,
-}: MegaMenuProps & { onClose: () => void }) {
+  isSignedIn,
+}: MegaMenuProps & { onClose: () => void; isSignedIn: boolean }) {
   const [openSection, setOpenSection] = useState<MobileSection>(null);
   const sectionId = useId();
 
@@ -441,34 +439,34 @@ function MobileNav({
         </div>
       )}
 
-      {/* Landing anchors on mobile */}
-      {landingAnchors && (
-        <>
-          <a
-            href="#features"
-            className="block rounded-lg px-3 py-2.5 text-sm hover:bg-muted"
-            onClick={onClose}
-          >
-            Features
-          </a>
-          <a
-            href="#pricing"
-            className="block rounded-lg px-3 py-2.5 text-sm hover:bg-muted"
-            onClick={onClose}
-          >
-            Pricing
-          </a>
-        </>
-      )}
+      {/* Features & Pricing links */}
+      <a
+        href={landingAnchors ? "#features" : "/#features"}
+        className="block rounded-lg px-3 py-2.5 text-sm hover:bg-muted"
+        onClick={onClose}
+      >
+        Features
+      </a>
+      <a
+        href={landingAnchors ? "#pricing" : "/#pricing"}
+        className="block rounded-lg px-3 py-2.5 text-sm hover:bg-muted"
+        onClick={onClose}
+      >
+        Pricing
+      </a>
 
       <div className="space-y-2 pt-3">
+        {!isSignedIn && (
+          <Link href="/dashboard" className="block" onClick={onClose}>
+            <Button variant="outline" className="w-full">
+              Sign In
+            </Button>
+          </Link>
+        )}
         <Link href="/dashboard" className="block" onClick={onClose}>
-          <Button variant="outline" className="w-full">
-            Sign In
+          <Button className="w-full">
+            {isSignedIn ? "Dashboard" : "Get Started"}
           </Button>
-        </Link>
-        <Link href="/dashboard" className="block" onClick={onClose}>
-          <Button className="w-full">Get Started</Button>
         </Link>
       </div>
     </div>
@@ -477,10 +475,12 @@ function MobileNav({
 
 export function MegaMenu({ landingAnchors = false }: MegaMenuProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: session } = authClient.useSession();
+  const isSignedIn = !!session?.user;
 
   return (
     <header className="sticky top-0 z-[100] border-b border-border/50 bg-background/80 backdrop-blur-2xl supports-[backdrop-filter]:bg-background/60">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-10">
         <Link href="/" className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Brain className="h-4 w-4" />
@@ -493,15 +493,17 @@ export function MegaMenu({ landingAnchors = false }: MegaMenuProps) {
         <DesktopNav landingAnchors={landingAnchors} />
 
         <div className="hidden items-center gap-3 md:flex">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="sm">
-              Sign In
-            </Button>
-          </Link>
+          {!isSignedIn && (
+            <Link href="/dashboard">
+              <Button variant="ghost" size="sm">
+                Sign In
+              </Button>
+            </Link>
+          )}
           <Link href="/dashboard">
             <Button size="sm">
-              Get Started
-              <ArrowRight className="ml-1 h-3.5 w-3.5" />
+              {isSignedIn ? "Dashboard" : "Get Started"}
+              {!isSignedIn && <ArrowRight className="ml-1 h-3.5 w-3.5" />}
             </Button>
           </Link>
         </div>
@@ -525,6 +527,7 @@ export function MegaMenu({ landingAnchors = false }: MegaMenuProps) {
           <MobileNav
             landingAnchors={landingAnchors}
             onClose={() => setMobileOpen(false)}
+            isSignedIn={isSignedIn}
           />
         </div>
       )}

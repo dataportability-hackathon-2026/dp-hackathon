@@ -22,6 +22,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useState } from "react";
+import { SpotlightCard } from "@/components/reactbits/spotlight-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -117,29 +118,6 @@ export function LandingPageTemplate({
           </a>
         </div>
       </nav>
-
-      {/* Breadcrumbs */}
-      <div className="max-w-6xl mx-auto px-6 pt-6">
-        <nav className="text-sm text-neutral-500 dark:text-neutral-400">
-          <a
-            href="/"
-            className="hover:text-neutral-700 dark:hover:text-neutral-300"
-          >
-            Home
-          </a>
-          <span className="mx-2">/</span>
-          <a
-            href={`/${breadcrumbCategory.toLowerCase().replace(/ /g, "-")}`}
-            className="hover:text-neutral-700 dark:hover:text-neutral-300"
-          >
-            {breadcrumbCategory}
-          </a>
-          <span className="mx-2">/</span>
-          <span className="text-neutral-700 dark:text-neutral-300">
-            {page.title}
-          </span>
-        </nav>
-      </div>
 
       {/* Hero Section */}
       <section className="max-w-6xl mx-auto px-6 pt-16 pb-20">
@@ -270,30 +248,35 @@ export function LandingPageTemplate({
       {page.testimonial && (
         <section id="testimonials" className="py-20">
           <div className="max-w-4xl mx-auto px-6">
-            <div className="relative p-8 md:p-12 rounded-2xl bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800">
-              <div className="flex gap-1 mb-6">
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <Star
-                    key={s}
-                    className="h-5 w-5 fill-amber-400 text-amber-400"
-                  />
-                ))}
+            <SpotlightCard
+              className="relative flex flex-col rounded-2xl bg-card text-card-foreground ring-1 ring-foreground/10 transition-all hover:shadow-lg hover:scale-[1.01]"
+              spotlightColor="rgba(139, 92, 246, 0.15)"
+            >
+              <div className="p-8 md:p-12">
+                <div className="flex gap-1 mb-6">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star
+                      key={s}
+                      className="h-5 w-5 fill-amber-400 text-amber-400"
+                    />
+                  ))}
+                </div>
+                <blockquote className="text-xl md:text-2xl text-card-foreground leading-relaxed mb-6 italic">
+                  &ldquo;{page.testimonial.quote}&rdquo;
+                </blockquote>
+                <div>
+                  <div className="font-semibold text-card-foreground">
+                    {page.testimonial.name}
+                  </div>
+                  <div className="text-muted-foreground text-sm">
+                    {page.testimonial.role}
+                  </div>
+                  <div className="text-muted-foreground text-sm">
+                    {page.testimonial.institution}
+                  </div>
+                </div>
               </div>
-              <blockquote className="text-xl md:text-2xl text-neutral-900 dark:text-neutral-100 leading-relaxed mb-6 italic">
-                &ldquo;{page.testimonial.quote}&rdquo;
-              </blockquote>
-              <div>
-                <div className="font-semibold text-neutral-900 dark:text-neutral-100">
-                  {page.testimonial.name}
-                </div>
-                <div className="text-neutral-600 dark:text-neutral-400 text-sm">
-                  {page.testimonial.role}
-                </div>
-                <div className="text-neutral-500 dark:text-neutral-500 text-sm">
-                  {page.testimonial.institution}
-                </div>
-              </div>
-            </div>
+            </SpotlightCard>
           </div>
         </section>
       )}
