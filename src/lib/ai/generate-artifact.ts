@@ -1,4 +1,4 @@
-import { generateText, Output } from "ai";
+import { generateObject } from "ai";
 import { loadSourceContent } from "@/lib/sources/load-sources";
 import { prompts } from "./prompts";
 import { openai } from "./provider";
@@ -43,75 +43,60 @@ export async function generateQuiz(
   input: ArtifactInput,
 ): Promise<QuizArtifactData> {
   const sourceContent = await resolveSourceContent(input);
-  const result = await generateText({
+  const { object } = await generateObject({
     model: openai("gpt-4o-mini"),
-    output: Output.object({ schema: QuizArtifactSchema }),
+    schema: QuizArtifactSchema,
     prompt: prompts.quizGeneration({ ...input, sourceContent }),
   });
-  if (!result.output) {
-    throw new Error("Failed to generate quiz");
-  }
-  return result.output;
+  return object;
 }
 
 export async function generateFlashcards(
   input: ArtifactInput,
 ): Promise<FlashcardArtifactData> {
   const sourceContent = await resolveSourceContent(input);
-  const result = await generateText({
+  const { object } = await generateObject({
     model: openai("gpt-4o-mini"),
-    output: Output.object({ schema: FlashcardArtifactSchema }),
+    schema: FlashcardArtifactSchema,
     prompt: prompts.flashcardGeneration({ ...input, sourceContent }),
   });
-  if (!result.output) {
-    throw new Error("Failed to generate flashcards");
-  }
-  return result.output;
+  return object;
 }
 
 export async function generateMindMap(
   input: ArtifactInput,
 ): Promise<MindMapArtifactData> {
   const sourceContent = await resolveSourceContent(input);
-  const result = await generateText({
+  const { object } = await generateObject({
     model: openai("gpt-4o-mini"),
-    output: Output.object({ schema: MindMapArtifactSchema }),
+    schema: MindMapArtifactSchema,
     prompt: prompts.mindmapGeneration({ ...input, sourceContent }),
   });
-  if (!result.output) {
-    throw new Error("Failed to generate mind map");
-  }
-  return result.output;
+  return object;
 }
 
 export async function generateSlides(
   input: ArtifactInput,
 ): Promise<SlideArtifactData> {
   const sourceContent = await resolveSourceContent(input);
-  const result = await generateText({
+  const { object } = await generateObject({
     model: openai("gpt-4o-mini"),
-    output: Output.object({ schema: SlideArtifactSchema }),
+    schema: SlideArtifactSchema,
     prompt: prompts.slideGeneration({ ...input, sourceContent }),
   });
-  if (!result.output) {
-    throw new Error("Failed to generate slides");
-  }
-  return result.output;
+  return object;
 }
 
 export async function generateSpatial(
   input: ArtifactInput,
 ): Promise<SpatialArtifactData> {
   const sourceContent = await resolveSourceContent(input);
-  const result = await generateText({
+  const { object } = await generateObject({
     model: openai("gpt-4o-mini"),
-    output: Output.object({ schema: SpatialArtifactSchema }),
+    schema: SpatialArtifactSchema,
     prompt: prompts.spatialGeneration({ ...input, sourceContent }),
   });
-  if (!result.output) {
-    throw new Error("Failed to generate spatial model");
-  }
-  return result.output;
+  return object;
 }
 
 export type { ArtifactInput };

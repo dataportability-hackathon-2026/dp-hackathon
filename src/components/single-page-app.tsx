@@ -432,16 +432,6 @@ export function SinglePageApp({
     setScrollToArtifactId(null);
   }, [setArtifactParam]);
 
-  const handleAgentToolResult = useCallback(
-    (toolName: string, result: Record<string, unknown>) => {
-      dispatchAgentResult(toolName, result, {
-        setActiveTab: (tab) => void setActiveTab(tab),
-        setArtifactParam: (artifact) => void setArtifactParam(artifact),
-      });
-    },
-    [setActiveTab, setArtifactParam],
-  );
-
   const selectedTopic = TOPICS.find((t) => t.id === selectedTopicId) ?? {
     id: selectedTopicId,
     name: "Topic",
@@ -468,6 +458,19 @@ export function SinglePageApp({
       daysPerWeek: 5,
       deadline: "",
     };
+
+  const currentTopicSlug = slugify(selectedTopic.name);
+
+  const handleAgentToolResult = useCallback(
+    (toolName: string, result: Record<string, unknown>) => {
+      dispatchAgentResult(toolName, result, {
+        setActiveTab: (tab) => void setActiveTab(tab),
+        setArtifactParam: (artifact) => void setArtifactParam(artifact),
+        topicSlug: currentTopicSlug,
+      });
+    },
+    [setActiveTab, setArtifactParam, currentTopicSlug],
+  );
 
   return (
     <TooltipProvider delay={400}>
@@ -795,7 +798,9 @@ export function SinglePageApp({
                   scrollToId={scrollToArtifactId}
                   topicSlug={slugify(selectedTopic.name)}
                   topicName={selectedTopic.name}
-                  topicConcepts={selectedTopic.masteryData.map((m) => m.concept)}
+                  topicConcepts={selectedTopic.masteryData.map(
+                    (m) => m.concept,
+                  )}
                   onClose={handleCloseCanvas}
                 />
               ) : (
