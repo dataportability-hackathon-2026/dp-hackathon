@@ -47,9 +47,7 @@ export function HelpButton() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Help</DialogTitle>
-            <DialogDescription>
-              Keyboard shortcuts, feedback, and support
-            </DialogDescription>
+            <DialogDescription className="sr-only">Help</DialogDescription>
           </DialogHeader>
 
           <Tabs defaultValue="shortcuts">

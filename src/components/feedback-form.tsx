@@ -206,8 +206,8 @@ export function FeedbackForm() {
             </div>
             <DialogHeader>
               <DialogTitle>Thanks for your feedback!</DialogTitle>
-              <DialogDescription>
-                We've received your message and will get back to you if needed.
+              <DialogDescription className="sr-only">
+                Feedback received
               </DialogDescription>
             </DialogHeader>
             <Button variant="outline" onClick={() => setOpen(false)}>
@@ -218,8 +218,8 @@ export function FeedbackForm() {
           <form onSubmit={handleSubmit}>
             <DialogHeader>
               <DialogTitle>Send Feedback</DialogTitle>
-              <DialogDescription>
-                Let us know how we can improve. We read every message.
+              <DialogDescription className="sr-only">
+                Send Feedback
               </DialogDescription>
             </DialogHeader>
 

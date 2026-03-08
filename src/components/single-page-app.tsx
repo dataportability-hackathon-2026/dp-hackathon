@@ -480,217 +480,112 @@ export function SinglePageApp({
           }}
           className="flex h-dvh flex-col gap-0 bg-background"
         >
-          <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-muted"
-            >
-              <Brain className="size-5 text-primary" />
-              <span className="text-sm font-semibold">{siteConfig.name}</span>
-              {isAdmin && (
-                <Badge
-                  variant="destructive"
-                  className="text-[10px] px-1.5 py-0"
-                >
-                  ADMIN
-                </Badge>
-              )}
-            </Link>
-
-            <Separator orientation="vertical" className="mx-1 h-5" />
-
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted"
-            >
-              <FolderOpen className="size-3.5" />
-              <span className="hidden sm:inline">{selectedTopic.name}</span>
-              <ChevronRight className="size-3.5" />
-              <span className="font-medium text-foreground">
-                {selectedProject.name}
-              </span>
-            </Link>
-
-            <div className="ml-auto flex items-center gap-2">
-              {/* Desktop: Nav + Connect + Audit + User */}
-              <div className="hidden items-center gap-2 lg:flex">
-                <TabsList className="mr-4 bg-muted/50">
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <TabsTrigger
-                          value="guide"
-                          className="gap-1.5 px-3 text-sm"
-                        />
-                      }
-                    >
-                      <Calendar className="size-3.5" />
-                      Guide
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Guide <ShortcutKbd shortcut="⌘1" />
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <TabsTrigger
-                          value="sources"
-                          className="gap-1.5 px-3 text-sm"
-                        />
-                      }
-                    >
-                      <FileText className="size-3.5" />
-                      Sources
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Sources <ShortcutKbd shortcut="⌘2" />
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <TabsTrigger
-                          value="progress"
-                          className="gap-1.5 px-3 text-sm"
-                        />
-                      }
-                    >
-                      <TrendingUp className="size-3.5" />
-                      Progress
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Progress <ShortcutKbd shortcut="⌘3" />
-                    </TooltipContent>
-                  </Tooltip>
-                </TabsList>
-                <ConnectDialog />
-                <CreditBadge />
-                <AuditDialog />
-                <Sheet
-                  open={profileSheetOpen}
-                  onOpenChange={handleSetProfileSheetOpen}
-                >
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <SheetTrigger
-                          render={
-                            <button
-                              type="button"
-                              className="flex items-center gap-2 rounded-full border border-transparent px-2 py-1.5 transition-colors hover:bg-muted"
-                            />
-                          }
-                        />
-                      }
-                    >
-                      <Avatar size="sm">
-                        <AvatarFallback>
-                          <User className="h-4 w-4" />
-                        </AvatarFallback>
-                      </Avatar>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Profile <ShortcutKbd shortcut="⌘U" />
-                    </TooltipContent>
-                  </Tooltip>
-                  <SheetContent side="right" className="w-full sm:max-w-lg">
-                    <ProfileSheetContent
-                      onRetakeAssessment={() => {
-                        handleSetAssessmentMode(true);
-                        handleSetProfileSheetOpen(false);
-                      }}
-                    />
-                  </SheetContent>
-                </Sheet>
-              </div>
-
-              {/* Mobile: Agent toggle */}
-              <Button
-                variant={agentOpen ? "default" : "ghost"}
-                size="icon-sm"
-                className="lg:hidden"
-                onClick={() => handleSetAgentOpen(!agentOpen)}
+          <header className="border-b">
+            <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-3 px-10">
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2.5 rounded-md transition-colors hover:bg-muted"
               >
-                <MessageSquare className="size-4" />
-              </Button>
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <Brain className="h-4 w-4" />
+                </div>
+                <span className="text-lg font-bold tracking-tight">
+                  {siteConfig.name}
+                </span>
+                {isAdmin && (
+                  <Badge
+                    variant="destructive"
+                    className="text-[10px] px-1.5 py-0"
+                  >
+                    ADMIN
+                  </Badge>
+                )}
+              </Link>
 
-              {/* Mobile: Hamburger menu */}
-              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <SheetTrigger
-                  render={
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="lg:hidden"
-                    />
-                  }
-                >
-                  <Menu className="size-4" />
-                </SheetTrigger>
-                <SheetContent side="right">
-                  <SheetHeader>
-                    <SheetTitle>Menu</SheetTitle>
-                  </SheetHeader>
-                  <div className="flex flex-col gap-4 p-4">
-                    {/* Mobile nav - uses regular buttons to avoid duplicate TabsList conflicts */}
-                    <div className="flex w-full rounded-4xl border bg-muted/50 p-0.5">
-                      {(
-                        [
-                          { value: "guide", label: "Guide", icon: Calendar },
-                          {
-                            value: "sources",
-                            label: "Sources",
-                            icon: FileText,
-                          },
-                          {
-                            value: "progress",
-                            label: "Progress",
-                            icon: TrendingUp,
-                          },
-                        ] as const
-                      ).map((tab) => {
-                        const Icon = tab.icon;
-                        return (
-                          <button
-                            key={tab.value}
-                            type="button"
-                            onClick={() => {
-                              void setActiveTab(tab.value);
-                              void setArtifactParam(null);
-                              setMobileMenuOpen(false);
-                            }}
-                            className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition-colors ${
-                              activeTab === tab.value
-                                ? "bg-background text-foreground shadow-sm"
-                                : "text-muted-foreground hover:text-foreground"
-                            }`}
-                          >
-                            <Icon className="size-3.5" />
-                            {tab.label}
-                          </button>
-                        );
-                      })}
-                    </div>
+              <Separator orientation="vertical" className="mx-1 h-5" />
 
-                    <Separator />
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm text-muted-foreground transition-colors hover:bg-muted"
+              >
+                <FolderOpen className="size-3.5" />
+                <span className="hidden sm:inline">{selectedTopic.name}</span>
+                <ChevronRight className="size-3.5" />
+                <span className="font-medium text-foreground">
+                  {selectedProject.name}
+                </span>
+              </Link>
 
-                    <div className="flex gap-2">
-                      <ConnectDialog />
-                      <AuditDialog />
-                    </div>
-
-                    <Separator />
-
-                    <Sheet
-                      open={profileSheetOpen}
-                      onOpenChange={handleSetProfileSheetOpen}
-                    >
-                      <SheetTrigger
+              <div className="ml-auto flex items-center gap-2">
+                {/* Desktop: Nav + Connect + Audit + User */}
+                <div className="hidden items-center gap-2 lg:flex">
+                  <TabsList className="mr-4 bg-muted/50">
+                    <Tooltip>
+                      <TooltipTrigger
                         render={
-                          <button
-                            type="button"
-                            className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted"
+                          <TabsTrigger
+                            value="guide"
+                            className="gap-1.5 px-3 text-sm"
+                          />
+                        }
+                      >
+                        <Calendar className="size-3.5" />
+                        Guide
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Guide <ShortcutKbd shortcut="⌘1" />
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <TabsTrigger
+                            value="sources"
+                            className="gap-1.5 px-3 text-sm"
+                          />
+                        }
+                      >
+                        <FileText className="size-3.5" />
+                        Sources
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Sources <ShortcutKbd shortcut="⌘2" />
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <TabsTrigger
+                            value="progress"
+                            className="gap-1.5 px-3 text-sm"
+                          />
+                        }
+                      >
+                        <TrendingUp className="size-3.5" />
+                        Progress
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Progress <ShortcutKbd shortcut="⌘3" />
+                      </TooltipContent>
+                    </Tooltip>
+                  </TabsList>
+                  <ConnectDialog />
+                  <CreditBadge />
+                  <AuditDialog />
+                  <Sheet
+                    open={profileSheetOpen}
+                    onOpenChange={handleSetProfileSheetOpen}
+                  >
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <SheetTrigger
+                            render={
+                              <button
+                                type="button"
+                                className="flex items-center gap-2 rounded-full border border-transparent px-2 py-1.5 transition-colors hover:bg-muted"
+                              />
+                            }
                           />
                         }
                       >
@@ -699,23 +594,137 @@ export function SinglePageApp({
                             <User className="h-4 w-4" />
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-sm font-medium">
-                          {session?.user?.name ?? "Account"}
-                        </span>
-                      </SheetTrigger>
-                      <SheetContent side="right" className="w-full sm:max-w-lg">
-                        <ProfileSheetContent
-                          onRetakeAssessment={() => {
-                            handleSetAssessmentMode(true);
-                            handleSetProfileSheetOpen(false);
-                            setMobileMenuOpen(false);
-                          }}
-                        />
-                      </SheetContent>
-                    </Sheet>
-                  </div>
-                </SheetContent>
-              </Sheet>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Profile <ShortcutKbd shortcut="⌘U" />
+                      </TooltipContent>
+                    </Tooltip>
+                    <SheetContent side="right" className="w-full sm:max-w-lg">
+                      <ProfileSheetContent
+                        onRetakeAssessment={() => {
+                          handleSetAssessmentMode(true);
+                          handleSetProfileSheetOpen(false);
+                        }}
+                      />
+                    </SheetContent>
+                  </Sheet>
+                </div>
+
+                {/* Mobile: Agent toggle */}
+                <Button
+                  variant={agentOpen ? "default" : "ghost"}
+                  size="icon-sm"
+                  className="lg:hidden"
+                  onClick={() => handleSetAgentOpen(!agentOpen)}
+                >
+                  <MessageSquare className="size-4" />
+                </Button>
+
+                {/* Mobile: Hamburger menu */}
+                <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                  <SheetTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="lg:hidden"
+                      />
+                    }
+                  >
+                    <Menu className="size-4" />
+                  </SheetTrigger>
+                  <SheetContent side="right">
+                    <SheetHeader>
+                      <SheetTitle>Menu</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex flex-col gap-4 p-4">
+                      {/* Mobile nav - uses regular buttons to avoid duplicate TabsList conflicts */}
+                      <div className="flex w-full rounded-4xl border bg-muted/50 p-0.5">
+                        {(
+                          [
+                            { value: "guide", label: "Guide", icon: Calendar },
+                            {
+                              value: "sources",
+                              label: "Sources",
+                              icon: FileText,
+                            },
+                            {
+                              value: "progress",
+                              label: "Progress",
+                              icon: TrendingUp,
+                            },
+                          ] as const
+                        ).map((tab) => {
+                          const Icon = tab.icon;
+                          return (
+                            <button
+                              key={tab.value}
+                              type="button"
+                              onClick={() => {
+                                void setActiveTab(tab.value);
+                                void setArtifactParam(null);
+                                setMobileMenuOpen(false);
+                              }}
+                              className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition-colors ${
+                                activeTab === tab.value
+                                  ? "bg-background text-foreground shadow-sm"
+                                  : "text-muted-foreground hover:text-foreground"
+                              }`}
+                            >
+                              <Icon className="size-3.5" />
+                              {tab.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <Separator />
+
+                      <div className="flex gap-2">
+                        <ConnectDialog />
+                        <AuditDialog />
+                      </div>
+
+                      <Separator />
+
+                      <Sheet
+                        open={profileSheetOpen}
+                        onOpenChange={handleSetProfileSheetOpen}
+                      >
+                        <SheetTrigger
+                          render={
+                            <button
+                              type="button"
+                              className="flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-muted"
+                            />
+                          }
+                        >
+                          <Avatar size="sm">
+                            <AvatarFallback>
+                              <User className="h-4 w-4" />
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-medium">
+                            {session?.user?.name ?? "Account"}
+                          </span>
+                        </SheetTrigger>
+                        <SheetContent
+                          side="right"
+                          className="w-full sm:max-w-lg"
+                        >
+                          <ProfileSheetContent
+                            onRetakeAssessment={() => {
+                              handleSetAssessmentMode(true);
+                              handleSetProfileSheetOpen(false);
+                              setMobileMenuOpen(false);
+                            }}
+                          />
+                        </SheetContent>
+                      </Sheet>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
             </div>
           </header>
 
@@ -880,9 +889,7 @@ function AuditDialog() {
       <DialogContent className="flex max-h-[90dvh] flex-col sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Audit Trail</DialogTitle>
-          <DialogDescription>
-            Observe &rarr; Analyze &rarr; Act chain for every adaptation
-          </DialogDescription>
+          <DialogDescription className="sr-only">Audit Trail</DialogDescription>
         </DialogHeader>
         <div className="flex items-center gap-1 border-b pb-2 -mx-6 px-6">
           <button
@@ -1854,14 +1861,14 @@ export function ConnectDialog() {
                   Connect {selectedInfo.label}
                 </DialogTitle>
               </div>
-              <DialogDescription>{selectedInfo.description}</DialogDescription>
+              <DialogDescription className="sr-only">
+                Connect {selectedInfo.label}
+              </DialogDescription>
             </>
           ) : (
             <>
               <DialogTitle>Connect</DialogTitle>
-              <DialogDescription>
-                Link external services and export your data
-              </DialogDescription>
+              <DialogDescription className="sr-only">Connect</DialogDescription>
             </>
           )}
         </DialogHeader>
@@ -3238,13 +3245,13 @@ function SourcesTab({
       </div>
 
       {/* Academic Resources */}
-      <AcademicResourcesList />
+      <AcademicResourcesList sourceCount={sources.length} />
     </div>
   );
 }
 
-function AcademicResourcesList() {
-  const [open, setOpen] = useState(false);
+function AcademicResourcesList({ sourceCount }: { sourceCount: number }) {
+  const [open, setOpen] = useState(sourceCount < 2);
   const resourceId = useId();
 
   return (
@@ -3254,7 +3261,7 @@ function AcademicResourcesList() {
         onClick={() => setOpen((v) => !v)}
         className="text-xs font-medium text-muted-foreground uppercase cursor-pointer hover:text-foreground transition-colors"
       >
-        Academic Resources ({ACADEMIC_RESOURCES.length})
+        Academic Resources
       </button>
       {open &&
         ACADEMIC_RESOURCES.map((resource) => (

@@ -404,8 +404,8 @@ function NotificationsDialog() {
       <DialogContent className="flex max-h-[80dvh] flex-col sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Notifications</DialogTitle>
-          <DialogDescription>
-            Choose which notifications you receive
+          <DialogDescription className="sr-only">
+            Notifications
           </DialogDescription>
         </DialogHeader>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto -mx-6 px-6 py-1">
@@ -481,7 +481,7 @@ function SettingsDialog() {
       <DialogContent className="flex max-h-[80dvh] flex-col sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
-          <DialogDescription>Manage your account settings</DialogDescription>
+          <DialogDescription className="sr-only">Settings</DialogDescription>
         </DialogHeader>
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto -mx-6 px-6">
           <div className="space-y-3">
@@ -606,9 +606,7 @@ function PreferencesDialog() {
       <DialogContent className="flex max-h-[80dvh] flex-col sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Preferences</DialogTitle>
-          <DialogDescription>
-            Adjust your learning and display settings
-          </DialogDescription>
+          <DialogDescription className="sr-only">Preferences</DialogDescription>
         </DialogHeader>
         <div className="min-h-0 flex-1 space-y-6 overflow-y-auto -mx-6 px-6 py-1">
           {/* Visualization type */}
