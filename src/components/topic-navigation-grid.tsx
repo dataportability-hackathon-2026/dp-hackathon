@@ -129,34 +129,40 @@ export function TopicNavigationGrid() {
 
   return (
     <div className="min-h-dvh bg-background">
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
-        <Link href="/dashboard" className="flex items-center gap-2 px-1 py-1">
-          <Brain className="size-5 text-primary" />
-          <span className="text-sm font-semibold">{siteConfig.name}</span>
-        </Link>
-        <span className="text-sm text-muted-foreground">Topics</span>
-        <div className="ml-auto flex items-center gap-2">
-          <ConnectDialog />
-          <CreditBadge />
-          <Sheet>
-            <SheetTrigger
-              render={
-                <button
-                  type="button"
-                  className="flex items-center gap-2 rounded-full border border-transparent px-2 py-1.5 transition-colors hover:bg-muted"
-                />
-              }
-            >
-              <Avatar size="sm">
-                <AvatarFallback>
-                  <User className="size-4" />
-                </AvatarFallback>
-              </Avatar>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-full sm:max-w-lg">
-              <ProfileSheetContent />
-            </SheetContent>
-          </Sheet>
+      <header className="border-b">
+        <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-3 px-10">
+          <Link href="/dashboard" className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Brain className="h-4 w-4" />
+            </div>
+            <span className="text-lg font-bold tracking-tight">
+              {siteConfig.name}
+            </span>
+          </Link>
+          <span className="text-sm text-muted-foreground">Topics</span>
+          <div className="ml-auto flex items-center gap-2">
+            <ConnectDialog />
+            <CreditBadge />
+            <Sheet>
+              <SheetTrigger
+                render={
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 rounded-full border border-transparent px-2 py-1.5 transition-colors hover:bg-muted"
+                  />
+                }
+              >
+                <Avatar size="sm">
+                  <AvatarFallback>
+                    <User className="size-4" />
+                  </AvatarFallback>
+                </Avatar>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full sm:max-w-lg">
+                <ProfileSheetContent />
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </header>
 

@@ -41,6 +41,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+import { authClient } from "@/lib/auth-client";
 import {
   blogPosts,
   industryPages,
@@ -318,7 +319,8 @@ type MobileSection = "solutions" | "personas" | "learn" | null;
 function MobileNav({
   landingAnchors,
   onClose,
-}: MegaMenuProps & { onClose: () => void }) {
+  isSignedIn,
+}: MegaMenuProps & { onClose: () => void; isSignedIn: boolean }) {
   const [openSection, setOpenSection] = useState<MobileSection>(null);
   const sectionId = useId();
 
@@ -462,13 +464,17 @@ function MobileNav({
       )}
 
       <div className="space-y-2 pt-3">
+        {!isSignedIn && (
+          <Link href="/dashboard" className="block" onClick={onClose}>
+            <Button variant="outline" className="w-full">
+              Sign In
+            </Button>
+          </Link>
+        )}
         <Link href="/dashboard" className="block" onClick={onClose}>
-          <Button variant="outline" className="w-full">
-            Sign In
+          <Button className="w-full">
+            {isSignedIn ? "Dashboard" : "Get Started"}
           </Button>
-        </Link>
-        <Link href="/dashboard" className="block" onClick={onClose}>
-          <Button className="w-full">Get Started</Button>
         </Link>
       </div>
     </div>
@@ -477,10 +483,12 @@ function MobileNav({
 
 export function MegaMenu({ landingAnchors = false }: MegaMenuProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: session } = authClient.useSession();
+  const isSignedIn = !!session?.user;
 
   return (
     <header className="sticky top-0 z-[100] border-b border-border/50 bg-background/80 backdrop-blur-2xl supports-[backdrop-filter]:bg-background/60">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-10">
         <Link href="/" className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Brain className="h-4 w-4" />
@@ -493,15 +501,17 @@ export function MegaMenu({ landingAnchors = false }: MegaMenuProps) {
         <DesktopNav landingAnchors={landingAnchors} />
 
         <div className="hidden items-center gap-3 md:flex">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="sm">
-              Sign In
-            </Button>
-          </Link>
+          {!isSignedIn && (
+            <Link href="/dashboard">
+              <Button variant="ghost" size="sm">
+                Sign In
+              </Button>
+            </Link>
+          )}
           <Link href="/dashboard">
             <Button size="sm">
-              Get Started
-              <ArrowRight className="ml-1 h-3.5 w-3.5" />
+              {isSignedIn ? "Dashboard" : "Get Started"}
+              {!isSignedIn && <ArrowRight className="ml-1 h-3.5 w-3.5" />}
             </Button>
           </Link>
         </div>
@@ -525,6 +535,7 @@ export function MegaMenu({ landingAnchors = false }: MegaMenuProps) {
           <MobileNav
             landingAnchors={landingAnchors}
             onClose={() => setMobileOpen(false)}
+            isSignedIn={isSignedIn}
           />
         </div>
       )}

@@ -4,7 +4,6 @@ import {
   ArrowRight,
   Braces,
   Brain,
-  Building2,
   CheckCircle2,
   ChevronDown,
   Clock,
@@ -14,7 +13,6 @@ import {
   Map,
   Microscope,
   Palette,
-  Phone,
   Play,
   Presentation,
   Quote,
@@ -50,7 +48,7 @@ import { MegaMenu } from "@/components/marketing/mega-menu";
 import { BlurText } from "@/components/reactbits/blur-text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { authClient } from "@/lib/auth-client";
 import { siteConfig } from "@/lib/white-label";
 
 // ── Animation Helpers ──
@@ -190,7 +188,7 @@ const personas = [
       "Transitioning from wet lab research to computational biology while maintaining clinical workload.",
     quote:
       "Core Model showed me I was overconfident in my stats knowledge but underestimating my programming ability.",
-    metric: "42% → 81%",
+    metric: "42% \u2192 81%",
     metricLabel: "Calibration accuracy",
     weeks: 14,
   },
@@ -224,7 +222,7 @@ const personas = [
       "Preparing for qualifying exams covering ML theory, causal inference, and Bayesian statistics.",
     quote:
       "Core Model's uncertainty tracking showed me exactly where my knowledge had gaps I didn't even know existed.",
-    metric: "61% → 97%",
+    metric: "61% \u2192 97%",
     metricLabel: "Knowledge coverage",
     weeks: 12,
   },
@@ -320,7 +318,7 @@ const faqs = [
   },
   {
     q: "Is my data private?",
-    a: "Absolutely. Your learner profile is never sold or shared. You own your data completely — exportable and deletable at any time. Encryption at rest and in transit.",
+    a: "Absolutely. Your learner profile is never sold or shared. You own your data completely \u2014 exportable and deletable at any time. Encryption at rest and in transit.",
   },
   {
     q: "What if I disagree with a recommendation?",
@@ -330,10 +328,10 @@ const faqs = [
 
 const pricingPlans = [
   {
-    name: "Starter",
+    name: "Free",
     price: "$0",
     period: "forever",
-    description: "For anyone trying it out on their own",
+    description: "Get started with the essentials",
     features: [
       "Up to 3 projects",
       "50 MB storage",
@@ -345,10 +343,10 @@ const pricingPlans = [
     highlighted: false,
   },
   {
-    name: "Scholar",
-    price: "$29",
+    name: "Pro",
+    price: "$5",
     period: "/month",
-    description: "For students and professionals who want the full picture",
+    description: "Unlock everything \u2014 no limits",
     features: [
       "Unlimited projects",
       "5 GB storage",
@@ -356,28 +354,10 @@ const pricingPlans = [
       "Knowledge map & gaps",
       "Faster AI responses",
       "Full history & export",
-      "Email support",
+      "Priority support",
     ],
-    cta: "Start 14-Day Trial",
+    cta: "Upgrade to Pro",
     highlighted: true,
-  },
-  {
-    name: "Teams",
-    price: "$79",
-    period: "/seat/month",
-    description: "For groups and departments working together",
-    features: [
-      "Everything in Scholar",
-      "Shared workspace",
-      "Admin dashboard & roles",
-      "One bill for the team",
-      "Team analytics",
-      "Single sign-on (SSO)",
-      "Onboarding help",
-      "Priority email & chat",
-    ],
-    cta: "Start Team Trial",
-    highlighted: false,
   },
 ];
 
@@ -407,16 +387,11 @@ const layers = [
 
 // ── Component ──
 
-type ContentModal =
-  | { type: "feature"; index: number }
-  | { type: "layer"; index: number }
-  | { type: "persona"; index: number }
-  | null;
-
 export function LandingPage() {
   const listId = useId();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [contentModal, setContentModal] = useState<ContentModal>(null);
+  const { data: session } = authClient.useSession();
+  const isSignedIn = !!session?.user;
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -485,7 +460,7 @@ export function LandingPage() {
                       size="lg"
                       className="text-base px-8 py-6 rounded-xl shadow-lg shadow-primary/20 group"
                     >
-                      Get Started Free
+                      {isSignedIn ? "Dashboard" : "Get Started Free"}
                       <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </a>
@@ -539,6 +514,9 @@ export function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <FadeInOnScroll>
             <div className="flex flex-col items-center justify-center gap-2">
+              <div className="grayscale">
+                <p className="text-sm text-gray-500">Trusted Partner</p>
+              </div>
               <Image
                 src="/logos/texas-longhorns.svg"
                 alt="UT Austin"
@@ -546,9 +524,6 @@ export function LandingPage() {
                 height={144}
                 className="h-36 w-36 object-contain"
               />
-              <div className="grayscale">
-                <p className="text-sm text-gray-500">Trusted Partner</p>
-              </div>
             </div>
           </FadeInOnScroll>
         </div>
@@ -571,21 +546,31 @@ export function LandingPage() {
             </FadeInOnScroll>
 
             <StaggerChildren className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {features.map((feature, i) => (
+              {features.map((feature) => (
                 <StaggerItem key={`${listId}-feat-${feature.title}`}>
-                  <motion.button
-                    type="button"
-                    className="w-full text-left rounded-2xl overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  <motion.div
+                    className="rounded-2xl overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-white/5 p-6"
                     whileHover={{ y: -6, scale: 1.02 }}
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                    onClick={() =>
-                      setContentModal({ type: "feature", index: i })
-                    }
                   >
-                    <div className="aspect-[4/3] relative flex items-center justify-center">
-                      <feature.icon className="h-16 w-16 text-primary" />
-                    </div>
-                  </motion.button>
+                    <feature.icon className="h-10 w-10 text-primary mb-4" />
+                    <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {feature.description}
+                    </p>
+                    {feature.formats && (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {feature.formats.map((fmt) => (
+                          <span
+                            key={fmt.label}
+                            className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground"
+                          >
+                            <fmt.icon className="h-3 w-3" /> {fmt.label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
                 </StaggerItem>
               ))}
             </StaggerChildren>
@@ -617,17 +602,24 @@ export function LandingPage() {
                   key={`${listId}-layer-${layer.title}`}
                   delay={i * 0.15}
                 >
-                  <motion.button
-                    type="button"
-                    className="w-full text-left rounded-2xl overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  <motion.div
+                    className="rounded-2xl overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-white/5 p-6"
                     whileHover={{ y: -8 }}
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                    onClick={() => setContentModal({ type: "layer", index: i })}
                   >
-                    <div className="aspect-[4/3] relative flex items-center justify-center">
-                      <layer.icon className="h-16 w-16 text-white" />
+                    <div
+                      className={`inline-flex items-center justify-center h-12 w-12 rounded-xl bg-gradient-to-br ${layer.color} mb-4`}
+                    >
+                      <layer.icon className="h-6 w-6 text-white" />
                     </div>
-                  </motion.button>
+                    <p className="text-xs font-mono text-muted-foreground mb-1">
+                      Step {layer.step}
+                    </p>
+                    <h3 className="text-lg font-bold mb-2">{layer.title}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {layer.subtitle}
+                    </p>
+                  </motion.div>
                 </FadeInOnScroll>
               ))}
             </div>
@@ -686,19 +678,52 @@ export function LandingPage() {
                   delay={i * 0.1}
                   direction={i % 2 === 0 ? "left" : "right"}
                 >
-                  <motion.button
-                    type="button"
-                    className="w-full text-left rounded-2xl overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-white/5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  <motion.div
+                    className="rounded-2xl overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-white/5 p-6"
                     whileHover={{ y: -4 }}
                     transition={{ type: "spring", stiffness: 200, damping: 20 }}
-                    onClick={() =>
-                      setContentModal({ type: "persona", index: i })
-                    }
                   >
-                    <div className="aspect-[4/3] relative flex items-center justify-center">
-                      <persona.icon className="h-16 w-16 text-white" />
+                    <persona.icon className="h-10 w-10 text-primary mb-4" />
+                    <h3 className="text-lg font-bold mb-1">{persona.name}</h3>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      {persona.role}
+                    </p>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {persona.institution}
+                    </p>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                      <Clock className="h-4 w-4 shrink-0" />
+                      <span>{persona.weeks}-week journey</span>
                     </div>
-                  </motion.button>
+                    <div className="rounded-lg bg-muted/30 px-3 py-2 inline-block mb-4">
+                      <span className="text-lg font-black font-heading">
+                        {persona.metric}
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-2">
+                        {persona.metricLabel}
+                      </span>
+                    </div>
+                    <h4 className="font-semibold text-sm mb-1">
+                      The Challenge
+                    </h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                      {persona.challenge}
+                    </p>
+                    <div className="relative rounded-xl backdrop-blur-xl bg-white/10 dark:bg-white/5 p-4 mb-4">
+                      <Quote className="absolute top-2 left-2 h-4 w-4 text-primary/20" />
+                      <p className="text-sm italic leading-relaxed pl-5">
+                        &ldquo;{persona.quote}&rdquo;
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {[...Array(5)].map((_, j) => (
+                        <Star
+                          key={`${persona.id}-star-${j}`}
+                          className="h-4 w-4 fill-amber-400 text-amber-400"
+                        />
+                      ))}
+                    </div>
+                  </motion.div>
                 </FadeInOnScroll>
               ))}
             </div>
@@ -718,12 +743,12 @@ export function LandingPage() {
                 Start free, upgrade anytime.
               </h2>
               <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-                No credit card required. Choose the plan that fits — pay only
-                when you need more.
+                No credit card required. Choose the plan that fits &mdash; pay
+                only when you need more.
               </p>
             </FadeInOnScroll>
 
-            <StaggerChildren className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">
+            <StaggerChildren className="grid gap-6 md:grid-cols-2 max-w-3xl mx-auto">
               {pricingPlans.map((plan) => (
                 <StaggerItem key={plan.name}>
                   <motion.div
@@ -774,58 +799,6 @@ export function LandingPage() {
                   </motion.div>
                 </StaggerItem>
               ))}
-
-              {/* Enterprise / Call Us */}
-              <StaggerItem key="enterprise">
-                <motion.div
-                  className="rounded-2xl backdrop-blur-xl bg-white/10 dark:bg-white/5 p-6 sm:p-8 h-full flex flex-col"
-                  whileHover={{ y: -8, scale: 1.02 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                >
-                  <div className="mb-4 flex items-center gap-2">
-                    <Building2 className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-bold">Enterprise</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    For large organizations. Custom pricing and dedicated
-                    support.
-                  </p>
-                  <div className="flex items-baseline gap-1 mb-6">
-                    <span className="text-4xl font-black font-heading">
-                      Custom
-                    </span>
-                  </div>
-                  <a href="tel:+18005551234">
-                    <Button
-                      className="w-full mb-6 gap-2 backdrop-blur-xl bg-white/10 dark:bg-white/5 hover:bg-white/20 dark:hover:bg-white/10 border-0"
-                      variant="ghost"
-                    >
-                      <Phone className="h-4 w-4" />
-                      Call Us
-                    </Button>
-                  </a>
-                  <div className="space-y-3">
-                    {[
-                      "Everything in Teams",
-                      "Unlimited seats",
-                      "Custom integrations",
-                      "Uptime guarantee",
-                      "Your own servers (optional)",
-                      "Dedicated success manager",
-                      "Custom AI setup",
-                      "24/7 phone & email support",
-                    ].map((feature) => (
-                      <div
-                        key={feature}
-                        className="flex items-start gap-2 text-sm"
-                      >
-                        <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                        <span>{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              </StaggerItem>
             </StaggerChildren>
           </div>
         </section>
@@ -907,7 +880,7 @@ export function LandingPage() {
                         variant="ghost"
                         className="text-base px-8 py-6 rounded-xl backdrop-blur-xl bg-white/10 dark:bg-white/5 hover:bg-white/20 dark:hover:bg-white/10 group"
                       >
-                        Sign Up Now
+                        {isSignedIn ? "Dashboard" : "Sign Up Now"}
                         <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                       </Button>
                     </a>
@@ -926,138 +899,6 @@ export function LandingPage() {
             </FadeInOnScroll>
           </div>
         </section>
-
-        {/* ── Content modals (half image, half text) ── */}
-        <Dialog
-          open={contentModal !== null}
-          onOpenChange={(open) => !open && setContentModal(null)}
-        >
-          <DialogContent className="max-w-4xl p-0 gap-0 overflow-hidden">
-            <div className="grid md:grid-cols-2 min-h-[320px]">
-              {/* Half: image */}
-              <div className="relative aspect-[4/3] md:aspect-auto min-h-[200px] md:min-h-0 flex items-center justify-center">
-                {contentModal?.type === "feature" &&
-                  features[contentModal.index] && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-                      {(() => {
-                        const F = features[contentModal.index].icon;
-                        return <F className="h-20 w-20 text-primary" />;
-                      })()}
-                    </div>
-                  )}
-                {contentModal?.type === "layer" &&
-                  layers[contentModal.index] && (
-                    <div
-                      className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br ${layers[contentModal.index].color}`}
-                    >
-                      {(() => {
-                        const L = layers[contentModal.index].icon;
-                        return <L className="h-20 w-20 text-white" />;
-                      })()}
-                    </div>
-                  )}
-                {contentModal?.type === "persona" &&
-                  personas[contentModal.index] && (
-                    <div
-                      className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br ${personas[contentModal.index].color}`}
-                    >
-                      {(() => {
-                        const P = personas[contentModal.index].icon;
-                        return <P className="h-20 w-20 text-white" />;
-                      })()}
-                    </div>
-                  )}
-              </div>
-              {/* Half: content text */}
-              <div className="flex flex-col justify-center p-6 sm:p-8 overflow-y-auto">
-                {contentModal?.type === "feature" &&
-                  features[contentModal.index] && (
-                    <>
-                      <DialogTitle className="text-xl mb-2">
-                        {features[contentModal.index].title}
-                      </DialogTitle>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {features[contentModal.index].description}
-                      </p>
-                      {features[contentModal.index].formats && (
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {features[contentModal.index].formats?.map(
-                            (fmt, j) => (
-                              <span
-                                key={j}
-                                className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground"
-                              >
-                                <fmt.icon className="h-3 w-3" /> {fmt.label}
-                              </span>
-                            ),
-                          )}
-                        </div>
-                      )}
-                    </>
-                  )}
-                {contentModal?.type === "layer" &&
-                  layers[contentModal.index] && (
-                    <>
-                      <DialogTitle className="text-xl mb-2">
-                        {layers[contentModal.index].title}
-                      </DialogTitle>
-                      <p className="text-sm text-muted-foreground">
-                        {layers[contentModal.index].subtitle}
-                      </p>
-                    </>
-                  )}
-                {contentModal?.type === "persona" &&
-                  personas[contentModal.index] && (
-                    <>
-                      <DialogTitle className="text-lg mb-1">
-                        {personas[contentModal.index].name}
-                      </DialogTitle>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {personas[contentModal.index].role}
-                      </p>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {personas[contentModal.index].institution}
-                      </p>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                        <Clock className="h-4 w-4 shrink-0" />
-                        <span>
-                          {personas[contentModal.index].weeks}-week journey
-                        </span>
-                      </div>
-                      <div className="rounded-lg bg-muted/30 px-3 py-2 inline-block mb-4">
-                        <span className="text-lg font-black font-heading">
-                          {personas[contentModal.index].metric}
-                        </span>
-                        <span className="text-xs text-muted-foreground ml-2">
-                          {personas[contentModal.index].metricLabel}
-                        </span>
-                      </div>
-                      <h4 className="font-semibold text-sm mb-1">
-                        The Challenge
-                      </h4>
-                      <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                        {personas[contentModal.index].challenge}
-                      </p>
-                      <div className="relative rounded-xl backdrop-blur-xl bg-white/10 dark:bg-white/5 p-4 mb-4">
-                        <Quote className="absolute top-2 left-2 h-4 w-4 text-primary/20" />
-                        <p className="text-sm italic leading-relaxed pl-5">
-                          &ldquo;{personas[contentModal.index].quote}&rdquo;
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {[...Array(5)].map((_, j) => (
-                          <Star
-                            key={j}
-                            className="h-4 w-4 fill-amber-400 text-amber-400"
-                          />
-                        ))}
-                      </div>
-                    </>
-                  )}
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
 
         {/* ── Footer ── */}
         <footer className="py-12">

@@ -102,9 +102,7 @@ export function UsageDialog() {
       <DialogContent className="flex max-h-[80dvh] flex-col sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Usage</DialogTitle>
-          <DialogDescription>
-            Generation and token usage for this billing period
-          </DialogDescription>
+          <DialogDescription className="sr-only">Usage</DialogDescription>
         </DialogHeader>
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto -mx-6 px-6">
           {loading ? (
