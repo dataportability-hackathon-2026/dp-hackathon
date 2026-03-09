@@ -12,6 +12,7 @@ import {
 type CreditContextValue = {
   balance: number;
   displayCredits: number;
+  unlimited: boolean;
   loading: boolean;
   refresh: () => void;
 };
@@ -21,11 +22,13 @@ const CreditContext = createContext<CreditContextValue | null>(null);
 type BalanceResponse = {
   balance: number;
   displayCredits: number;
+  unlimited?: boolean;
 };
 
 export function CreditProvider({ children }: { children: ReactNode }) {
   const [balance, setBalance] = useState(0);
   const [displayCredits, setDisplayCredits] = useState(0);
+  const [unlimited, setUnlimited] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(() => {
@@ -38,6 +41,7 @@ export function CreditProvider({ children }: { children: ReactNode }) {
       .then((data) => {
         setBalance(data.balance);
         setDisplayCredits(data.displayCredits);
+        setUnlimited(data.unlimited ?? false);
       })
       .catch(() => {
         // Silently handle errors, keep previous values
@@ -54,7 +58,9 @@ export function CreditProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   return (
-    <CreditContext value={{ balance, displayCredits, loading, refresh }}>
+    <CreditContext
+      value={{ balance, displayCredits, unlimited, loading, refresh }}
+    >
       {children}
     </CreditContext>
   );

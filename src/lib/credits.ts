@@ -12,12 +12,27 @@ export async function getBalance(userId: string): Promise<number> {
   return result[0]?.creditBalance ?? 0;
 }
 
+async function isAdmin(userId: string): Promise<boolean> {
+  const rows = await db
+    .select({ role: user.role })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+  return rows[0]?.role === "admin";
+}
+
 export async function deductCredits(
   userId: string,
   amount: number,
   description: string,
   referenceId?: string,
 ): Promise<{ success: true; newBalance: number } | { success: false }> {
+  // Admins have unlimited credits — skip deduction
+  if (await isAdmin(userId)) {
+    const currentBalance = await getBalance(userId);
+    return { success: true as const, newBalance: currentBalance };
+  }
+
   return db.transaction(async (tx) => {
     const updated = await tx
       .update(user)

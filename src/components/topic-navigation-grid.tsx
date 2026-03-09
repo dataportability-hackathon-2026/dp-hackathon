@@ -15,14 +15,17 @@ import {
   Star,
   Trash2,
   User,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useId, useMemo, useRef, useState } from "react";
 import { CreditBadge } from "@/components/billing/credit-badge";
+import { LearningProfileForm } from "@/components/learning-profile-form";
 import { ProfileSheetContent } from "@/components/profile-sheet-content";
 import { SpotlightCard } from "@/components/reactbits/spotlight-card";
 import { ConnectDialog } from "@/components/single-page-app";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +55,7 @@ import {
 } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
+import { useLatestAssessment } from "@/lib/assessments/use-latest-assessment";
 import { usePreference } from "@/lib/hooks/use-preferences";
 import { useCreateTopic, useTopics } from "@/lib/hooks/use-topics";
 import { FadeIn, StaggerItem, StaggerList } from "@/lib/motion";
@@ -107,6 +111,25 @@ export function TopicNavigationGrid() {
   const [showCommunity, setShowCommunity] = usePreference("showCommunity");
   const searchId = useId();
   const switchId = useId();
+  const {
+    loading: assessmentLoading,
+    assessment: latestAssessment,
+    refetch: refetchAssessment,
+  } = useLatestAssessment();
+  const [assessmentMode, setAssessmentMode] = useState(false);
+  const [assessmentBannerDismissed, setAssessmentBannerDismissed] = useState(
+    () => {
+      if (typeof window === "undefined") return false;
+      return (
+        localStorage.getItem("dashboard-assessment-banner-dismissed") === "true"
+      );
+    },
+  );
+
+  const dismissAssessmentBanner = useCallback(() => {
+    setAssessmentBannerDismissed(true);
+    localStorage.setItem("dashboard-assessment-banner-dismissed", "true");
+  }, []);
 
   const filteredUserTopics = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -183,6 +206,47 @@ export function TopicNavigationGrid() {
           </div>
         ) : (
           <>
+            {/* Assessment banner */}
+            {!assessmentLoading &&
+              !latestAssessment &&
+              !assessmentBannerDismissed && (
+                <FadeIn className="mb-6">
+                  <Alert className="relative bg-muted/50 border-primary/20">
+                    <Sparkles className="size-4 text-primary" />
+                    <AlertDescription className="flex items-center gap-4">
+                      <span className="text-sm max-w-[64ch]">
+                        Want a more personalized experience? Take a quick
+                        learning assessment so we can tailor content to the way
+                        you learn best. Totally optional — no pressure!
+                      </span>
+                      <Button size="sm" onClick={() => setAssessmentMode(true)}>
+                        Take Assessment
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="ml-auto shrink-0"
+                        onClick={dismissAssessmentBanner}
+                      >
+                        <X className="size-4" />
+                        <span className="sr-only">Dismiss</span>
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                </FadeIn>
+              )}
+
+            {assessmentMode && (
+              <LearningProfileForm
+                onSave={() => {
+                  setAssessmentMode(false);
+                  refetchAssessment();
+                  dismissAssessmentBanner();
+                }}
+                onCancel={() => setAssessmentMode(false)}
+              />
+            )}
+
             {/* Filter row */}
             <FadeIn className="mb-8">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

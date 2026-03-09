@@ -134,6 +134,9 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ email: persona.email }),
       });
       router.push("/admin");
+    } else {
+      // Top up demo personas to 30 credits
+      await fetch("/api/billing/ensure-demo-credits", { method: "POST" });
     }
   }
 

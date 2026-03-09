@@ -8,9 +8,9 @@ import { DialogTrigger } from "@/components/ui/dialog";
 import { useCredits } from "@/hooks/use-credits";
 
 export function CreditBadge() {
-  const { displayCredits, loading } = useCredits();
+  const { displayCredits, unlimited, loading } = useCredits();
   const [open, setOpen] = useState(false);
-  const hasCredits = !loading && Math.round(displayCredits) > 0;
+  const hasCredits = !loading && (unlimited || Math.round(displayCredits) > 0);
 
   return (
     <BillingDialog
@@ -28,6 +28,8 @@ export function CreditBadge() {
           )}
           {loading ? (
             <Loader2 className="size-4 animate-spin" />
+          ) : unlimited ? (
+            <span className="tabular-nums">&infin;</span>
           ) : (
             <span className="tabular-nums">{Math.round(displayCredits)}</span>
           )}

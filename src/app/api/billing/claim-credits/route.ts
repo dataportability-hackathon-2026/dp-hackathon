@@ -5,7 +5,7 @@ import { creditLedger } from "@/db/schema";
 import { addCredits } from "@/lib/credits";
 import { getEffectiveUserId } from "@/lib/impersonate";
 
-const FREE_CREDIT_AMOUNT = 5_000; // 5 display credits (stored as 1000x)
+const FREE_CREDIT_AMOUNT = 10_000; // 10 display credits (stored as 1000x)
 
 export async function POST() {
   const userId = await getEffectiveUserId();
@@ -32,7 +32,7 @@ export async function POST() {
     userId,
     FREE_CREDIT_AMOUNT,
     "adjustment",
-    "Free 5 credits claim",
+    "Free 10 credits claim",
   );
 
   // Mark as claimed by inserting a separate ledger entry with type "free_claim"
