@@ -157,6 +157,7 @@ async function generateNarration(
   sceneIndex: number,
   narration: string,
   voice: string,
+  voiceInstructions?: string,
 ): Promise<string> {
   const outDir = join(TMP_DIR, scriptId);
   mkdirSync(outDir, { recursive: true });
@@ -167,9 +168,20 @@ async function generateNarration(
     return outPath;
   }
 
+  const model = voiceInstructions ? "gpt-4o-mini-tts" : "tts-1-hd";
   log(
-    `  [${scriptId}] Generating narration-${sceneIndex} (voice: ${voice})...`,
+    `  [${scriptId}] Generating narration-${sceneIndex} (model: ${model}, voice: ${voice})...`,
   );
+
+  const body: Record<string, unknown> = {
+    model,
+    input: narration,
+    voice,
+    response_format: "mp3",
+  };
+  if (voiceInstructions) {
+    body.instructions = voiceInstructions;
+  }
 
   const response = await fetch("https://api.openai.com/v1/audio/speech", {
     method: "POST",
@@ -177,12 +189,7 @@ async function generateNarration(
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model: "tts-1-hd",
-      input: narration,
-      voice,
-      response_format: "mp3",
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -407,6 +414,7 @@ async function main() {
           i,
           scene.narration,
           script.voice,
+          script.voiceInstructions,
         );
         narrationPaths.push(narrationPath);
       }

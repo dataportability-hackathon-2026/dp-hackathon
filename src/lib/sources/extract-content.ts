@@ -43,7 +43,10 @@ export async function extractSourceContent(
 ): Promise<string> {
   let text: string;
 
-  if (mimeType === "application/pdf" || filename.toLowerCase().endsWith(".pdf")) {
+  if (
+    mimeType === "application/pdf" ||
+    filename.toLowerCase().endsWith(".pdf")
+  ) {
     try {
       text = await extractPdfText(blobUrl);
     } catch (err) {

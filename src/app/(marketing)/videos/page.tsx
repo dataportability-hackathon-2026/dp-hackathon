@@ -114,7 +114,7 @@ export default function VideosPage() {
                     <div className="mt-4 grid md:grid-cols-2 gap-4">
                       {video.clipUrls.map((clipUrl, clipIdx) => (
                         <div
-                          key={`${keyPrefix}-${video.id}-clip-${video.scenes[clipIdx]?.durationSeconds ?? clipIdx}`}
+                          key={`${keyPrefix}-${video.id}-clip-${clipIdx}`}
                           className="space-y-2"
                         >
                           <div className="rounded-lg overflow-hidden bg-black aspect-video">

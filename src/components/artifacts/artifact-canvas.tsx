@@ -90,9 +90,7 @@ export function ArtifactCanvas({
 }) {
   const artifacts = useDataStore((s) =>
     Array.from(s.artifacts.values()).filter(
-      (a) =>
-        a.type === activeType &&
-        (!topicSlug || a.topicSlug === topicSlug),
+      (a) => a.type === activeType && (!topicSlug || a.topicSlug === topicSlug),
     ),
   );
   const scrollRef = useRef<HTMLDivElement>(null);

@@ -153,7 +153,7 @@ export function DevArtifactToolbar({
         )}
         {loading
           ? "Generating…"
-          : TYPE_LABEL[activeType] ?? `Generate ${activeType}`}
+          : (TYPE_LABEL[activeType] ?? `Generate ${activeType}`)}
       </Button>
       {topicName && (
         <span className="truncate text-xs text-muted-foreground">

@@ -8,7 +8,19 @@ type VideoScript = {
   id: string;
   title: string;
   tagline: string;
-  voice: "alloy" | "echo" | "fable" | "onyx" | "nova" | "shimmer";
+  voice:
+    | "alloy"
+    | "ash"
+    | "ballad"
+    | "coral"
+    | "echo"
+    | "fable"
+    | "nova"
+    | "onyx"
+    | "sage"
+    | "shimmer"
+    | "verse";
+  voiceInstructions?: string;
   scenes: Scene[];
 };
 
@@ -53,34 +65,36 @@ export const videoScripts: VideoScript[] = [
     id: "do-you-wish",
     title: "Do You Wish...",
     tagline: "Your learning path, intelligently mapped.",
-    voice: "nova",
+    voice: "coral",
+    voiceInstructions:
+      "Speak as an intelligent, confident American woman in her late 20s. Your tone is warm with optimistic curiosity — like you're genuinely excited to share a discovery. Pace yourself naturally with purposeful pauses between sentences. Sound like a TED speaker, not a commercial narrator.",
     scenes: [
       {
         prompt:
           "A college student in a hoodie scrolling endlessly through a generic online course platform on a laptop, looking bored and disengaged. Flat overhead fluorescent lighting in a dorm room. Camera slowly zooms out to reveal the messy, uninspiring environment. Muted colors, monotonous, stagnant feeling.",
         narration:
-          "Do you wish learning didn't feel like an endless scroll? Same lectures. Same quizzes. No idea if any of it is working.",
+          "Most learning still looks like this. Long nights. Endless notes. Trying to piece together ideas that never quite connect. But what if the system actually understood what you know — and what you're ready to discover next?",
         durationSeconds: 8,
       },
       {
         prompt:
-          "Dramatic transition: the same laptop screen transforms into a vibrant, personalized learning dashboard with flowing animated knowledge graphs, glowing neural network connections, and a clear progress pathway lighting up. Camera pushes in dynamically. Rich blues and purples, energetic, futuristic UI animation.",
+          "A sleek modern presentation screen showing elegant data visualizations, charts with upward trends, and insight cards with key metrics. A confident presenter gestures toward the screen in a bright, well-lit conference room. Camera slowly pushes in on the screen. Clean, professional, aspirational tech aesthetic.",
         narration:
-          "CoreModel maps your knowledge in real time — identifying gaps, reinforcing strengths, and building a path that's uniquely yours.",
+          "Introducing CoreModel. Because the real advantage isn't studying more. It's seeing the structure behind the knowledge — the patterns others miss. The people who learn this way don't just keep up. They move ahead.",
         durationSeconds: 8,
       },
       {
         prompt:
-          "The same college student from earlier, now sitting upright at a clean desk, looking at a laptop screen showing a big green checkmark and a high test score. She breaks into a wide, genuine smile of relief and pride, pulling off her hoodie hood. Warm natural light from a nearby window. Camera slowly pushes in on her joyful expression. Uplifting, authentic, the moment it all clicks.",
+          "A beautiful animated knowledge network visualization — glowing nodes representing concepts connected by luminous edges, with new connections lighting up in sequence across the screen. Camera slowly orbits through the 3D network. Rich blues, purples, and warm gold highlights. Futuristic, elegant, the feeling of understanding clicking into place.",
         narration:
-          "Because real confidence comes from real understanding. Not cramming — mastering.",
+          "It maps your understanding in real time. It finds the hidden gaps between ideas and turns them into your next insight. Not memorization. Discovery.",
         durationSeconds: 6,
       },
       {
         prompt:
           "Aerial drone shot slowly rising above a vibrant university campus at golden hour, students walking along tree-lined pathways. Text-friendly negative space in the sky area. Warm cinematic color grading, lens flare from the setting sun. Sweeping, inspirational, the feeling of unlimited potential and a bright future ahead.",
         narration:
-          "CoreModel. Your learning path, intelligently mapped. Start free today.",
+          "A new generation of thinkers is learning this way. The only question is how far ahead they'll be. CoreModel. Your learning path, intelligently mapped. Start free today.",
         durationSeconds: 8,
       },
     ],

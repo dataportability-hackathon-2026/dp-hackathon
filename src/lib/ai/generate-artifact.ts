@@ -1,5 +1,5 @@
 import { put } from "@vercel/blob";
-import { generateText, Output, generateObject } from "ai";
+import { generateObject, generateText } from "ai";
 import OpenAI from "openai";
 import { loadSourceContent } from "@/lib/sources/load-sources";
 import { prompts } from "./prompts";

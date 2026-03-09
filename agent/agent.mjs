@@ -75,18 +75,31 @@ const artifactParams = z.object({
     .describe("The learner's goal, e.g. 'exam prep', 'deep understanding'"),
 });
 
+/** Fill in required profile-aware fields with sensible defaults */
+function withProfileDefaults(args) {
+  return {
+    ...args,
+    calibrationAccuracy: args.calibrationAccuracy ?? "well-calibrated",
+    cognitiveLoadRisk: args.cognitiveLoadRisk ?? "medium",
+    metacognitiveAwareness: args.metacognitiveAwareness ?? "medium",
+    coachingTone: args.coachingTone ?? "encouraging",
+  };
+}
+
 const createQuiz = llm.tool({
   description:
     "Create a multiple-choice quiz to test the learner's understanding. Use when the learner asks to be quizzed or wants practice questions.",
   parameters: artifactParams,
-  execute: async (args) => callAppApi("create_quiz", args),
+  execute: async (args) =>
+    callAppApi("create_adaptive_quiz", withProfileDefaults(args)),
 });
 
 const createFlashcards = llm.tool({
   description:
     "Create flashcards for active recall practice. Use when the learner wants to memorize key terms or review definitions.",
   parameters: artifactParams,
-  execute: async (args) => callAppApi("create_flashcards", args),
+  execute: async (args) =>
+    callAppApi("create_adaptive_flashcards", withProfileDefaults(args)),
 });
 
 const createMindMap = llm.tool({
