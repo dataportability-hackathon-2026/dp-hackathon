@@ -160,6 +160,33 @@ Create a 3D spatial model that:
 - Assigns appropriate shapes: sphere for atoms/nodes, box for containers, cylinder for bonds/axes, torus for orbits/cycles
 - Sets autoRotate to true for better visualization
 - Scale values between 0.2 and 2.0${sourceContentBlock(input.sourceContent)}`,
+  manimGeneration: (input: ArtifactPromptInput): string =>
+    `You are an expert Manim (Community Edition) developer and math educator.
+Generate a short, visually clear Manim animation that teaches a key concept from the subject.
+
+**Subject:** ${input.subject}
+**Concepts to cover:** ${input.concepts.length > 0 ? input.concepts.slice(0, 3).join(", ") : "core concepts"}
+**Student Level:** ${input.priorKnowledgeLevel}
+
+## Requirements
+- Use Manim CE (v0.17+) syntax — import from \`manim\`
+- Pick ONE focused concept to visualize (do not try to cover everything)
+- Class must extend \`Scene\` and be named \`EducationScene\` exactly
+- Animation should run 8-20 seconds total (keep it short and clear)
+- Use \`MathTex\` for equations, \`Text\` for labels
+- Use \`self.play()\` and \`self.wait()\` — no interactive elements
+- Include smooth transitions: \`Write\`, \`FadeIn\`, \`Transform\`, \`Create\`
+- Background color: default dark background (do not override)
+- Do NOT use external files or assets
+- Do NOT use \`plt\`, \`numpy\`, or external libraries — pure Manim only
+
+## Output format
+Return a JSON object with:
+- \`title\`: short animation title (5-8 words)
+- \`description\`: one sentence explaining what the animation shows
+- \`sceneName\`: must be exactly "EducationScene"
+- \`code\`: the complete runnable Python file (include all imports)${sourceContentBlock(input.sourceContent)}`,
+
   remixGeneration: (
     input: ArtifactPromptInput & { profileContext?: string },
   ): string =>
