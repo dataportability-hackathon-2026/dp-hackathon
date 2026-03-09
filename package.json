@@ -13,7 +13,8 @@
     "eval": "evalite",
     "eval:watch": "evalite watch",
     "mcp": "tsx src/mcp-server.ts",
-    "generate-videos": "bun run scripts/generate-videos.ts"
+    "generate-videos": "bun run scripts/generate-videos.ts",
+    "generate-videos:recompose": "bun run scripts/generate-videos.ts --recompose"
   },
   "dependencies": {
     "@ai-sdk/gateway": "^3.0.66",
