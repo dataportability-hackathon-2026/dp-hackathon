@@ -41,7 +41,6 @@ video-generation.log
 .vercel
 
 # lock files (using bun)
-package-lock.json
 yarn.lock
 
 # local database
