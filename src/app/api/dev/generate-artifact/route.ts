@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { source } from "@/db/schema";
 import {
   type ArtifactInput,
+  generateAudio,
   generateFlashcards,
   generateMindMap,
   generateQuiz,
@@ -55,6 +56,10 @@ export async function POST(req: Request) {
       case "slidedeck": {
         const data = await generateSlides(enrichedInput);
         return NextResponse.json({ type: "slidedeck", data });
+      }
+      case "audio": {
+        const data = await generateAudio(enrichedInput);
+        return NextResponse.json({ type: "audio", data });
       }
       default:
         return NextResponse.json(
