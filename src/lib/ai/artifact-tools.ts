@@ -1,4 +1,4 @@
-import { generateText, Output, tool } from "ai";
+import { generateObject, tool } from "ai";
 import { z } from "zod";
 import { loadSourceContent } from "@/lib/sources/load-sources";
 import { getCitationBlock, getCitationGuardrails } from "./citations";
@@ -150,6 +150,10 @@ const profileAwareInputSchema = z.object({
     .optional()
     .describe("IDs of uploaded source materials to use as reference content"),
   userId: z.string().optional().describe("User ID for source content access"),
+  topicSlug: z
+    .string()
+    .optional()
+    .describe("Topic slug to scope the generated artifact to"),
 });
 
 type ProfileAwareInput = z.infer<typeof profileAwareInputSchema>;
@@ -170,9 +174,9 @@ export const artifactTools = {
     inputSchema: profileAwareInputSchema,
     execute: async (input: ProfileAwareInput) => {
       const sourceBlock = await resolveSourceContent(input);
-      const result = await generateText({
+      const { object } = await generateObject({
         model: openai("gpt-4o-mini"),
-        output: Output.object({ schema: QuizArtifactSchema }),
+        schema: QuizArtifactSchema,
         prompt: `You are an expert educator creating an adaptive practice quiz.
 
 ${getCitationGuardrails()}
@@ -215,10 +219,11 @@ ${getCitationBlock(["ROEDIGER_KARPICKE_2006", "DUNLOSKY_2013", "SWELLER_1988", "
 - Progress from easier to harder.
 - Cover all listed concepts proportionally.${sourceBlock}`,
       });
-      if (!result.output) {
-        throw new Error("Failed to generate quiz");
-      }
-      return { type: "quiz" as const, data: result.output };
+      return {
+        type: "quiz" as const,
+        topicSlug: input.topicSlug,
+        data: object,
+      };
     },
   }),
 
@@ -228,9 +233,9 @@ ${getCitationBlock(["ROEDIGER_KARPICKE_2006", "DUNLOSKY_2013", "SWELLER_1988", "
     inputSchema: profileAwareInputSchema,
     execute: async (input: ProfileAwareInput) => {
       const sourceBlock = await resolveSourceContent(input);
-      const result = await generateText({
+      const { object } = await generateObject({
         model: openai("gpt-4o-mini"),
-        output: Output.object({ schema: FlashcardArtifactSchema }),
+        schema: FlashcardArtifactSchema,
         prompt: `You are an expert educator creating flashcards for evidence-based learning.
 
 ${getCitationGuardrails()}
@@ -268,10 +273,11 @@ ${getCitationBlock(["ROEDIGER_KARPICKE_2006", "CEPEDA_2006", "DUNLOSKY_2013", "B
 - Mix: factual recall (40%), conceptual understanding (40%), application (20%).
 - NEVER include cards that can be answered by pattern matching without understanding.${sourceBlock}`,
       });
-      if (!result.output) {
-        throw new Error("Failed to generate flashcards");
-      }
-      return { type: "flashcards" as const, data: result.output };
+      return {
+        type: "flashcards" as const,
+        topicSlug: input.topicSlug,
+        data: object,
+      };
     },
   }),
 
@@ -292,9 +298,9 @@ ${getCitationBlock(["ROEDIGER_KARPICKE_2006", "CEPEDA_2006", "DUNLOSKY_2013", "B
             ? "partial"
             : "minimal";
 
-      const result = await generateText({
+      const { object } = await generateObject({
         model: openai("gpt-4o-mini"),
-        output: Output.object({ schema: WorkedExampleSchema }),
+        schema: WorkedExampleSchema,
         prompt: `You are an expert educator creating a worked example with fading scaffolding.
 
 ${getCitationGuardrails()}
@@ -338,10 +344,7 @@ ${getCitationBlock(["SWELLER_1988", "DUNLOSKY_2013", "BJORK_2011"])}
 - Set fadeLevel to "${fadeLevel}" based on knowledge level.
 - Common mistakes should be specific and realistic, not generic.${sourceBlock}`,
       });
-      if (!result.output) {
-        throw new Error("Failed to generate worked example");
-      }
-      return { type: "worked_example" as const, data: result.output };
+      return { type: "worked_example" as const, data: object };
     },
   }),
 
@@ -351,9 +354,9 @@ ${getCitationBlock(["SWELLER_1988", "DUNLOSKY_2013", "BJORK_2011"])}
     inputSchema: profileAwareInputSchema,
     execute: async (input: ProfileAwareInput) => {
       const sourceBlock = await resolveSourceContent(input);
-      const result = await generateText({
+      const { object } = await generateObject({
         model: openai("gpt-4o-mini"),
-        output: Output.object({ schema: ElaborativeInterrogationSchema }),
+        schema: ElaborativeInterrogationSchema,
         prompt: `You are an expert educator creating an elaborative interrogation exercise.
 
 ${getCitationGuardrails()}
@@ -388,12 +391,9 @@ ${getCitationBlock(["DUNLOSKY_2013", "ROEDIGER_KARPICKE_2006", "BJORK_2011"])}
 - Each item connects to at least 1 related concept.
 - Tone: ${input.coachingTone}.${sourceBlock}`,
       });
-      if (!result.output) {
-        throw new Error("Failed to generate elaborative interrogation");
-      }
       return {
         type: "elaborative_interrogation" as const,
-        data: result.output,
+        data: object,
       };
     },
   }),
@@ -404,9 +404,9 @@ ${getCitationBlock(["DUNLOSKY_2013", "ROEDIGER_KARPICKE_2006", "BJORK_2011"])}
     inputSchema: profileAwareInputSchema,
     execute: async (input: ProfileAwareInput) => {
       const sourceBlock = await resolveSourceContent(input);
-      const result = await generateText({
+      const { object } = await generateObject({
         model: openai("gpt-4o-mini"),
-        output: Output.object({ schema: PredictionReflectionSchema }),
+        schema: PredictionReflectionSchema,
         prompt: `You are an expert educator creating a prediction-reflection-repair exercise.
 
 ${getCitationGuardrails()}
@@ -442,12 +442,9 @@ ${getCitationBlock(["SCHRAW_1994", "BJORK_2011", "FREDERICK_2005", "DUNLOSKY_201
 - Reflection prompts should be specific to the problem, not generic.
 - Repair hints: null if no common misconception applies.${sourceBlock}`,
       });
-      if (!result.output) {
-        throw new Error("Failed to generate prediction-reflection exercise");
-      }
       return {
         type: "prediction_reflection" as const,
-        data: result.output,
+        data: object,
       };
     },
   }),
@@ -467,9 +464,9 @@ ${getCitationBlock(["SCHRAW_1994", "BJORK_2011", "FREDERICK_2005", "DUNLOSKY_201
       }
 
       const sourceBlock = await resolveSourceContent(input);
-      const result = await generateText({
+      const { object } = await generateObject({
         model: openai("gpt-4o-mini"),
-        output: Output.object({ schema: InterleavedProblemSetSchema }),
+        schema: InterleavedProblemSetSchema,
         prompt: `You are an expert educator creating an interleaved problem set.
 
 ${getCitationGuardrails()}
@@ -508,12 +505,9 @@ ${getCitationBlock(["ROHRER_TAYLOR_2007", "BJORK_2011", "DUNLOSKY_2013"])}
 - Solutions must be complete and correct.
 - discriminationNote is required for every problem.${sourceBlock}`,
       });
-      if (!result.output) {
-        throw new Error("Failed to generate interleaved problem set");
-      }
       return {
         type: "interleaved_problem_set" as const,
-        data: result.output,
+        data: object,
       };
     },
   }),
@@ -524,9 +518,9 @@ ${getCitationBlock(["ROHRER_TAYLOR_2007", "BJORK_2011", "DUNLOSKY_2013"])}
     inputSchema: profileAwareInputSchema,
     execute: async (input: ProfileAwareInput) => {
       const sourceBlock = await resolveSourceContent(input);
-      const result = await generateText({
+      const { object } = await generateObject({
         model: openai("gpt-4o-mini"),
-        output: Output.object({ schema: MindMapArtifactSchema }),
+        schema: MindMapArtifactSchema,
         prompt: `You are an expert educator creating a concept mind map.
 
 ${getCitationGuardrails()}
@@ -548,10 +542,11 @@ ${getCitationBlock(["DUNLOSKY_2013", "BJORK_2011"])}
 - Must form a proper tree (no cycles, one root).
 - Show prerequisite relationships through hierarchy.${sourceBlock}`,
       });
-      if (!result.output) {
-        throw new Error("Failed to generate mind map");
-      }
-      return { type: "mindmap" as const, data: result.output };
+      return {
+        type: "mindmap" as const,
+        topicSlug: input.topicSlug,
+        data: object,
+      };
     },
   }),
 
@@ -561,9 +556,9 @@ ${getCitationBlock(["DUNLOSKY_2013", "BJORK_2011"])}
     inputSchema: profileAwareInputSchema,
     execute: async (input: ProfileAwareInput) => {
       const sourceBlock = await resolveSourceContent(input);
-      const result = await generateText({
+      const { object } = await generateObject({
         model: openai("gpt-4o-mini"),
-        output: Output.object({ schema: SlideArtifactSchema }),
+        schema: SlideArtifactSchema,
         prompt: `You are an expert educator creating a review slide deck.
 
 ${getCitationGuardrails()}
@@ -591,10 +586,11 @@ Passive reading of slides is a low-utility strategy. These slides should:
 - Concise, educational language for ${input.priorKnowledgeLevel} level.
 - Logical progression from foundational to advanced.${sourceBlock}`,
       });
-      if (!result.output) {
-        throw new Error("Failed to generate slides");
-      }
-      return { type: "slidedeck" as const, data: result.output };
+      return {
+        type: "slidedeck" as const,
+        topicSlug: input.topicSlug,
+        data: object,
+      };
     },
   }),
 
@@ -604,9 +600,9 @@ Passive reading of slides is a low-utility strategy. These slides should:
     inputSchema: profileAwareInputSchema,
     execute: async (input: ProfileAwareInput) => {
       const sourceBlock = await resolveSourceContent(input);
-      const result = await generateText({
+      const { object } = await generateObject({
         model: openai("gpt-4o-mini"),
-        output: Output.object({ schema: SpatialArtifactSchema }),
+        schema: SpatialArtifactSchema,
         prompt: `You are an expert educator creating a 3D spatial visualization.
 
 ${getCitationGuardrails()}
@@ -631,10 +627,11 @@ Bad uses: memorizing vocabulary, learning historical dates (spatial adds no valu
 - Scale: 0.2-2.0.
 - autoRotate: true for better perspective.${sourceBlock}`,
       });
-      if (!result.output) {
-        throw new Error("Failed to generate spatial model");
-      }
-      return { type: "spatial" as const, data: result.output };
+      return {
+        type: "spatial" as const,
+        topicSlug: input.topicSlug,
+        data: object,
+      };
     },
   }),
 };

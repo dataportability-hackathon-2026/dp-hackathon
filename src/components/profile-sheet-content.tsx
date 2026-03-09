@@ -6,6 +6,7 @@ import {
   ChevronRight,
   ClipboardList,
   Clock,
+  Download,
   Loader2,
   Lock,
   LogOut,
@@ -736,6 +737,45 @@ function PreferencesDialog() {
   );
 }
 
+function DownloadDataButton() {
+  const [loading, setLoading] = useState(false);
+
+  const handleDownload = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/export");
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "coremodel-export.zip";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return (
+    <button
+      type="button"
+      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted"
+      onClick={() => void handleDownload()}
+      disabled={loading}
+    >
+      {loading ? (
+        <Loader2 className="size-4 animate-spin" />
+      ) : (
+        <Download className="size-4" />
+      )}
+      Export Data
+    </button>
+  );
+}
+
 function AccountSection() {
   return (
     <div className="flex flex-col gap-1 p-6">
@@ -744,6 +784,7 @@ function AccountSection() {
       <PreferencesDialog />
       <NotificationsDialog />
       <SettingsDialog />
+      <DownloadDataButton />
       <Separator className="my-1" />
       <button
         type="button"

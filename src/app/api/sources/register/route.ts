@@ -28,8 +28,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     projectId?: string | null;
   };
 
-  const { blobUrl, filename, mimeType, sizeBytes, topicSlug, projectId } =
-    body;
+  const { blobUrl, filename, mimeType, sizeBytes, topicSlug, projectId } = body;
 
   if (!blobUrl || !filename || !topicSlug) {
     return NextResponse.json(

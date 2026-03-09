@@ -7,9 +7,10 @@ import { openai } from "@/lib/ai/provider";
 import { stateTools } from "@/lib/ai/state-tools";
 import { tools } from "@/lib/ai/tools";
 import { getEffectiveUserId } from "@/lib/impersonate";
+import { getImportedDataSummary } from "@/lib/sources/get-imported-data-summary";
 
 export async function POST(req: Request) {
-  const { messages, priorContext } = await req.json();
+  const { messages, priorContext, topicSlug } = await req.json();
 
   // If there is prior conversation context (e.g. from a voice session),
   // inject it into the system prompt so the text agent understands the full history
@@ -53,6 +54,15 @@ ${fp.summary}
 **Reflectiveness:** ${fp.cognitiveProfile?.reflectivenessLevel ?? "unknown"}
 
 Use this profile to adapt your responses: match the coaching tone, address risks proactively, and leverage identified strengths.`;
+    }
+  }
+
+  let dataContext = "";
+  if (userId && topicSlug) {
+    try {
+      dataContext = await getImportedDataSummary(userId, topicSlug);
+    } catch {
+      // Non-critical — don't break chat if data summary fails
     }
   }
 
@@ -129,7 +139,14 @@ Keep text responses concise and focused on the learning objective.
 NEVER claim that format preferences improve learning outcomes.
 Present estimates with uncertainty, not false precision.
 
-Note: The conversation may include messages from a prior voice session. Treat these as part of the ongoing conversation and maintain continuity.${profileContext}${priorContextSummary}`,
+Note: The conversation may include messages from a prior voice session. Treat these as part of the ongoing conversation and maintain continuity.
+
+## Cross-Source Insights
+When imported data context is available, weave patterns from the learner's data into responses:
+- Reference scheduling constraints from calendar data
+- Connect conversation history themes to current study topics
+- Use lifelog patterns to suggest optimal study times
+${profileContext}${dataContext}${priorContextSummary}`,
     messages: allMessages,
     tools: { ...tools, ...stateTools },
     stopWhen: stepCountIs(5),
