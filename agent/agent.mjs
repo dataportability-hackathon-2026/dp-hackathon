@@ -148,6 +148,31 @@ const createSpatial = llm.tool({
   execute: async (args) => callAppApi("create_spatial", args),
 });
 
+const readSourceContent = llm.tool({
+  description:
+    "Read the full text content of an uploaded source file by its ID. Use this when the learner asks about a specific file's content, wants a summary, or you need to understand the material. Ask the learner for the file name or ID first.",
+  parameters: z.object({
+    sourceId: z.string().describe("The source file ID to read"),
+  }),
+  execute: async (args) => {
+    try {
+      const res = await fetch(`${APP_URL}/api/agent-tools`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tool: "read_source_content", input: args }),
+      });
+      if (!res.ok) return `Sorry, I couldn't read that file (${res.status}).`;
+      const result = await res.json();
+      if (result.error) return `Sorry, there was a problem: ${result.error}`;
+      // Summarize for voice — the full content may be too long to speak
+      const preview = result.content?.slice(0, 2000) ?? "";
+      return `Here is the content of "${result.filename}":\n\n${preview}${result.content?.length > 2000 ? "\n\n[Content truncated for voice. The full file has been loaded.]" : ""}`;
+    } catch (err) {
+      return `Sorry, I couldn't read that file. Error: ${err.message}`;
+    }
+  },
+});
+
 const createLearningGuide = llm.tool({
   description:
     "Create a structured 7-day learning guide with study blocks. Use when the learner wants a study plan or weekly schedule.",
@@ -209,9 +234,13 @@ export default defineAgent({
         "- 'mind map' / 'concept map' / 'show relationships' → create_mind_map\n" +
         "- 'slides' / 'presentation' / 'overview' → create_slides\n" +
         "- '3D' / 'visualize' / 'spatial' → create_spatial\n" +
-        "- 'study plan' / 'schedule' / 'learning guide' → create_learning_guide\n\n" +
+        "- 'study plan' / 'schedule' / 'learning guide' → create_learning_guide\n" +
+        "- 'what's in this file' / 'read my file' / 'summarize the document' → read_source_content (requires sourceId)\n\n" +
         "When you call a tool, tell the learner it will appear on their screen. " +
-        "After the artifact is created, briefly summarize what was generated and ask follow-up questions to check understanding. " +
+        "CRITICAL: After the artifact is created, respond with ONLY a brief 1-2 sentence summary and a follow-up question. " +
+        "Do NOT read out, list, or describe the full contents of the artifact (nodes, questions, cards, slides, etc.) — the student can already see it on their screen. " +
+        "For example, say 'I created a mind map covering the key property law concepts. Want to explore any area further?' " +
+        "NEVER enumerate or describe individual nodes, questions, or cards from the artifact. " +
         "If you are unsure about the subject or concepts, ask clarifying questions BEFORE calling the tool — " +
         "but NEVER respond by reading out flashcard content, quiz questions, or other materials verbally instead of using the tool.",
       llm: model,
@@ -222,26 +251,88 @@ export default defineAgent({
         create_slides: createSlides,
         create_spatial: createSpatial,
         create_learning_guide: createLearningGuide,
+        read_source_content: readSourceContent,
       },
     });
 
-    const session = new voice.AgentSession({});
-    console.log("[voice-agent] Starting agent session...");
-    await session.start({
-      agent,
-      room: ctx.room,
-    });
-    console.log("[voice-agent] Agent session started successfully");
+    // Track whether we've already sent the initial greeting
+    let greeted = false;
+    // Queue context that arrives before the session is ready
+    let pendingContextMessages = null;
+    // Session reference — set after session.start()
+    let activeSession = null;
 
-    // Listen for text messages sent from the frontend via data channel
+    async function sendGreeting(messages) {
+      if (greeted || !activeSession) return;
+      greeted = true;
+      if (Array.isArray(messages) && messages.length > 0) {
+        const recent = messages.slice(-20);
+        console.log(
+          "[voice-agent] Resuming with conversation context:",
+          recent.length,
+          "messages",
+        );
+
+        // Inject prior messages as actual conversation turns in the chat context
+        const currentAgent = activeSession.currentAgent;
+        const chatCtx = currentAgent.chatCtx.copy();
+        for (const m of recent) {
+          chatCtx.addMessage({
+            role: m.role === "user" ? "user" : "assistant",
+            content: m.text,
+          });
+        }
+        await currentAgent.updateChatCtx(chatCtx);
+
+        activeSession.generateReply({
+          userInput:
+            "The user just reconnected to the voice session. " +
+            "Greet them warmly and briefly, picking up where you left off. " +
+            "Do NOT re-introduce yourself from scratch. Do NOT repeat the full conversation.",
+          instructions:
+            "Keep the greeting short and conversational. You already have the full conversation " +
+            "history in context, so just continue naturally.",
+        });
+      } else {
+        console.log("[voice-agent] No prior messages, using default greeting");
+        activeSession.generateReply({
+          userInput:
+            "Say hello and introduce yourself as CoreModel, a learning assistant. " +
+            "Mention you can create quizzes, flashcards, and other study materials. " +
+            "Ask what they'd like to study today.",
+          instructions: "Keep the greeting short and natural.",
+        });
+      }
+    }
+
+    // Register data listener BEFORE session.start() to catch early messages
     ctx.room.on("dataReceived", (payload, _participant) => {
       try {
         const decoder = new TextDecoder();
         const data = JSON.parse(decoder.decode(payload));
         console.log("[voice-agent] Data received from frontend:", data.type);
-        if (data.type === "text_input" && typeof data.text === "string") {
-          // Inject typed text as user input so the voice agent can respond
-          session.generateReply({
+
+        if (data.type === "conversation_context" && !greeted) {
+          pendingContextMessages = data.messages ?? [];
+          console.log(
+            "[voice-agent] Received conversation context:",
+            pendingContextMessages.length,
+            "messages",
+          );
+          // If session is already ready, send greeting immediately
+          if (activeSession) {
+            sendGreeting(pendingContextMessages).catch((err) =>
+              console.error("[voice-agent] Failed to send greeting:", err),
+            );
+          }
+        }
+
+        if (
+          data.type === "text_input" &&
+          typeof data.text === "string" &&
+          activeSession
+        ) {
+          activeSession.generateReply({
             userInput: data.text,
             instructions:
               "The user typed this message instead of speaking. Respond naturally via voice. " +
@@ -253,13 +344,32 @@ export default defineAgent({
       }
     });
 
-    session.generateReply({
-      userInput:
-        "Say hello and introduce yourself as CoreModel, a learning assistant. " +
-        "Mention you can create quizzes, flashcards, and other study materials. " +
-        "Ask what they'd like to study today.",
-      instructions: "Keep the greeting short and natural.",
+    const session = new voice.AgentSession({});
+    console.log("[voice-agent] Starting agent session...");
+    await session.start({
+      agent,
+      room: ctx.room,
     });
+    console.log("[voice-agent] Agent session started successfully");
+    activeSession = session;
+
+    // Process any context that arrived while session was starting
+    if (pendingContextMessages !== null) {
+      sendGreeting(pendingContextMessages).catch((err) =>
+        console.error("[voice-agent] Failed to send greeting:", err),
+      );
+    }
+
+    // Fallback: if no conversation context arrives within 8 seconds, send the default greeting.
+    // The frontend sends context on connect and again when the agent participant joins,
+    // so 8s gives ample time for the data channel to be established.
+    setTimeout(() => {
+      if (!greeted) {
+        sendGreeting(null).catch((err) =>
+          console.error("[voice-agent] Failed to send greeting:", err),
+        );
+      }
+    }, 8000);
   },
 });
 

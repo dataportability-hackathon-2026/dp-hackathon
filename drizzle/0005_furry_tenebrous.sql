@@ -1,0 +1,1 @@
+ALTER TABLE "source" ADD COLUMN "excluded" boolean DEFAULT false NOT NULL;

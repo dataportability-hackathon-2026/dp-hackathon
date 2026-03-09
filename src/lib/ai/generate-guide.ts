@@ -91,11 +91,17 @@ export async function generateGuideForUser(
       }
     : { ...DEFAULT_PREFERENCES };
 
-  // 3. Fetch all source IDs for this topic
+  // 3. Fetch all non-excluded source IDs for this topic
   const topicSources = await db
     .select({ id: source.id })
     .from(source)
-    .where(and(eq(source.userId, userId), eq(source.topicSlug, topicSlug)));
+    .where(
+      and(
+        eq(source.userId, userId),
+        eq(source.topicSlug, topicSlug),
+        eq(source.excluded, false),
+      ),
+    );
 
   const sourceIds = topicSources.map((s) => s.id);
 
@@ -189,6 +195,77 @@ export async function generateGuideForUser(
       : "");
 
   // 6. Call LLM
+  const result = await generateText({
+    model: model("openai/gpt-4o-mini"),
+    output: Output.object({ schema: LearningGuideSchema }),
+    prompt,
+  });
+
+  if (!result.output) {
+    throw new Error("Failed to generate learning guide");
+  }
+
+  return result.output;
+}
+
+// ── Legacy exports (used by evals and mcp-server) ──
+
+export type GuideInput = {
+  profileAnalysis: LearningProfileAnalysis;
+  fieldOfStudy: string;
+  primaryGoal: string;
+  goalDescription: string;
+  deadline: string;
+  minutesPerDay: number;
+  daysPerWeek: number;
+  sessionLength: string;
+  priorKnowledgeLevel: string;
+  studyStrategies: string[];
+  concepts: string[];
+  sourceContent?: string;
+};
+
+export async function generateLearningGuide(
+  input: GuideInput,
+): Promise<GenerateGuideResult> {
+  const analysis = input.profileAnalysis;
+  const totalWeeklyMinutes = input.minutesPerDay * input.daysPerWeek;
+
+  const guideInput = {
+    fieldOfStudy: input.fieldOfStudy,
+    primaryGoal: input.primaryGoal,
+    goalDescription: input.goalDescription,
+    deadline: input.deadline,
+    minutesPerDay: input.minutesPerDay,
+    daysPerWeek: input.daysPerWeek,
+    sessionLength: input.sessionLength as "short" | "medium" | "long",
+    priorKnowledgeLevel: input.priorKnowledgeLevel as
+      | "beginner"
+      | "intermediate"
+      | "advanced",
+    studyStrategies: input.studyStrategies,
+    concepts: input.concepts,
+    profileSummary: analysis.summary,
+    strengths: analysis.strengths,
+    risks: analysis.risks,
+    cognitiveLoadRisk: (analysis.cognitiveProfile.metacognitiveAwareness ===
+    "low"
+      ? "high"
+      : analysis.cognitiveProfile.metacognitiveAwareness === "medium"
+        ? "medium"
+        : "low") as "low" | "medium" | "high",
+    calibrationAccuracy: analysis.cognitiveProfile.calibrationAccuracy,
+    metacognitiveAwareness: analysis.cognitiveProfile.metacognitiveAwareness,
+    motivationalFocus: analysis.coachingApproach.motivationalFocus,
+    coachingTone: analysis.coachingApproach.tone,
+  };
+
+  const prompt =
+    buildGuidePrompt(guideInput, totalWeeklyMinutes) +
+    (input.sourceContent
+      ? `\n\n## Reference Material\nUse this material as the primary content source for concepts and examples:\n${input.sourceContent}`
+      : "");
+
   const result = await generateText({
     model: model("openai/gpt-4o-mini"),
     output: Output.object({ schema: LearningGuideSchema }),

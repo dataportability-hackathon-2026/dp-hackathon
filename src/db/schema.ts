@@ -155,6 +155,7 @@ export const source = pgTable("source", {
   mimeType: text("mime_type").notNull(),
   sizeBytes: bigint("size_bytes", { mode: "number" }).notNull(),
   blobUrl: text("blob_url").notNull(),
+  excluded: boolean("excluded").notNull().default(false),
   status: text("status").notNull().default("ready"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

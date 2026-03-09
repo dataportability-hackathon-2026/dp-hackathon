@@ -61,7 +61,7 @@ export const ACADEMIC_RESOURCES: AcademicResource[] = [
     color: "text-[#BF5700] dark:text-[#E8852F]",
     bgColor: "bg-orange-50 dark:bg-orange-950/30",
     borderColor: "border-orange-200 dark:border-orange-800",
-    url: "https://tarltonguides.law.utexas.edu",
+    url: "https://tarlton.law.utexas.edu",
     category: "content",
   },
   {

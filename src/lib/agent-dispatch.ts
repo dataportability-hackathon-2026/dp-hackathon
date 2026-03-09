@@ -33,6 +33,10 @@ export function dispatchAgentResult(
   switch (toolName) {
     case "create_adaptive_quiz":
     case "create_adaptive_flashcards":
+    case "create_worked_example":
+    case "create_elaborative_interrogation":
+    case "create_prediction_reflection":
+    case "create_interleaved_problem_set":
     case "create_mind_map":
     case "create_slides":
     case "create_spatial":
@@ -49,8 +53,10 @@ export function dispatchAgentResult(
     case "create_remix": {
       const artifact = normalizeToolResultToArtifact(result);
       if (artifact?.id && artifact.type) {
-        // Inject topicSlug from dispatch context if the artifact doesn't already have one
-        if (!artifact.topicSlug && ctx.topicSlug) {
+        // Always use the dispatch context's topicSlug (the project/topic the user is viewing)
+        // The AI tool may return its own topicSlug (e.g. "game-theory") that doesn't match
+        // the actual project slug (e.g. "admin-test-a2c996ed"), causing filtering to miss it.
+        if (ctx.topicSlug) {
           artifact.topicSlug = ctx.topicSlug;
         }
         dataStore.addArtifact(artifact);
@@ -58,6 +64,11 @@ export function dispatchAgentResult(
         persistArtifact(artifact);
         ctx.setArtifactParam(artifact.type);
         ctx.setActiveTab("");
+      } else {
+        console.warn(
+          "[agent-dispatch] could not normalize artifact for",
+          toolName,
+        );
       }
       break;
     }
@@ -117,22 +128,42 @@ export function dispatchAgentResult(
  * Normalize the raw tool result into a flat Artifact shape.
  * Tools return { type, topicSlug?, data: { title, description, ... } }.
  * If the result already looks like a flat Artifact (has id+type), use it as-is.
+ *
+ * The AI SDK may wrap outputs in { type: "json", value: ... } or { type: "text", value: ... }.
+ * We unwrap these before processing.
  */
 function normalizeToolResultToArtifact(result: ToolResult): Artifact | null {
+  // Unwrap AI SDK output wrapping: { type: "json"|"text", value: ... }
+  let unwrapped = result;
+  if (
+    (result.type === "json" || result.type === "text") &&
+    "value" in result &&
+    typeof result.value === "object" &&
+    result.value !== null
+  ) {
+    unwrapped = result.value as ToolResult;
+    // Unwrapped AI SDK output wrapper
+  }
+
   // Already a flat artifact (has id and type at top level)
-  if (result.id && result.type) {
-    return result as unknown as Artifact;
+  if (unwrapped.id && unwrapped.type) {
+    return unwrapped as unknown as Artifact;
   }
 
   // Tool result shape: { type, topicSlug?, data: { title, description, ... } }
-  const artifactType = result.type as string | undefined;
-  const data = result.data as Record<string, unknown> | undefined;
-  if (!artifactType || !data) return null;
+  const artifactType = unwrapped.type as string | undefined;
+  const data = unwrapped.data as Record<string, unknown> | undefined;
+  if (!artifactType || !data) {
+    console.warn(
+      "[agent-dispatch] Cannot normalize artifact — missing type or data",
+    );
+    return null;
+  }
 
   return {
     id: `artifact-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     type: artifactType,
-    topicSlug: (result.topicSlug as string) ?? undefined,
+    topicSlug: (unwrapped.topicSlug as string) ?? undefined,
     createdAt: new Date().toISOString().slice(0, 10),
     ...data,
   } as unknown as Artifact;

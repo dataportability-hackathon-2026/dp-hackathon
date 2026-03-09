@@ -19,7 +19,13 @@ export async function loadSourceContent(
       blobUrl: source.blobUrl,
     })
     .from(source)
-    .where(and(inArray(source.id, sourceIds), eq(source.userId, userId)));
+    .where(
+      and(
+        inArray(source.id, sourceIds),
+        eq(source.userId, userId),
+        eq(source.excluded, false),
+      ),
+    );
 
   if (sources.length === 0) return "";
 

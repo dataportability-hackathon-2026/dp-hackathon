@@ -1,6 +1,10 @@
 import { tool } from "ai";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+import { db } from "@/db";
+import { source } from "@/db/schema";
 import type { ClientStateSnapshot } from "@/lib/ai/client-state-snapshot";
+import { extractSourceContent } from "@/lib/sources/extract-content";
 import { TOPICS } from "@/lib/topics";
 
 /**
@@ -238,7 +242,10 @@ export const stateTools = {
 // These are built dynamically per-request because the state snapshot
 // comes from the client in the request body.
 
-export function buildStateReadTools(snapshot: ClientStateSnapshot | null) {
+export function buildStateReadTools(
+  snapshot: ClientStateSnapshot | null,
+  context?: { userId?: string; topicSlug?: string },
+) {
   return {
     read_app_state: tool({
       description:
@@ -374,6 +381,140 @@ export function buildStateReadTools(snapshot: ClientStateSnapshot | null) {
                 snapshot.masteryScores.length
               : 0,
         };
+      },
+    }),
+
+    read_sources: tool({
+      description:
+        "Read the uploaded source files/materials. Can return sources for a specific topic, the current topic, or ALL topics. Use this to understand what reference materials the learner has uploaded before generating artifacts or guides. When the learner asks 'what sources do I have' without specifying a topic, set allTopics to true.",
+      inputSchema: z.object({
+        topicSlug: z
+          .string()
+          .optional()
+          .describe(
+            "Topic slug to fetch sources for. If omitted, uses the currently selected topic (unless allTopics is true).",
+          ),
+        allTopics: z
+          .boolean()
+          .optional()
+          .describe(
+            "If true, return sources across ALL topics regardless of which topic is selected. Use this when the learner asks about their sources in general.",
+          ),
+      }),
+      execute: async ({ topicSlug: slugOverride, allTopics }) => {
+        const uid = context?.userId;
+        if (!uid) return { error: "No authenticated user" };
+
+        if (allTopics) {
+          const rows = await db
+            .select({
+              id: source.id,
+              topicSlug: source.topicSlug,
+              filename: source.filename,
+              mimeType: source.mimeType,
+              sizeBytes: source.sizeBytes,
+              blobUrl: source.blobUrl,
+              excluded: source.excluded,
+              status: source.status,
+              createdAt: source.createdAt,
+            })
+            .from(source)
+            .where(eq(source.userId, uid));
+
+          return {
+            allTopics: true,
+            count: rows.length,
+            totalSizeBytes: rows.reduce(
+              (sum, r) => sum + Number(r.sizeBytes),
+              0,
+            ),
+            sources: rows.map((r) => ({
+              id: r.id,
+              topicSlug: r.topicSlug,
+              filename: r.filename,
+              mimeType: r.mimeType,
+              sizeBytes: Number(r.sizeBytes),
+              blobUrl: r.blobUrl,
+              excluded: r.excluded,
+              status: r.status,
+              createdAt: r.createdAt,
+            })),
+          };
+        }
+
+        const slug =
+          slugOverride ?? context?.topicSlug ?? snapshot?.selectedTopicId;
+        if (!slug) return { error: "No topic selected" };
+
+        const rows = await db
+          .select({
+            id: source.id,
+            filename: source.filename,
+            mimeType: source.mimeType,
+            sizeBytes: source.sizeBytes,
+            blobUrl: source.blobUrl,
+            excluded: source.excluded,
+            status: source.status,
+            createdAt: source.createdAt,
+          })
+          .from(source)
+          .where(and(eq(source.userId, uid), eq(source.topicSlug, slug)));
+
+        return {
+          topicSlug: slug,
+          count: rows.length,
+          totalSizeBytes: rows.reduce((sum, r) => sum + Number(r.sizeBytes), 0),
+          sources: rows.map((r) => ({
+            id: r.id,
+            filename: r.filename,
+            mimeType: r.mimeType,
+            sizeBytes: Number(r.sizeBytes),
+            blobUrl: r.blobUrl,
+            excluded: r.excluded,
+            status: r.status,
+            createdAt: r.createdAt,
+          })),
+        };
+      },
+    }),
+
+    read_source_content: tool({
+      description:
+        "Read the full text content of an uploaded source file by its ID. Use this when the learner asks questions about a specific file, wants a summary, or you need to understand the material before generating artifacts. Call read_sources first to get the list of source IDs.",
+      inputSchema: z.object({
+        sourceId: z.string().describe("The source file ID to read"),
+      }),
+      execute: async ({ sourceId }) => {
+        const uid = context?.userId;
+        if (!uid) return { error: "No authenticated user" };
+
+        const [row] = await db
+          .select({
+            id: source.id,
+            filename: source.filename,
+            mimeType: source.mimeType,
+            blobUrl: source.blobUrl,
+          })
+          .from(source)
+          .where(and(eq(source.id, sourceId), eq(source.userId, uid)));
+
+        if (!row) return { error: "Source not found" };
+
+        const content = await extractSourceContent(
+          row.blobUrl,
+          row.mimeType,
+          row.filename,
+        );
+
+        if (!content) {
+          return {
+            id: row.id,
+            filename: row.filename,
+            error: "Could not extract text content from this file type",
+          };
+        }
+
+        return { id: row.id, filename: row.filename, content };
       },
     }),
   };

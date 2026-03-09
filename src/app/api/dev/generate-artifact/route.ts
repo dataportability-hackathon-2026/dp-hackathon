@@ -32,7 +32,13 @@ export async function POST(req: Request) {
     const sources = await db
       .select({ id: source.id })
       .from(source)
-      .where(and(eq(source.topicSlug, topicSlug), eq(source.userId, userId)));
+      .where(
+        and(
+          eq(source.topicSlug, topicSlug),
+          eq(source.userId, userId),
+          eq(source.excluded, false),
+        ),
+      );
     if (sources.length > 0) {
       sourceIds = sources.map((s) => s.id);
     }

@@ -1,5 +1,9 @@
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { db } from "@/db";
+import { source } from "@/db/schema";
 import { tools } from "@/lib/ai/tools";
+import { extractSourceContent } from "@/lib/sources/extract-content";
 import { TOPICS } from "@/lib/topics";
 
 // State management tools that return state-update instructions for the client
@@ -110,6 +114,49 @@ export async function POST(req: Request) {
   };
 
   console.log("[agent-tools] POST request:", { toolName, input });
+
+  // Handle read_source_content (async, needs DB access)
+  if (toolName === "read_source_content") {
+    const sourceId = input.sourceId as string;
+    if (!sourceId) {
+      return NextResponse.json(
+        { error: "sourceId is required" },
+        { status: 400 },
+      );
+    }
+    try {
+      const [row] = await db
+        .select({
+          id: source.id,
+          filename: source.filename,
+          mimeType: source.mimeType,
+          blobUrl: source.blobUrl,
+        })
+        .from(source)
+        .where(eq(source.id, sourceId));
+
+      if (!row) {
+        return NextResponse.json({ error: "Source not found" });
+      }
+
+      const content = await extractSourceContent(
+        row.blobUrl,
+        row.mimeType,
+        row.filename,
+      );
+      return NextResponse.json({
+        id: row.id,
+        filename: row.filename,
+        content:
+          content || "Could not extract text content from this file type",
+      });
+    } catch (err) {
+      return NextResponse.json(
+        { error: `Failed to read source: ${String(err)}` },
+        { status: 500 },
+      );
+    }
+  }
 
   // Check state tools first
   if (toolName in stateHandlers) {

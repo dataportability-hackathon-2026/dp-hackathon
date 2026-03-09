@@ -2,7 +2,7 @@
 
 import { type Edge, MarkerType, type Node, Position } from "@xyflow/react";
 import dynamic from "next/dynamic";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import "@xyflow/react/dist/style.css";
 import {
   type ColumnDef,
@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  Download,
   MoreVertical,
   Pause,
   Pencil,
@@ -112,6 +113,7 @@ export function ArtifactCanvas({
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       ),
   );
+
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -221,6 +223,17 @@ function ArtifactActions({
 }) {
   const isRenaming = renamingId === artifact.id;
 
+  const handleExportJsonl = () => {
+    const jsonl = JSON.stringify(artifact);
+    const blob = new Blob([`${jsonl}\n`], { type: "application/jsonl" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${artifact.title.replace(/[^a-zA-Z0-9_-]/g, "_")}.jsonl`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleShare = () => {
     const url = `${window.location.origin}${window.location.pathname}?artifact=${artifact.type}&id=${artifact.id}`;
     navigator.clipboard.writeText(url);
@@ -278,6 +291,10 @@ function ArtifactActions({
           <DropdownMenuItem onClick={handleShare}>
             <Share2 className="mr-2 size-4" />
             Copy link
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleExportJsonl}>
+            <Download className="mr-2 size-4" />
+            Export JSONL
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onClick={handleDelete}>
@@ -536,7 +553,7 @@ const LazyControls = dynamic(
 );
 
 function MindMapCard({ artifact }: { artifact: MindMapArtifact }) {
-  const { nodes, edges } = buildFlowGraph(artifact);
+  const { nodes, edges } = useMemo(() => buildFlowGraph(artifact), [artifact]);
 
   return (
     <Card>

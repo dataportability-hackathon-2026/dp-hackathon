@@ -3,6 +3,7 @@
 import { upload as blobUpload } from "@vercel/blob/client";
 import {
   AlertCircle,
+  ArrowDown,
   ArrowLeft,
   AudioLines,
   BarChart3,
@@ -40,6 +41,7 @@ import {
   Send,
   Shield,
   Sparkles,
+  Square,
   Table2,
   Trash2,
   TrendingUp,
@@ -116,6 +118,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
@@ -126,6 +129,10 @@ import {
 import { ACADEMIC_RESOURCES } from "@/lib/academic-resources";
 import { useLatestAssessment } from "@/lib/assessments/use-latest-assessment";
 import { useHotkeys } from "@/lib/hooks/use-hotkeys";
+import {
+  BLOCKED_EXTENSIONS,
+  extFromName,
+} from "@/lib/sources/upload-validation";
 import {
   type MockAuditEvent,
   type MockFile,
@@ -154,7 +161,7 @@ import {
   useTrackTranscription,
   useVoiceAssistant,
 } from "@livekit/components-react";
-import { ConnectionState, Track } from "livekit-client";
+import { ConnectionState, RoomEvent, Track } from "livekit-client";
 import {
   type ArtifactType,
   artifactTypeFromLabel,
@@ -225,6 +232,69 @@ async function ensureConversation(): Promise<string> {
   await conversationStore.setConversationId(id);
   sessionStorage.setItem("conversationId", id);
   return id;
+}
+
+// ── Per-session conversation mapping ──
+// Each chat tab gets its own conversationId so messages persist per-session.
+
+function getSessionConversationMap(): Record<string, string> {
+  try {
+    const raw = sessionStorage.getItem("session-conversation-map");
+    if (raw) return JSON.parse(raw) as Record<string, string>;
+  } catch {
+    /* ignore */
+  }
+  return {};
+}
+
+function setSessionConversationId(sessionId: string, conversationId: string) {
+  const map = getSessionConversationMap();
+  map[sessionId] = conversationId;
+  sessionStorage.setItem("session-conversation-map", JSON.stringify(map));
+}
+
+function getSessionConversationId(sessionId: string): string | null {
+  return getSessionConversationMap()[sessionId] ?? null;
+}
+
+async function ensureSessionConversation(sessionId: string): Promise<string> {
+  const existing = getSessionConversationId(sessionId);
+  if (existing) return existing;
+
+  const res = await fetch("/api/conversations", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title: "New conversation" }),
+  });
+  if (!res.ok) throw new Error("Failed to create conversation");
+  const { id } = (await res.json()) as { id: string };
+  setSessionConversationId(sessionId, id);
+  return id;
+}
+
+async function hydrateSessionMessages(
+  conversationId: string,
+): Promise<UIMessage[]> {
+  try {
+    const res = await fetch(`/api/conversations/${conversationId}/messages`);
+    if (!res.ok) return [];
+    const rows = (await res.json()) as Array<{
+      id: string;
+      role: string;
+      text: string;
+      modality: string;
+      timestamp: number;
+    }>;
+    return rows
+      .sort((a, b) => a.timestamp - b.timestamp)
+      .map((r) => ({
+        id: r.id,
+        role: r.role as "user" | "assistant",
+        parts: [{ type: "text" as const, text: r.text }],
+      }));
+  } catch {
+    return [];
+  }
 }
 
 /** Read-only hook for the full conversation (voice + text). */
@@ -412,15 +482,95 @@ export function SinglePageApp({
   const [voiceActivated, setVoiceActivated] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Multi-session agent tabs
+  // Full-screen dropzone (desktop)
+  const [screenDragOver, setScreenDragOver] = useState(false);
+  const [pendingDropFiles, setPendingDropFiles] = useState<File[] | null>(null);
+  const dragCounterRef = useRef(0);
+
+  useEffect(() => {
+    const handleDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounterRef.current += 1;
+      if (e.dataTransfer?.types.includes("Files")) {
+        setScreenDragOver(true);
+      }
+    };
+    const handleDragOver = (e: DragEvent) => {
+      e.preventDefault();
+    };
+    const handleDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounterRef.current -= 1;
+      if (dragCounterRef.current <= 0) {
+        dragCounterRef.current = 0;
+        setScreenDragOver(false);
+      }
+    };
+    const handleDrop = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounterRef.current = 0;
+      setScreenDragOver(false);
+      if (!e.dataTransfer?.files.length) return;
+      const accepted = Array.from(e.dataTransfer.files).filter(
+        (f) => !BLOCKED_EXTENSIONS.has(extFromName(f.name)),
+      );
+      if (accepted.length === 0) return;
+      setPendingDropFiles(accepted);
+      void setActiveTab("sources");
+    };
+    window.addEventListener("dragenter", handleDragEnter);
+    window.addEventListener("dragover", handleDragOver);
+    window.addEventListener("dragleave", handleDragLeave);
+    window.addEventListener("drop", handleDrop);
+    return () => {
+      window.removeEventListener("dragenter", handleDragEnter);
+      window.removeEventListener("dragover", handleDragOver);
+      window.removeEventListener("dragleave", handleDragLeave);
+      window.removeEventListener("drop", handleDrop);
+    };
+  }, [setActiveTab]);
+
+  // Multi-session agent tabs (persisted to sessionStorage)
   type AgentSession = { id: string; label: string; isNew: boolean };
-  const [agentSessions, setAgentSessions] = useState<AgentSession[]>(() => [
-    { id: `session-${Date.now()}`, label: "Chat 1", isNew: false },
-  ]);
-  const [activeSessionId, setActiveSessionId] = useState(
-    () => agentSessions[0].id,
+  const [agentSessions, setAgentSessions] = useState<AgentSession[]>(() => {
+    if (typeof window === "undefined")
+      return [{ id: `session-${Date.now()}`, label: "Chat 1", isNew: false }];
+    try {
+      const stored = sessionStorage.getItem("agent-sessions");
+      if (stored) {
+        const parsed = JSON.parse(stored) as AgentSession[];
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      /* ignore */
+    }
+    return [{ id: `session-${Date.now()}`, label: "Chat 1", isNew: false }];
+  });
+  const [activeSessionId, setActiveSessionId] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = sessionStorage.getItem("active-session-id");
+      if (stored) return stored;
+    }
+    return agentSessions[0].id;
+  });
+  const sessionCounter = useRef(
+    agentSessions.reduce((max, s) => {
+      const match = s.label.match(/^Chat (\d+)$/);
+      return match ? Math.max(max, Number.parseInt(match[1], 10)) : max;
+    }, 0) || 1,
   );
-  const sessionCounter = useRef(1);
+  const [renamingSessionId, setRenamingSessionId] = useState<string | null>(
+    null,
+  );
+
+  const renameSession = useCallback((sessionId: string, newLabel: string) => {
+    const trimmed = newLabel.trim();
+    if (!trimmed) return;
+    setAgentSessions((prev) =>
+      prev.map((s) => (s.id === sessionId ? { ...s, label: trimmed } : s)),
+    );
+    setRenamingSessionId(null);
+  }, []);
 
   const addAgentSession = useCallback(() => {
     sessionCounter.current += 1;
@@ -431,6 +581,15 @@ export function SinglePageApp({
     };
     setAgentSessions((prev) => [...prev, newSession]);
     setActiveSessionId(newSession.id);
+    // Switch away from voice mode so the new text chat is visible
+    setVoiceMode(false);
+  }, []);
+
+  /** Clear isNew flag for a session (called after first message is sent). */
+  const markSessionUsed = useCallback((sessionId: string) => {
+    setAgentSessions((prev) =>
+      prev.map((s) => (s.id === sessionId ? { ...s, isNew: false } : s)),
+    );
   }, []);
 
   const closeAgentSession = useCallback(
@@ -446,6 +605,16 @@ export function SinglePageApp({
     },
     [activeSessionId],
   );
+
+  // Persist agent sessions to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem("agent-sessions", JSON.stringify(agentSessions));
+  }, [agentSessions]);
+
+  useEffect(() => {
+    sessionStorage.setItem("active-session-id", activeSessionId);
+  }, [activeSessionId]);
+
   const {
     loading: assessmentLoading,
     assessment: latestAssessment,
@@ -560,8 +729,20 @@ export function SinglePageApp({
             void setActiveTab(val);
             void setArtifactParam(null);
           }}
-          className="flex h-dvh flex-col gap-0 bg-background"
+          className="relative flex h-dvh flex-col gap-0 bg-background"
         >
+          {/* Full-screen drop overlay (desktop only) */}
+          {screenDragOver && (
+            <div className="pointer-events-none fixed inset-0 z-50 hidden items-center justify-center bg-background/80 backdrop-blur-sm lg:flex">
+              <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-primary bg-primary/5 p-12">
+                <Upload className="size-10 text-primary" />
+                <p className="text-lg font-semibold">Drop files to upload</p>
+                <p className="text-sm text-muted-foreground">
+                  Files will be added to your sources
+                </p>
+              </div>
+            </div>
+          )}
           <header className="border-b">
             <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-3 px-10">
               <Link
@@ -906,8 +1087,9 @@ export function SinglePageApp({
                       topicName={selectedTopic.name}
                     />
                     <GenerateMaterialsSection
-                      className="mx-auto mt-6 max-w-2xl"
+                      className="mx-auto mt-12 max-w-2xl"
                       onGenerate={handleOpenArtifactType}
+                      onOpenAgent={() => handleSetAgentOpen(true)}
                     />
                   </TabsContent>
 
@@ -916,6 +1098,8 @@ export function SinglePageApp({
                       topicSlug={currentTopicSlug}
                       topicName={selectedTopic.name}
                       fallbackFiles={selectedTopic.files}
+                      pendingFiles={pendingDropFiles}
+                      onPendingConsumed={() => setPendingDropFiles(null)}
                     />
                   </TabsContent>
 
@@ -944,7 +1128,14 @@ export function SinglePageApp({
                     <button
                       key={s.id}
                       type="button"
-                      onClick={() => setActiveSessionId(s.id)}
+                      onClick={() => {
+                        setActiveSessionId(s.id);
+                        setVoiceMode(false);
+                      }}
+                      onDoubleClick={(e) => {
+                        e.preventDefault();
+                        setRenamingSessionId(s.id);
+                      }}
                       className={`group relative flex shrink-0 items-center gap-1 px-3 py-2 text-xs font-medium transition-colors ${
                         activeSessionId === s.id
                           ? "text-foreground after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-primary"
@@ -952,7 +1143,29 @@ export function SinglePageApp({
                       }`}
                     >
                       <MessageSquare className="size-3" />
-                      {s.label}
+                      {renamingSessionId === s.id ? (
+                        <input
+                          type="text"
+                          defaultValue={s.label}
+                          // biome-ignore lint/a11y/noAutofocus: intentional for inline rename
+                          autoFocus
+                          className="w-20 rounded border border-input bg-background px-1 py-0 text-xs outline-none focus:ring-1 focus:ring-ring"
+                          onClick={(e) => e.stopPropagation()}
+                          onBlur={(e) =>
+                            renameSession(s.id, e.currentTarget.value)
+                          }
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            if (e.key === "Enter") {
+                              renameSession(s.id, e.currentTarget.value);
+                            } else if (e.key === "Escape") {
+                              setRenamingSessionId(null);
+                            }
+                          }}
+                        />
+                      ) : (
+                        s.label
+                      )}
                       {agentSessions.length > 1 && (
                         <span
                           role="button"
@@ -1021,7 +1234,10 @@ export function SinglePageApp({
                       : "hidden"
                   }
                 >
-                  <VoiceAgent />
+                  <VoiceAgent
+                    onToolResult={handleAgentToolResult}
+                    active={voiceMode}
+                  />
                 </div>
               )}
               {!voiceMode &&
@@ -1044,6 +1260,7 @@ export function SinglePageApp({
                       selectedProjectId={selectedProject.id}
                       activeArtifact={artifactParam || null}
                       isNewSession={s.isNew}
+                      onSessionUsed={markSessionUsed}
                     />
                   </div>
                 ))}
@@ -2160,7 +2377,15 @@ type LiveKitConnection = {
   roomName: string;
 };
 
-function VoiceAgentUI({ onDisconnect }: { onDisconnect: () => void }) {
+function VoiceAgentUI({
+  onDisconnect,
+  onToolResult,
+  active,
+}: {
+  onDisconnect: () => void;
+  onToolResult?: (toolName: string, result: Record<string, unknown>) => void;
+  active: boolean;
+}) {
   const {
     state: agentState,
     audioTrack,
@@ -2179,6 +2404,68 @@ function VoiceAgentUI({ onDisconnect }: { onDisconnect: () => void }) {
   useEffect(() => {
     console.log("[VoiceAgentUI] Room participants:", room.numParticipants);
   }, [room.numParticipants]);
+
+  // Send prior conversation context to the voice agent.
+  // We send it twice: once immediately on connected (optimistic), and again
+  // when the agent participant joins (numParticipants >= 2) to ensure delivery.
+  // The agent deduplicates via its `greeted` flag.
+  const contextSendCountRef = useRef(0);
+  useEffect(() => {
+    if (connectionState !== ConnectionState.Connected) {
+      contextSendCountRef.current = 0;
+      return;
+    }
+    // Send on first connect and again when agent participant joins
+    const shouldSend =
+      contextSendCountRef.current === 0 ||
+      (contextSendCountRef.current === 1 && room.numParticipants >= 2);
+    if (!shouldSend) return;
+    contextSendCountRef.current += 1;
+
+    const entries = conversationStore.getSnapshot();
+    const messages = entries
+      .filter((e) => e.isFinal && e.text.trim())
+      .map((e) => ({ role: e.role, text: e.text }));
+    const encoder = new TextEncoder();
+    const payload = JSON.stringify({
+      type: "conversation_context",
+      messages,
+    });
+    console.log(
+      "[VoiceAgentUI] Sending conversation context (attempt",
+      contextSendCountRef.current + "):",
+      messages.length,
+      "messages",
+    );
+    room.localParticipant.publishData(encoder.encode(payload), {
+      reliable: true,
+    });
+  }, [connectionState, room, room.numParticipants]);
+
+  // Listen for artifact data from the voice agent's data channel
+  useEffect(() => {
+    if (!onToolResult) return;
+    const decoder = new TextDecoder();
+    const handler = (payload: Uint8Array) => {
+      try {
+        const msg = JSON.parse(decoder.decode(payload)) as {
+          type?: string;
+          tool?: string;
+          data?: Record<string, unknown>;
+        };
+        if (msg.type === "artifact" && msg.tool && msg.data) {
+          onToolResult(msg.tool, msg.data);
+        }
+      } catch {
+        // Ignore non-JSON data channel messages
+      }
+    };
+    room.on(RoomEvent.DataReceived, handler);
+    return () => {
+      room.off(RoomEvent.DataReceived, handler);
+    };
+  }, [room, onToolResult]);
+
   const [isMuted, setIsMuted] = useState(false);
   const [vizType, setVizType] = usePreference("vizType");
   const [elapsed, setElapsed] = useState(0);
@@ -2279,6 +2566,20 @@ function VoiceAgentUI({ onDisconnect }: { onDisconnect: () => void }) {
       setIsMuted(next);
     }
   }, [room, isMuted]);
+
+  // When voice mode is deactivated (e.g. new session tab), mute mic; re-enable when active again
+  const wasMutedBeforeDeactivate = useRef(false);
+  useEffect(() => {
+    if (!room?.localParticipant) return;
+    if (!active) {
+      wasMutedBeforeDeactivate.current = isMuted;
+      room.localParticipant.setMicrophoneEnabled(false);
+      setIsMuted(true);
+    } else if (!wasMutedBeforeDeactivate.current) {
+      room.localParticipant.setMicrophoneEnabled(true);
+      setIsMuted(false);
+    }
+  }, [active, room]);
 
   useHotkeys({
     "mod+m": toggleMute,
@@ -2467,12 +2768,18 @@ function VoiceAgentUI({ onDisconnect }: { onDisconnect: () => void }) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <RoomAudioRenderer />
+      <RoomAudioRenderer muted={!active} />
     </div>
   );
 }
 
-function VoiceAgent() {
+function VoiceAgent({
+  onToolResult,
+  active,
+}: {
+  onToolResult?: (toolName: string, result: Record<string, unknown>) => void;
+  active: boolean;
+}) {
   const [micAccess, setMicAccess] = useState<"pending" | "granted" | "denied">(
     "pending",
   );
@@ -2638,7 +2945,11 @@ function VoiceAgent() {
       className="flex flex-1 flex-col overflow-hidden"
       onDisconnected={handleDisconnect}
     >
-      <VoiceAgentUI onDisconnect={handleDisconnect} />
+      <VoiceAgentUI
+        onDisconnect={handleDisconnect}
+        onToolResult={onToolResult}
+        active={active}
+      />
     </LiveKitRoom>
   );
 }
@@ -2647,7 +2958,9 @@ function VoiceAgent() {
 
 const TOOL_TYPE_TO_ARTIFACT: Record<string, ArtifactType> = {
   create_quiz: "quiz",
+  create_adaptive_quiz: "quiz",
   create_flashcards: "flashcards",
+  create_adaptive_flashcards: "flashcards",
   create_mind_map: "mindmap",
   create_remix: "remix",
   create_slides: "slidedeck",
@@ -2685,9 +2998,9 @@ const STATE_TOOL_NAMES = new Set([
   "get_current_state",
 ]);
 
-/** Wrapper that hydrates initial messages from the conversation store before
- *  rendering the chat UI. This ensures useChat receives initialMessages on mount
- *  so that conversations survive page refreshes. */
+/** Wrapper that hydrates initial messages from per-session DB conversations
+ *  before rendering the chat UI. Each session tab has its own conversationId
+ *  so messages persist independently across page refreshes. */
 function AgentTab({
   chatId,
   topicSlug,
@@ -2698,6 +3011,7 @@ function AgentTab({
   selectedProjectId,
   activeArtifact,
   isNewSession = false,
+  onSessionUsed,
 }: {
   chatId?: string;
   topicSlug: string;
@@ -2708,6 +3022,7 @@ function AgentTab({
   selectedProjectId: string;
   activeArtifact: string | null;
   isNewSession?: boolean;
+  onSessionUsed?: (sessionId: string) => void;
 }) {
   const [initialMessages, setInitialMessages] = useState<UIMessage[] | null>(
     null,
@@ -2720,23 +3035,32 @@ function AgentTab({
       return;
     }
     let cancelled = false;
-    conversationStore.whenHydrated().then(() => {
-      if (cancelled) return;
-      // Convert conversation store entries → UIMessage[] for useChat
-      const entries = conversationStore.getSnapshot();
-      const uiMessages: UIMessage[] = entries
-        .filter((e) => e.isFinal)
-        .map((e) => ({
-          id: e.id,
-          role: e.role,
-          parts: [{ type: "text" as const, text: e.text }],
-        }));
-      setInitialMessages(uiMessages);
-    });
+    const sessionId = chatId ?? "default";
+    const convId = getSessionConversationId(sessionId);
+    if (convId) {
+      // Hydrate from per-session conversation in DB
+      hydrateSessionMessages(convId).then((msgs) => {
+        if (!cancelled) setInitialMessages(msgs);
+      });
+    } else {
+      // No conversation yet for this session — also try legacy shared store
+      conversationStore.whenHydrated().then(() => {
+        if (cancelled) return;
+        const entries = conversationStore.getSnapshot();
+        const uiMessages: UIMessage[] = entries
+          .filter((e) => e.isFinal)
+          .map((e) => ({
+            id: e.id,
+            role: e.role,
+            parts: [{ type: "text" as const, text: e.text }],
+          }));
+        setInitialMessages(uiMessages);
+      });
+    }
     return () => {
       cancelled = true;
     };
-  }, [isNewSession]);
+  }, [isNewSession, chatId]);
 
   if (initialMessages === null) {
     return (
@@ -2757,6 +3081,7 @@ function AgentTab({
       selectedTopicId={selectedTopicId}
       selectedProjectId={selectedProjectId}
       activeArtifact={activeArtifact}
+      onSessionUsed={onSessionUsed}
     />
   );
 }
@@ -2771,6 +3096,7 @@ function AgentTabInner({
   selectedTopicId,
   selectedProjectId,
   activeArtifact,
+  onSessionUsed,
 }: {
   chatId?: string;
   topicSlug: string;
@@ -2781,38 +3107,89 @@ function AgentTabInner({
   selectedTopicId: string;
   selectedProjectId: string;
   activeArtifact: string | null;
+  onSessionUsed?: (sessionId: string) => void;
 }) {
   const msgId = useId();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { messages, sendMessage, status, error } = useChat({
-    id: chatId,
-    messages: initialMessages,
-    onFinish: ({ message }) => {
-      // Sync assistant responses into the unified conversation store
-      const textContent = message.parts
-        .filter(
-          (p): p is Extract<typeof p, { type: "text" }> => p.type === "text",
-        )
-        .map((p) => p.text)
-        .join("");
-      if (textContent.trim()) {
-        conversationStore.addMessage({
-          id: `chat-assistant-${message.id}`,
-          role: "assistant",
-          text: textContent,
-          timestamp: Date.now(),
-          modality: "text",
-          isFinal: true,
-        });
-      }
-    },
-  });
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const userScrolledUp = useRef(false);
+  const { messages, sendMessage, status, error, regenerate, clearError, stop } =
+    useChat({
+      id: chatId,
+      messages: initialMessages,
+      onFinish: ({ message }) => {
+        // Sync assistant responses into the unified conversation store
+        const textContent = message.parts
+          .filter(
+            (p): p is Extract<typeof p, { type: "text" }> => p.type === "text",
+          )
+          .map((p) => p.text)
+          .join("");
+        if (textContent.trim()) {
+          const assistantMsgId = `chat-assistant-${message.id}`;
+          const assistantTimestamp = Date.now();
+          conversationStore.addMessage({
+            id: assistantMsgId,
+            role: "assistant",
+            text: textContent,
+            timestamp: assistantTimestamp,
+            modality: "text",
+            isFinal: true,
+          });
+          // Also persist to per-session conversation
+          const sessionId = chatId ?? "default";
+          const sessionConvId = getSessionConversationId(sessionId);
+          if (sessionConvId) {
+            fetch(`/api/conversations/${sessionConvId}/messages`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                messages: [
+                  {
+                    id: assistantMsgId,
+                    role: "assistant",
+                    text: textContent,
+                    modality: "text",
+                    timestamp: assistantTimestamp,
+                  },
+                ],
+              }),
+            }).catch(() => {});
+          }
+        }
+      },
+    });
   const [input, setInput] = useState("");
   const processedToolCalls = useRef(new Set<string>());
 
   const isLoading = status === "streaming" || status === "submitted";
 
+  // Track scroll position to show/hide scroll-to-bottom button
   useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      const halfScreen = clientHeight / 2;
+      setShowScrollButton(distanceFromBottom > halfScreen);
+      userScrolledUp.current = distanceFromBottom > 50;
+    };
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Auto-scroll to bottom when new messages arrive (unless user scrolled up)
+  useEffect(() => {
+    if (!userScrolledUp.current) {
+      scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  const scrollToBottom = useCallback(() => {
+    userScrolledUp.current = false;
+    setShowScrollButton(false);
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
@@ -2828,15 +3205,15 @@ function AgentTabInner({
             type: string;
             state: string;
             toolCallId: string;
-            result?: Record<string, unknown>;
+            output?: Record<string, unknown>;
           };
           if (
-            toolPart.state === "result" &&
-            toolPart.result &&
+            toolPart.state === "output-available" &&
+            toolPart.output &&
             !processedToolCalls.current.has(toolPart.toolCallId)
           ) {
             processedToolCalls.current.add(toolPart.toolCallId);
-            onToolResult(toolName, toolPart.result);
+            onToolResult(toolName, toolPart.output);
           }
         }
       }
@@ -2846,16 +3223,39 @@ function AgentTabInner({
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
+    const msgTimestamp = Date.now();
+    const userMsgId = `text-chat-${msgTimestamp}`;
     // Also add to unified store so voice mode picks it up
     conversationStore.addMessage({
-      id: `text-chat-${Date.now()}`,
+      id: userMsgId,
       role: "user",
       text: input,
-      timestamp: Date.now(),
+      timestamp: msgTimestamp,
       modality: "text",
       isFinal: true,
     });
     await ensureConversation();
+    // Ensure per-session conversation exists and persist the user message
+    const sessionId = chatId ?? "default";
+    const sessionConvId = await ensureSessionConversation(sessionId);
+    // Mark session as used so it hydrates from DB on future reloads
+    onSessionUsed?.(sessionId);
+    // Fire-and-forget: persist user message to per-session conversation
+    fetch(`/api/conversations/${sessionConvId}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [
+          {
+            id: userMsgId,
+            role: "user",
+            text: input,
+            modality: "text",
+            timestamp: msgTimestamp,
+          },
+        ],
+      }),
+    }).catch(() => {});
     // Send all non-useChat messages as prior context (voice + text-in-voice-mode).
     // useChat tracks its own messages, so we exclude those (they have "text-chat-" prefix).
     const priorContext = conversationStore
@@ -2925,130 +3325,163 @@ function AgentTabInner({
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
-      <ScrollArea className="flex-1 overflow-y-auto p-4">
-        <div className="space-y-4">
-          {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-              <MessageSquare className="size-8 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">
-                Ask me anything about your studies
-              </p>
-            </div>
-          )}
-          {messages.map((msg: UIMessage) => (
-            <div
-              key={`${msgId}-${msg.id}`}
-              className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}
-            >
-              {msg.role === "assistant" && (
-                <Avatar size="sm" className="mt-0.5 shrink-0">
-                  <AvatarFallback>
-                    <Bot className="size-4" />
-                  </AvatarFallback>
-                </Avatar>
-              )}
-              <div className={`max-w-[85%] ${msg.role === "user" ? "" : ""}`}>
-                {msg.parts.map((part, partIdx) => {
-                  if (part.type === "text" && part.text.trim()) {
-                    return (
-                      <div
-                        key={`${msg.id}-part-${partIdx}`}
-                        className={`rounded-2xl px-3.5 py-1.5 text-sm leading-relaxed ${
-                          msg.role === "user"
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
-                        }`}
-                      >
-                        {msg.role === "assistant" ? (
-                          <Streamdown
-                            animated
-                            isAnimating={status === "streaming"}
-                          >
-                            {part.text}
-                          </Streamdown>
-                        ) : (
-                          part.text
-                        )}
-                      </div>
-                    );
-                  }
-                  if (part.type.startsWith("tool-")) {
-                    const toolName = part.type.replace("tool-", "");
-                    const isStateTool = STATE_TOOL_NAMES.has(toolName);
-                    const artifactType = TOOL_TYPE_TO_ARTIFACT[toolName];
-                    const label = TOOL_LABELS[toolName] ?? toolName;
-                    const toolPart = part as {
-                      type: string;
-                      state: string;
-                      toolCallId: string;
-                    };
-
-                    if (
-                      toolPart.state === "call" ||
-                      toolPart.state === "input-streaming"
-                    ) {
-                      return (
-                        <div
-                          key={`${msg.id}-part-${partIdx}`}
-                          className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"
-                        >
-                          <Loader2 className="size-3 animate-spin" />
-                          {isStateTool
-                            ? label
-                            : `Creating ${label.toLowerCase().replace("view ", "")}...`}
-                        </div>
-                      );
-                    }
-
-                    if (toolPart.state === "result" && isStateTool) {
-                      return (
-                        <div
-                          key={`${msg.id}-part-${partIdx}`}
-                          className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground"
-                        >
-                          <Check className="size-3 text-green-600" />
-                          Done
-                        </div>
-                      );
-                    }
-
-                    if (toolPart.state === "result" && artifactType) {
-                      return (
-                        <div key={`${msg.id}-part-${partIdx}`} className="mt-2">
-                          <button
-                            type="button"
-                            onClick={() => onOpenArtifact(artifactType)}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10 hover:border-primary/50"
-                          >
-                            <ChevronRight className="size-3" />
-                            {label}
-                          </button>
-                        </div>
-                      );
-                    }
-
-                    return null;
-                  }
-                  return null;
-                })}
+      <div className="relative flex-1 overflow-hidden">
+        <div ref={scrollContainerRef} className="h-full overflow-y-auto p-4">
+          <div className="space-y-4">
+            {messages.length === 0 && (
+              <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+                <MessageSquare className="size-8 text-muted-foreground/50" />
+                <p className="text-sm text-muted-foreground">
+                  Ask me anything about your studies
+                </p>
               </div>
-              {msg.role === "user" && (
-                <Avatar size="sm" className="mt-0.5 shrink-0">
-                  <AvatarFallback>
-                    <User className="h-4 w-4" />
-                  </AvatarFallback>
-                </Avatar>
-              )}
-            </div>
-          ))}
-          {error && (
-            <div className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
-              {error.message}
-            </div>
-          )}
-          <div ref={scrollRef} />
+            )}
+            {messages.map((msg: UIMessage) => (
+              <div
+                key={`${msgId}-${msg.id}`}
+                className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}
+              >
+                {msg.role === "assistant" && (
+                  <Avatar size="sm" className="mt-0.5 shrink-0">
+                    <AvatarFallback>
+                      <Bot className="size-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+                <div className={`max-w-[85%] ${msg.role === "user" ? "" : ""}`}>
+                  {msg.parts.map((part, partIdx) => {
+                    if (part.type === "text" && part.text.trim()) {
+                      return (
+                        <div
+                          key={`${msg.id}-part-${partIdx}`}
+                          className={`rounded-2xl px-3.5 py-1.5 text-sm leading-relaxed ${
+                            msg.role === "user"
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted"
+                          }`}
+                        >
+                          {msg.role === "assistant" ? (
+                            <Streamdown
+                              animated
+                              isAnimating={status === "streaming"}
+                            >
+                              {part.text}
+                            </Streamdown>
+                          ) : (
+                            part.text
+                          )}
+                        </div>
+                      );
+                    }
+                    if (part.type.startsWith("tool-")) {
+                      const toolName = part.type.replace("tool-", "");
+                      const isStateTool = STATE_TOOL_NAMES.has(toolName);
+                      const artifactType = TOOL_TYPE_TO_ARTIFACT[toolName];
+                      const label = TOOL_LABELS[toolName] ?? toolName;
+                      const toolPart = part as {
+                        type: string;
+                        state: string;
+                        toolCallId: string;
+                      };
+
+                      if (
+                        toolPart.state === "input-available" ||
+                        toolPart.state === "input-streaming"
+                      ) {
+                        return (
+                          <div
+                            key={`${msg.id}-part-${partIdx}`}
+                            className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"
+                          >
+                            <Loader2 className="size-3 animate-spin" />
+                            {isStateTool
+                              ? label
+                              : `Creating ${label.toLowerCase().replace("view ", "")}...`}
+                          </div>
+                        );
+                      }
+
+                      if (
+                        toolPart.state === "output-available" &&
+                        isStateTool
+                      ) {
+                        return (
+                          <div
+                            key={`${msg.id}-part-${partIdx}`}
+                            className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground"
+                          >
+                            <Check className="size-3 text-green-600" />
+                            Done
+                          </div>
+                        );
+                      }
+
+                      if (
+                        toolPart.state === "output-available" &&
+                        artifactType
+                      ) {
+                        return (
+                          <div
+                            key={`${msg.id}-part-${partIdx}`}
+                            className="mt-2"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => onOpenArtifact(artifactType)}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10 hover:border-primary/50"
+                            >
+                              <ChevronRight className="size-3" />
+                              {label}
+                            </button>
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    }
+                    return null;
+                  })}
+                </div>
+                {msg.role === "user" && (
+                  <Avatar size="sm" className="mt-0.5 shrink-0">
+                    <AvatarFallback>
+                      <User className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
+            ))}
+            {error && (
+              <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                <span className="flex-1">{error.message}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-6 shrink-0 text-xs"
+                  onClick={() => {
+                    clearError();
+                    regenerate();
+                  }}
+                >
+                  <RefreshCw className="mr-1 size-3" />
+                  Retry
+                </Button>
+              </div>
+            )}
+            <div ref={scrollRef} />
+          </div>
         </div>
-      </ScrollArea>
+        {showScrollButton && (
+          <button
+            type="button"
+            onClick={scrollToBottom}
+            className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center justify-center size-8 rounded-full bg-background border shadow-md text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Scroll to bottom"
+          >
+            <ArrowDown className="size-4" />
+          </button>
+        )}
+      </div>
 
       <form onSubmit={handleSubmit} className="shrink-0 border-t p-4">
         <div className="flex gap-2">
@@ -3060,13 +3493,24 @@ function AgentTabInner({
             className="flex-1"
             disabled={isLoading}
           />
-          <Button
-            size="icon"
-            type="submit"
-            disabled={isLoading || !input.trim()}
-          >
-            {isLoading ? <Loader2 className="animate-spin" /> : <Send />}
-          </Button>
+          <div className="relative group">
+            <Button
+              size="icon"
+              type="submit"
+              disabled={isLoading || !input.trim()}
+            >
+              {isLoading ? <Loader2 className="animate-spin" /> : <Send />}
+            </Button>
+            {isLoading && (
+              <button
+                type="button"
+                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-destructive text-destructive-foreground rounded-md"
+                onClick={stop}
+              >
+                <Square className="size-4 fill-current" />
+              </button>
+            )}
+          </div>
         </div>
       </form>
     </div>
@@ -3281,6 +3725,7 @@ type SourceRow = {
   mimeType: string;
   sizeBytes: number;
   blobUrl: string;
+  excluded: boolean;
   createdAt: string;
 };
 
@@ -3300,10 +3745,14 @@ function SourcesTab({
   topicSlug,
   topicName,
   fallbackFiles,
+  pendingFiles,
+  onPendingConsumed,
 }: {
   topicSlug: string;
   topicName: string;
   fallbackFiles: MockFile[];
+  pendingFiles: File[] | null;
+  onPendingConsumed: () => void;
 }) {
   const fileId = useId();
   const uploadId = useId();
@@ -3457,6 +3906,14 @@ function SourcesTab({
     [uploadFiles],
   );
 
+  // Consume files dropped on the full-screen dropzone
+  useEffect(() => {
+    if (pendingFiles && pendingFiles.length > 0) {
+      uploadFiles(pendingFiles);
+      onPendingConsumed();
+    }
+  }, [pendingFiles, onPendingConsumed, uploadFiles]);
+
   const cancelUpload = useCallback((tempId: string) => {
     setUploads((prev) => {
       const item = prev.find((u) => u.tempId === tempId);
@@ -3470,6 +3927,22 @@ function SourcesTab({
     if (res.ok) {
       setSources((prev) => prev.filter((s) => s.id !== id));
       setQuotaError(null);
+    }
+  }, []);
+
+  const toggleExcluded = useCallback(async (id: string, excluded: boolean) => {
+    setSources((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, excluded } : s)),
+    );
+    const res = await fetch(`/api/sources/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ excluded }),
+    });
+    if (!res.ok) {
+      setSources((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, excluded: !excluded } : s)),
+      );
     }
   }, []);
 
@@ -3715,7 +4188,18 @@ function SourcesTab({
                 )}
               </div>
               {!isRenaming && displayFiles.length > 0 && (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={
+                      !("excluded" in file && (file as SourceRow).excluded)
+                    }
+                    onCheckedChange={(checked: boolean) =>
+                      toggleExcluded(id, !checked)
+                    }
+                    size="sm"
+                    aria-label={`Include ${filename} in generation`}
+                    data-testid="source-toggle"
+                  />
                   <Button
                     variant="ghost"
                     size="icon-xs"
@@ -4143,18 +4627,38 @@ const GENERATE_MATERIAL_TYPES = [
 
 function GenerateMaterialsSection({
   onGenerate,
+  onOpenAgent,
   className,
 }: {
   onGenerate: (type: ArtifactType) => void;
+  onOpenAgent: () => void;
   className?: string;
 }) {
   return (
     <div className={className}>
+      {/* Agent prompt alert */}
+      <Alert
+        className="mb-6 cursor-pointer border-primary/30 bg-primary/5 transition-colors hover:bg-primary/10"
+        onClick={onOpenAgent}
+      >
+        <Bot className="size-4 text-primary" />
+        <AlertTitle className="text-sm font-semibold">
+          Ask the AI agent to generate materials
+        </AlertTitle>
+        <AlertDescription className="text-xs text-muted-foreground">
+          Describe what you need and the agent will create tailored learning
+          materials for you — flashcards, quizzes, summaries, and more.
+        </AlertDescription>
+      </Alert>
+
+      {/* Section heading */}
       <div className="mb-3 flex items-center gap-2">
         <Sparkles className="size-4 text-primary" />
         <h2 className="text-sm font-semibold">Generate Learning Materials</h2>
       </div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:hidden">
+
+      {/* Tile grid */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {GENERATE_MATERIAL_TYPES.map(
           ({ type, label, icon: Icon, description }) => (
             <button
@@ -4172,8 +4676,9 @@ function GenerateMaterialsSection({
           ),
         )}
       </div>
-      {/* On lg+, the left sidebar already shows the grid — show a compact hint */}
-      <p className="hidden text-xs text-muted-foreground lg:block">
+
+      {/* Sidebar hint on large screens */}
+      <p className="mt-3 text-center text-xs text-muted-foreground">
         Use the panel on the left to open and generate any material type.
       </p>
     </div>

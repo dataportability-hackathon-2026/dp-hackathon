@@ -43,16 +43,31 @@ export async function PATCH(
   const { id } = await params;
   const body = await req.json();
   const filename = body.filename as string | undefined;
+  const excluded = body.excluded as boolean | undefined;
 
-  if (!filename || filename.trim().length === 0)
-    return NextResponse.json(
-      { error: "filename is required" },
-      { status: 400 },
-    );
+  const updates: { filename?: string; excluded?: boolean; updatedAt: Date } = {
+    updatedAt: new Date(),
+  };
+
+  if (typeof filename === "string") {
+    if (filename.trim().length === 0)
+      return NextResponse.json(
+        { error: "filename is required" },
+        { status: 400 },
+      );
+    updates.filename = filename.trim();
+  }
+
+  if (typeof excluded === "boolean") {
+    updates.excluded = excluded;
+  }
+
+  if (!updates.filename && updates.excluded === undefined)
+    return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
 
   const [row] = await db
     .update(source)
-    .set({ filename: filename.trim(), updatedAt: new Date() })
+    .set(updates)
     .where(and(eq(source.id, id), eq(source.userId, userId)))
     .returning();
 
