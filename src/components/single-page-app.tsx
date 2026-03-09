@@ -2433,7 +2433,7 @@ function VoiceAgentUI({
     });
     console.log(
       "[VoiceAgentUI] Sending conversation context (attempt",
-      contextSendCountRef.current + "):",
+      `${contextSendCountRef.current}):`,
       messages.length,
       "messages",
     );
