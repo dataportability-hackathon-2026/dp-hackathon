@@ -187,6 +187,15 @@ function createDataStore() {
     notify();
   }
 
+  function updateArtifact(id: string, patch: Partial<Artifact>) {
+    const existing = state.artifacts.get(id);
+    if (!existing) return;
+    const next = new Map(state.artifacts);
+    next.set(id, { ...existing, ...patch } as Artifact);
+    state = { ...state, artifacts: next };
+    notify();
+  }
+
   function setGuideBlocks(blocks: MockGuideBlock[]) {
     state = { ...state, guideBlocks: blocks };
     notify();
@@ -348,6 +357,7 @@ function createDataStore() {
     // Actions
     addArtifact,
     removeArtifact,
+    updateArtifact,
     setGuideBlocks,
     updateGuideBlock,
     setLearningProfile,

@@ -4,9 +4,10 @@ import { loadSourceContent } from "@/lib/sources/load-sources";
 import { getCitationBlock, getCitationGuardrails } from "./citations";
 import { buildProfileContextBlock } from "./learning-profile-context";
 import { model } from "./provider";
-import type { LearningProfileAnalysis } from "./schemas";
 import {
   FlashcardArtifactSchema,
+  type LearningProfileAnalysis,
+  LearningProfileAnalysisSchema,
   MindMapArtifactSchema,
   QuizArtifactSchema,
   RemixArtifactSchema,
@@ -694,9 +695,7 @@ Bad uses: memorizing vocabulary, learning historical dates (spatial adds no valu
     description:
       "Remix source material into a new synthesized learning artifact. Takes one source document and restructures it into clear sections with key insights and next steps. Optionally imports the learner's profile to adapt tone, complexity, and focus. Uses elaboration [DUNLOSKY_2013] to connect source material to prior knowledge, and evidence-based restructuring to improve comprehension [SWELLER_1988].",
     inputSchema: profileAwareInputSchema.extend({
-      learningProfile: z
-        .custom<LearningProfileAnalysis>()
-        .nullable()
+      learningProfile: LearningProfileAnalysisSchema.nullable()
         .optional()
         .describe(
           "Optional learning profile to personalize the remix. When provided, the remix adapts to the learner's cognitive profile, strengths, risks, and coaching preferences.",

@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
+import type { ClientStateSnapshot } from "@/lib/ai/client-state-snapshot";
 import { TOPICS } from "@/lib/topics";
 
 /**
@@ -232,3 +233,148 @@ export const stateTools = {
     },
   }),
 };
+
+// ── Read-only tools that inspect client-side state ──
+// These are built dynamically per-request because the state snapshot
+// comes from the client in the request body.
+
+export function buildStateReadTools(snapshot: ClientStateSnapshot | null) {
+  return {
+    read_app_state: tool({
+      description:
+        "Read the current app UI state: which view is active, which topic and project are selected, and which artifact type is displayed. Call this first to orient yourself before taking actions.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        if (!snapshot) return { error: "No client state available" };
+        const topic = TOPICS.find((t) => t.id === snapshot.selectedTopicId);
+        const project = topic?.projects.find(
+          (p) => p.id === snapshot.selectedProjectId,
+        );
+        return {
+          activeView: snapshot.activeView,
+          selectedTopic: topic
+            ? { id: topic.id, name: topic.name }
+            : { id: snapshot.selectedTopicId, name: "Unknown" },
+          selectedProject: project
+            ? { id: project.id, name: project.name }
+            : { id: snapshot.selectedProjectId, name: "Unknown" },
+          activeArtifact: snapshot.activeArtifact,
+          artifactCount: snapshot.artifacts.length,
+          guideBlockCount: snapshot.guideBlocks.length,
+          completedGuideBlocks: snapshot.completedGuideBlockIds.length,
+        };
+      },
+    }),
+
+    read_all_artifacts: tool({
+      description:
+        "List all learning artifacts currently in the app (quizzes, flashcards, mind maps, slides, etc.). Returns id, type, title, description, and topicSlug for each. Use read_artifact_detail to get the full content of a specific artifact.",
+      inputSchema: z.object({
+        type: z
+          .enum([
+            "quiz",
+            "flashcards",
+            "mindmap",
+            "slidedeck",
+            "spatial",
+            "video",
+            "audio",
+            "report",
+            "infographic",
+            "datatable",
+            "manim",
+            "geo",
+            "remix",
+          ])
+          .optional()
+          .describe("Optional: filter by artifact type"),
+      }),
+      execute: async ({ type }) => {
+        if (!snapshot) return { error: "No client state available" };
+        const filtered = type
+          ? snapshot.artifacts.filter((a) => a.type === type)
+          : snapshot.artifacts;
+        return {
+          count: filtered.length,
+          artifacts: filtered.map((a) => ({
+            id: a.id,
+            type: a.type,
+            title: a.title,
+            description: a.description,
+            topicSlug: a.topicSlug,
+            createdAt: a.createdAt,
+          })),
+        };
+      },
+    }),
+
+    read_artifact_detail: tool({
+      description:
+        "Get the full content of a specific artifact by ID, including all type-specific data (quiz questions, flashcard cards, mind map nodes, slide content, etc.).",
+      inputSchema: z.object({
+        artifactId: z.string().describe("The artifact ID to retrieve"),
+      }),
+      execute: async ({ artifactId }) => {
+        if (!snapshot) return { error: "No client state available" };
+        const artifact = snapshot.artifacts.find((a) => a.id === artifactId);
+        if (!artifact) {
+          return {
+            error: `Artifact "${artifactId}" not found. Available IDs: ${snapshot.artifacts.map((a) => a.id).join(", ")}`,
+          };
+        }
+        return artifact;
+      },
+    }),
+
+    read_guide_blocks: tool({
+      description:
+        "Read the current 7-day study guide blocks, including which ones are completed. Use this to understand the learner's study plan and progress.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        if (!snapshot) return { error: "No client state available" };
+        return {
+          totalBlocks: snapshot.guideBlocks.length,
+          completedCount: snapshot.completedGuideBlockIds.length,
+          blocks: snapshot.guideBlocks.map((b) => ({
+            ...b,
+            completed:
+              b.completed || snapshot.completedGuideBlockIds.includes(b.id),
+          })),
+        };
+      },
+    }),
+
+    read_learner_profile: tool({
+      description:
+        "Read the learner's full profile including cognitive strengths, motivation (SDT), calibration tendency, and active system adaptations. Use this to personalize your responses and artifact generation.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        if (!snapshot) return { error: "No client state available" };
+        return {
+          learningProfile: snapshot.learningProfile,
+          profileStrengths: snapshot.profileStrengths,
+          motivationProfile: snapshot.motivationProfile,
+          calibrationTendency: snapshot.calibrationTendency,
+          systemAdaptations: snapshot.systemAdaptations,
+        };
+      },
+    }),
+
+    read_mastery_scores: tool({
+      description:
+        "Read the learner's per-concept mastery scores. Use this to identify weak areas, suggest practice topics, and track progress.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        if (!snapshot) return { error: "No client state available" };
+        return {
+          scores: snapshot.masteryScores,
+          averageMastery:
+            snapshot.masteryScores.length > 0
+              ? snapshot.masteryScores.reduce((sum, s) => sum + s.score, 0) /
+                snapshot.masteryScores.length
+              : 0,
+        };
+      },
+    }),
+  };
+}

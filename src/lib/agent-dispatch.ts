@@ -47,13 +47,15 @@ export function dispatchAgentResult(
     case "create_manim":
     case "create_geo":
     case "create_remix": {
-      const artifact = result as unknown as Artifact;
-      if (artifact.id && artifact.type) {
+      const artifact = normalizeToolResultToArtifact(result);
+      if (artifact?.id && artifact.type) {
         // Inject topicSlug from dispatch context if the artifact doesn't already have one
         if (!artifact.topicSlug && ctx.topicSlug) {
           artifact.topicSlug = ctx.topicSlug;
         }
         dataStore.addArtifact(artifact);
+        // Persist to DB so it survives page refresh
+        persistArtifact(artifact);
         ctx.setArtifactParam(artifact.type);
         ctx.setActiveTab("");
       }
@@ -109,6 +111,42 @@ export function dispatchAgentResult(
       // Schedule changes are reflected via the API; no local state needed
       break;
   }
+}
+
+/**
+ * Normalize the raw tool result into a flat Artifact shape.
+ * Tools return { type, topicSlug?, data: { title, description, ... } }.
+ * If the result already looks like a flat Artifact (has id+type), use it as-is.
+ */
+function normalizeToolResultToArtifact(result: ToolResult): Artifact | null {
+  // Already a flat artifact (has id and type at top level)
+  if (result.id && result.type) {
+    return result as unknown as Artifact;
+  }
+
+  // Tool result shape: { type, topicSlug?, data: { title, description, ... } }
+  const artifactType = result.type as string | undefined;
+  const data = result.data as Record<string, unknown> | undefined;
+  if (!artifactType || !data) return null;
+
+  return {
+    id: `artifact-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    type: artifactType,
+    topicSlug: (result.topicSlug as string) ?? undefined,
+    createdAt: new Date().toISOString().slice(0, 10),
+    ...data,
+  } as unknown as Artifact;
+}
+
+/** Fire-and-forget persist to /api/user-artifacts so artifacts survive page refresh */
+function persistArtifact(artifact: Artifact) {
+  fetch("/api/user-artifacts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ artifact }),
+  }).catch((err) => {
+    console.error("[agent-dispatch] Failed to persist artifact:", err);
+  });
 }
 
 function handleNavigation(result: ToolResult, ctx: DispatchContext) {

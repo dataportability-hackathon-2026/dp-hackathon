@@ -34,6 +34,7 @@ import {
   Phone,
   PhoneOff,
   Plug,
+  Plus,
   Presentation,
   RefreshCw,
   Send,
@@ -163,6 +164,7 @@ import { LearningProfileForm } from "@/components/learning-profile-form";
 import { PersonaImportDialog } from "@/components/persona-import-dialog";
 import { ProfileSheetContent } from "@/components/profile-sheet-content";
 import { dispatchAgentResult } from "@/lib/agent-dispatch";
+import type { ClientStateSnapshot } from "@/lib/ai/client-state-snapshot";
 import { authClient } from "@/lib/auth-client";
 import { dataStore, useDataStore } from "@/lib/data-store";
 import {
@@ -356,6 +358,29 @@ export function SinglePageApp({
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
 
+  // Hydrate artifacts from DB so they survive page refresh
+  const currentTopicSlugForHydration = topicSlugProp;
+  useEffect(() => {
+    async function hydrateArtifacts() {
+      try {
+        const params = currentTopicSlugForHydration
+          ? `?topicSlug=${encodeURIComponent(currentTopicSlugForHydration)}`
+          : "";
+        const res = await fetch(`/api/user-artifacts${params}`);
+        if (!res.ok) return;
+        const artifacts = await res.json();
+        for (const artifact of artifacts) {
+          if (artifact?.id && artifact?.type) {
+            dataStore.addArtifact(artifact);
+          }
+        }
+      } catch (err) {
+        console.error("[SinglePageApp] Failed to hydrate artifacts:", err);
+      }
+    }
+    hydrateArtifacts();
+  }, [currentTopicSlugForHydration]);
+
   // URL-synced UI state via nuqs
   const [activeTab, setActiveTab] = useQueryState(
     "tab",
@@ -383,9 +408,49 @@ export function SinglePageApp({
     null,
   );
   const [voiceMode, setVoiceMode] = useState(false);
+  // Track if voice mode was ever activated so we keep VoiceAgent mounted after first use
+  const [voiceActivated, setVoiceActivated] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { loading: assessmentLoading, assessment: latestAssessment } =
-    useLatestAssessment();
+
+  // Multi-session agent tabs
+  type AgentSession = { id: string; label: string; isNew: boolean };
+  const [agentSessions, setAgentSessions] = useState<AgentSession[]>(() => [
+    { id: `session-${Date.now()}`, label: "Chat 1", isNew: false },
+  ]);
+  const [activeSessionId, setActiveSessionId] = useState(
+    () => agentSessions[0].id,
+  );
+  const sessionCounter = useRef(1);
+
+  const addAgentSession = useCallback(() => {
+    sessionCounter.current += 1;
+    const newSession: AgentSession = {
+      id: `session-${Date.now()}`,
+      label: `Chat ${sessionCounter.current}`,
+      isNew: true,
+    };
+    setAgentSessions((prev) => [...prev, newSession]);
+    setActiveSessionId(newSession.id);
+  }, []);
+
+  const closeAgentSession = useCallback(
+    (sessionId: string) => {
+      setAgentSessions((prev) => {
+        if (prev.length <= 1) return prev; // Keep at least one session
+        const filtered = prev.filter((s) => s.id !== sessionId);
+        if (activeSessionId === sessionId) {
+          setActiveSessionId(filtered[filtered.length - 1].id);
+        }
+        return filtered;
+      });
+    },
+    [activeSessionId],
+  );
+  const {
+    loading: assessmentLoading,
+    assessment: latestAssessment,
+    refetch: refetchAssessment,
+  } = useLatestAssessment();
   const [bannerDismissed, setBannerDismissed] = useState(() => {
     if (typeof window === "undefined") return true;
     return localStorage.getItem("assessment-banner-dismissed") === "true";
@@ -627,7 +692,7 @@ export function SinglePageApp({
                   </Sheet>
                 </div>
 
-                {/* Mobile: Agent toggle */}
+                {/* Mobile: Agent toggle + new session */}
                 <Button
                   variant={agentOpen ? "default" : "ghost"}
                   size="icon-sm"
@@ -635,6 +700,18 @@ export function SinglePageApp({
                   onClick={() => handleSetAgentOpen(!agentOpen)}
                 >
                   <MessageSquare className="size-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="lg:hidden"
+                  onClick={() => {
+                    addAgentSession();
+                    handleSetAgentOpen(true);
+                  }}
+                  title="New chat session"
+                >
+                  <Plus className="size-4" />
                 </Button>
 
                 {/* Mobile: Hamburger menu */}
@@ -786,9 +863,10 @@ export function SinglePageApp({
           {assessmentMode && (
             <LearningProfileForm
               initialData={userProfile ?? undefined}
-              onSave={(profileData) =>
-                dataStore.setLearningProfile(profileData)
-              }
+              onSave={(profileData) => {
+                dataStore.setLearningProfile(profileData);
+                refetchAssessment();
+              }}
               onCancel={() => handleSetAssessmentMode(false)}
             />
           )}
@@ -822,7 +900,11 @@ export function SinglePageApp({
               ) : (
                 <div className="h-full overflow-y-auto">
                   <TabsContent value="guide" className="p-4 sm:p-6">
-                    <GuideTab blocks={guideBlocks} />
+                    <GuideTab
+                      blocks={guideBlocks}
+                      topicSlug={currentTopicSlug}
+                      topicName={selectedTopic.name}
+                    />
                     <GenerateMaterialsSection
                       className="mx-auto mt-6 max-w-2xl"
                       onGenerate={handleOpenArtifactType}
@@ -855,16 +937,61 @@ export function SinglePageApp({
                   : "hidden lg:flex"
               }`}
             >
-              <div className="flex h-10 shrink-0 items-center justify-between border-b px-4">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="size-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Agent</span>
-                </div>
-                <div className="flex items-center gap-1">
+              {/* Session tabs + controls */}
+              <div className="flex h-10 shrink-0 items-center border-b">
+                <div className="flex flex-1 items-center gap-0 overflow-x-auto scrollbar-none">
+                  {agentSessions.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setActiveSessionId(s.id)}
+                      className={`group relative flex shrink-0 items-center gap-1 px-3 py-2 text-xs font-medium transition-colors ${
+                        activeSessionId === s.id
+                          ? "text-foreground after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-primary"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <MessageSquare className="size-3" />
+                      {s.label}
+                      {agentSessions.length > 1 && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            closeAgentSession(s.id);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.stopPropagation();
+                              closeAgentSession(s.id);
+                            }
+                          }}
+                          className="ml-1 rounded-sm p-0.5 opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
+                        >
+                          <X className="size-3" />
+                        </span>
+                      )}
+                    </button>
+                  ))}
                   <Button
                     variant="ghost"
                     size="icon-xs"
-                    onClick={() => setVoiceMode((v) => !v)}
+                    onClick={addAgentSession}
+                    title="New chat session"
+                    className="mx-1 shrink-0"
+                  >
+                    <Plus className="size-3.5" />
+                  </Button>
+                </div>
+                <div className="flex shrink-0 items-center gap-1 border-l px-2">
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={() => {
+                      setVoiceMode((v) => !v);
+                      setVoiceActivated(true);
+                    }}
                     title={
                       voiceMode ? "Switch to text chat" : "Switch to voice"
                     }
@@ -885,15 +1012,41 @@ export function SinglePageApp({
                   </Button>
                 </div>
               </div>
-              {voiceMode ? (
-                <VoiceAgent />
-              ) : (
-                <AgentTab
-                  topicSlug={currentTopicSlug}
-                  onOpenArtifact={handleOpenArtifactType}
-                  onToolResult={handleAgentToolResult}
-                />
+              {/* Keep VoiceAgent mounted but hidden so calls survive tab switches */}
+              {voiceActivated && (
+                <div
+                  className={
+                    voiceMode
+                      ? "flex flex-1 flex-col overflow-hidden"
+                      : "hidden"
+                  }
+                >
+                  <VoiceAgent />
+                </div>
               )}
+              {!voiceMode &&
+                agentSessions.map((s) => (
+                  <div
+                    key={s.id}
+                    className={
+                      s.id === activeSessionId
+                        ? "flex flex-1 flex-col overflow-hidden"
+                        : "hidden"
+                    }
+                  >
+                    <AgentTab
+                      chatId={s.id}
+                      topicSlug={currentTopicSlug}
+                      onOpenArtifact={handleOpenArtifactType}
+                      onToolResult={handleAgentToolResult}
+                      activeView={activeTab}
+                      selectedTopicId={selectedTopicId}
+                      selectedProjectId={selectedProject.id}
+                      activeArtifact={artifactParam || null}
+                      isNewSession={s.isNew}
+                    />
+                  </div>
+                ))}
             </aside>
           </div>
         </Tabs>
@@ -2536,19 +2689,36 @@ const STATE_TOOL_NAMES = new Set([
  *  rendering the chat UI. This ensures useChat receives initialMessages on mount
  *  so that conversations survive page refreshes. */
 function AgentTab({
+  chatId,
   topicSlug,
   onOpenArtifact,
   onToolResult,
+  activeView,
+  selectedTopicId,
+  selectedProjectId,
+  activeArtifact,
+  isNewSession = false,
 }: {
+  chatId?: string;
   topicSlug: string;
   onOpenArtifact: (type: ArtifactType, scrollToId?: string) => void;
   onToolResult?: (toolName: string, result: Record<string, unknown>) => void;
+  activeView: string;
+  selectedTopicId: string;
+  selectedProjectId: string;
+  activeArtifact: string | null;
+  isNewSession?: boolean;
 }) {
   const [initialMessages, setInitialMessages] = useState<UIMessage[] | null>(
     null,
   );
 
   useEffect(() => {
+    // New sessions start with an empty conversation
+    if (isNewSession) {
+      setInitialMessages([]);
+      return;
+    }
     let cancelled = false;
     conversationStore.whenHydrated().then(() => {
       if (cancelled) return;
@@ -2566,7 +2736,7 @@ function AgentTab({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isNewSession]);
 
   if (initialMessages === null) {
     return (
@@ -2578,28 +2748,44 @@ function AgentTab({
 
   return (
     <AgentTabInner
+      chatId={chatId}
       topicSlug={topicSlug}
       onOpenArtifact={onOpenArtifact}
       onToolResult={onToolResult}
       initialMessages={initialMessages}
+      activeView={activeView}
+      selectedTopicId={selectedTopicId}
+      selectedProjectId={selectedProjectId}
+      activeArtifact={activeArtifact}
     />
   );
 }
 
 function AgentTabInner({
+  chatId,
   topicSlug,
   onOpenArtifact,
   onToolResult,
   initialMessages,
+  activeView,
+  selectedTopicId,
+  selectedProjectId,
+  activeArtifact,
 }: {
+  chatId?: string;
   topicSlug: string;
   onOpenArtifact: (type: ArtifactType, scrollToId?: string) => void;
   onToolResult?: (toolName: string, result: Record<string, unknown>) => void;
   initialMessages: UIMessage[];
+  activeView: string;
+  selectedTopicId: string;
+  selectedProjectId: string;
+  activeArtifact: string | null;
 }) {
   const msgId = useId();
   const scrollRef = useRef<HTMLDivElement>(null);
   const { messages, sendMessage, status, error } = useChat({
+    id: chatId,
     messages: initialMessages,
     onFinish: ({ message }) => {
       // Sync assistant responses into the unified conversation store
@@ -2681,7 +2867,59 @@ function AgentTabInner({
           !entry.id.startsWith("chat-assistant-"),
       )
       .map((entry) => ({ role: entry.role, content: entry.text }));
-    sendMessage({ text: input }, { body: { priorContext, topicSlug } });
+    // Build state snapshot from client stores for the agent's read tools
+    const ds = dataStore.getSnapshot();
+    const clientState: ClientStateSnapshot = {
+      activeView,
+      selectedTopicId,
+      selectedProjectId,
+      activeArtifact,
+      artifacts: Array.from(ds.artifacts.values()).map((a) => {
+        const {
+          id,
+          type,
+          topicSlug: slug,
+          title,
+          description,
+          createdAt,
+          ...rest
+        } = a;
+        return {
+          id,
+          type,
+          topicSlug: slug,
+          title,
+          description,
+          createdAt,
+          data: rest,
+        };
+      }),
+      guideBlocks: ds.guideBlocks.map((b) => ({
+        id: b.id,
+        day: b.dayIndex,
+        title: b.blockType,
+        description: b.description ?? "",
+        completed: b.completed,
+        type: b.blockType,
+        duration: `${b.plannedMinutes}m`,
+      })),
+      completedGuideBlockIds: ds.guideBlocks
+        .filter((b) => b.completed)
+        .map((b) => b.id),
+      learningProfile: ds.learningProfile as Record<string, unknown> | null,
+      masteryScores: ds.masteryScores.map((m) => ({
+        concept: m.concept,
+        score: m.posteriorMean,
+      })),
+      profileStrengths: ds.profileStrengths,
+      motivationProfile: ds.motivationProfile,
+      calibrationTendency: ds.calibrationTendency,
+      systemAdaptations: ds.systemAdaptations,
+    };
+    sendMessage(
+      { text: input },
+      { body: { priorContext, topicSlug, clientState } },
+    );
     setInput("");
   };
 
@@ -2837,21 +3075,86 @@ function AgentTabInner({
 
 // ── Guide Tab ──
 
-function GuideTab({ blocks }: { blocks: MockGuideBlock[] }) {
+function GuideTab({
+  blocks,
+  topicSlug,
+  topicName,
+}: {
+  blocks: MockGuideBlock[];
+  topicSlug: string;
+  topicName: string;
+}) {
   const blockId = useId();
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const days = Array.from(new Set(blocks.map((b) => b.dayIndex))).sort();
+
+  const handleGenerateGuide = useCallback(async () => {
+    setGenerating(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/generate-guide", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topicSlug, topicName }),
+      });
+      if (!res.ok) {
+        const body = await res
+          .json()
+          .catch(() => ({ error: "Request failed" }));
+        throw new Error(body.error ?? `Failed (${res.status})`);
+      }
+      const guide = await res.json();
+      if (guide.blocks) {
+        dataStore.setGuideBlocks(
+          guide.blocks.map((b: MockGuideBlock) => ({ ...b, completed: false })),
+        );
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setGenerating(false);
+    }
+  }, [topicSlug, topicName]);
 
   if (blocks.length === 0) {
     return (
       <div className="mx-auto max-w-2xl">
-        <Alert>
-          <BookOpen className="size-4" />
-          <AlertTitle>No guide yet</AlertTitle>
-          <AlertDescription>
-            Upload sources and ask the agent to generate a learning guide for
-            this topic.
-          </AlertDescription>
-        </Alert>
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
+            <div className="rounded-full bg-primary/10 p-3">
+              <Sparkles className="size-6 text-primary" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-semibold">
+                Generate your study guide
+              </h3>
+              <p className="mx-auto max-w-sm text-sm text-muted-foreground">
+                We&apos;ll create a personalized 7-day learning plan based on
+                your profile, preferences, and uploaded sources.
+              </p>
+            </div>
+            {error && (
+              <Alert variant="destructive" className="max-w-sm">
+                <AlertCircle className="size-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <Button onClick={handleGenerateGuide} disabled={generating}>
+              {generating ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  Generating guide…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 size-4" />
+                  Generate Guide
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -2862,10 +3165,31 @@ function GuideTab({ blocks }: { blocks: MockGuideBlock[] }) {
         <h2 className="text-base font-semibold">
           {days.length}-Day Learning Guide
         </h2>
-        <Badge variant="outline">
-          {blocks.filter((b) => b.completed).length}/{blocks.length} completed
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">
+            {blocks.filter((b) => b.completed).length}/{blocks.length} completed
+          </Badge>
+          <Button
+            size="xs"
+            variant="ghost"
+            onClick={handleGenerateGuide}
+            disabled={generating}
+          >
+            {generating ? (
+              <Loader2 className="size-3 animate-spin" />
+            ) : (
+              <RefreshCw className="size-3" />
+            )}
+            <span className="ml-1">Regenerate</span>
+          </Button>
+        </div>
       </div>
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="size-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       {days.map((day) => {
         const dayBlocks = blocks.filter((b) => b.dayIndex === day);

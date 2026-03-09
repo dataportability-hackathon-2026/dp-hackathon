@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { dataStore } from "@/lib/data-store";
 
 type AssessmentRecord = {
@@ -21,11 +21,17 @@ export function useLatestAssessment() {
   const [loading, setLoading] = useState(true);
   const [assessment, setAssessment] = useState<AssessmentRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fetchKey, setFetchKey] = useState(0);
+
+  const refetch = useCallback(() => {
+    setFetchKey((k) => k + 1);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
     async function fetchLatest() {
+      setLoading(true);
       try {
         const res = await fetch("/api/assessments/latest");
         if (res.status === 404) {
@@ -51,7 +57,7 @@ export function useLatestAssessment() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [fetchKey]);
 
-  return { loading, assessment, error };
+  return { loading, assessment, error, refetch };
 }

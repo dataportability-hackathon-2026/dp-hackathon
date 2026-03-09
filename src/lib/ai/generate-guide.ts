@@ -1,84 +1,203 @@
-import { generateText, Output } from "ai";
-import { model } from "./provider";
-import type { LearningGuide, LearningProfileAnalysis } from "./schemas";
-import { LearningGuideSchema } from "./schemas";
+/**
+ * Shared server-side guide generation.
+ * Used by both the CTA button (via /api/generate-guide) and the agent tool.
+ *
+ * Auto-resolves the user's assessment profile, source materials, and preferences
+ * from the database, then calls the LLM to produce a 7-day learning guide.
+ */
 
-type GuideInput = {
-  profileAnalysis: LearningProfileAnalysis;
-  fieldOfStudy: string;
-  primaryGoal: string;
-  goalDescription: string;
-  deadline: string;
-  minutesPerDay: number;
-  daysPerWeek: number;
-  sessionLength: string;
-  priorKnowledgeLevel: string;
-  studyStrategies: string[];
-  concepts: string[];
-  sourceContent?: string;
+import { generateText, Output } from "ai";
+import { and, desc, eq } from "drizzle-orm";
+import type { LearningProfileData } from "@/components/learning-profile-form";
+import { db } from "@/db";
+import { assessment, source, userPreferences } from "@/db/schema";
+import type { LearningProfileAnalysis } from "@/lib/ai/schemas";
+import { LearningGuideSchema } from "@/lib/ai/schemas";
+import {
+  DEFAULT_PREFERENCES,
+  type UserPreferences,
+} from "@/lib/preferences-store";
+import { loadSourceContent } from "@/lib/sources/load-sources";
+import { buildGuidePrompt } from "./guide-tools";
+import { model } from "./provider";
+
+type GenerateGuideInput = {
+  userId: string;
+  topicSlug: string;
+  /** Optional topic name override (used when slug is synthetic) */
+  topicName?: string;
 };
 
-export async function generateLearningGuide(
-  input: GuideInput,
-): Promise<LearningGuide> {
+export type GenerateGuideResult = {
+  title: string;
+  goalSummary: string;
+  totalMinutesPerWeek: number;
+  blocks: Array<{
+    id: string;
+    dayIndex: number;
+    blockType: string;
+    title: string;
+    description: string;
+    plannedMinutes: number;
+    concepts: string[];
+    techniques: string[];
+  }>;
+  dailySummaries: Array<{
+    dayIndex: number;
+    focus: string;
+    totalMinutes: number;
+  }>;
+};
+
+/**
+ * Generate a 7-day learning guide for a user, auto-resolving profile,
+ * preferences, and source materials from the database.
+ */
+export async function generateGuideForUser(
+  input: GenerateGuideInput,
+): Promise<GenerateGuideResult> {
+  const { userId, topicSlug, topicName } = input;
+
+  // 1. Fetch assessment (profile + fingerprint)
+  const [latestAssessment] = await db
+    .select()
+    .from(assessment)
+    .where(
+      and(eq(assessment.userId, userId), eq(assessment.status, "completed")),
+    )
+    .orderBy(desc(assessment.createdAt))
+    .limit(1);
+
+  const responses: LearningProfileData | null = latestAssessment?.responses
+    ? JSON.parse(latestAssessment.responses)
+    : null;
+
+  const fingerprint: LearningProfileAnalysis | null =
+    latestAssessment?.fingerprint
+      ? JSON.parse(latestAssessment.fingerprint)
+      : null;
+
+  // 2. Fetch user preferences
+  const [prefsRow] = await db
+    .select()
+    .from(userPreferences)
+    .where(eq(userPreferences.userId, userId))
+    .limit(1);
+
+  const prefs: UserPreferences = prefsRow
+    ? {
+        ...DEFAULT_PREFERENCES,
+        ...(JSON.parse(prefsRow.preferences) as Partial<UserPreferences>),
+      }
+    : { ...DEFAULT_PREFERENCES };
+
+  // 3. Fetch all source IDs for this topic
+  const topicSources = await db
+    .select({ id: source.id })
+    .from(source)
+    .where(and(eq(source.userId, userId), eq(source.topicSlug, topicSlug)));
+
+  const sourceIds = topicSources.map((s) => s.id);
+
+  // 4. Build guide generation input from resolved data
+  const fieldOfStudy =
+    responses?.fieldOfStudy || topicName || topicSlug.replace(/-/g, " ");
+  const primaryGoal = responses?.primaryGoal || "deep_understanding";
+  const goalDescription =
+    responses?.goalDescription || `Master ${fieldOfStudy}`;
+  const deadline =
+    responses?.deadline ||
+    new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const minutesPerDay = responses?.minutesPerDay ?? prefs.dailyMinutes;
+  const daysPerWeek = responses?.daysPerWeek ?? 5;
+  const sessionLength =
+    (responses?.sessionLength as "short" | "medium" | "long") || "medium";
+  const priorKnowledgeLevel =
+    (responses?.priorKnowledgeLevel as
+      | "beginner"
+      | "intermediate"
+      | "advanced") || "intermediate";
+  const studyStrategies = responses?.studyStrategies?.length
+    ? responses.studyStrategies
+    : ["active-recall", "spaced-repetition"];
+
+  // Resolve from fingerprint or defaults
+  const profileSummary =
+    fingerprint?.summary || `Learner studying ${fieldOfStudy}`;
+  const strengths = fingerprint?.strengths || ["Self-directed learning"];
+  const risks = fingerprint?.risks || [
+    {
+      area: "Unknown",
+      severity: "low" as const,
+      description: "No assessment completed yet",
+      mitigation: "Monitor progress",
+    },
+  ];
+  const cognitiveLoadRisk = (
+    fingerprint?.cognitiveProfile?.metacognitiveAwareness === "low"
+      ? "high"
+      : fingerprint?.cognitiveProfile?.metacognitiveAwareness === "medium"
+        ? "medium"
+        : "low"
+  ) as "low" | "medium" | "high";
+  const calibrationAccuracy =
+    fingerprint?.cognitiveProfile?.calibrationAccuracy || "well-calibrated";
+  const metacognitiveAwareness =
+    fingerprint?.cognitiveProfile?.metacognitiveAwareness || "medium";
+  const motivationalFocus =
+    fingerprint?.coachingApproach?.motivationalFocus || "competence";
+  const coachingTone =
+    responses?.coachingTone ||
+    fingerprint?.coachingApproach?.tone ||
+    "encouraging";
+
+  const guideInput = {
+    fieldOfStudy,
+    primaryGoal,
+    goalDescription,
+    deadline,
+    minutesPerDay,
+    daysPerWeek,
+    sessionLength,
+    priorKnowledgeLevel,
+    studyStrategies,
+    concepts: [fieldOfStudy],
+    profileSummary,
+    strengths,
+    risks,
+    cognitiveLoadRisk,
+    calibrationAccuracy,
+    metacognitiveAwareness,
+    motivationalFocus,
+    coachingTone,
+    sourceIds,
+    userId,
+  };
+
+  const totalWeeklyMinutes = minutesPerDay * daysPerWeek;
+
+  // 5. Load source content for context
+  let sourceContent: string | undefined;
+  if (sourceIds.length > 0) {
+    sourceContent = await loadSourceContent(sourceIds, userId);
+  }
+
+  const prompt =
+    buildGuidePrompt(guideInput, totalWeeklyMinutes) +
+    (sourceContent
+      ? `\n\n## Reference Material\nUse this material as the primary content source for concepts and examples:\n${sourceContent}`
+      : "");
+
+  // 6. Call LLM
   const result = await generateText({
     model: model("openai/gpt-4o-mini"),
     output: Output.object({ schema: LearningGuideSchema }),
-    prompt: buildGuidePrompt(input),
+    prompt,
   });
+
   if (!result.output) {
     throw new Error("Failed to generate learning guide");
   }
+
   return result.output;
 }
-
-function buildGuidePrompt(input: GuideInput): string {
-  const totalWeeklyMinutes = input.minutesPerDay * input.daysPerWeek;
-  const analysis = input.profileAnalysis;
-
-  return `You are an evidence-based learning guide generator. Create a structured 7-day learning guide.
-
-## Learner Context
-
-**Subject:** ${input.fieldOfStudy}
-**Goal:** ${input.primaryGoal} - ${input.goalDescription}
-**Deadline:** ${input.deadline}
-**Prior Knowledge:** ${input.priorKnowledgeLevel}
-**Concepts to Cover:** ${input.concepts.join(", ")}
-
-## Time Budget
-
-- ${input.minutesPerDay} minutes per day
-- ${input.daysPerWeek} days per week
-- Total weekly budget: ${totalWeeklyMinutes} minutes
-- Session length preference: ${input.sessionLength}
-
-## Profile Analysis
-
-**Summary:** ${analysis.summary}
-**Strengths:** ${analysis.strengths.join("; ")}
-**Risks:** ${analysis.risks.map((r) => `${r.area} (${r.severity}): ${r.mitigation}`).join("; ")}
-**Recommended Strategies:** ${analysis.recommendedStrategies.map((s) => `${s.strategy} (${s.priority})`).join("; ")}
-**Cognitive Profile:** Reflectiveness=${analysis.cognitiveProfile.reflectivenessLevel}, Metacognition=${analysis.cognitiveProfile.metacognitiveAwareness}, Calibration=${analysis.cognitiveProfile.calibrationAccuracy}
-**Coaching:** Tone=${analysis.coachingApproach.tone}, Feedback=${analysis.coachingApproach.feedbackFrequency}, Focus=${analysis.coachingApproach.motivationalFocus}
-
-## Block Type Rules
-
-1. **core_practice** (60-70% of time): Main learning content using active recall, worked examples, interleaving.
-2. **metacog_routine** (10-15% of time): Reflection, monitoring, calibration exercises. REQUIRED if metacognitive awareness is low/medium.
-3. **skill_builder** (10-15% of time): Study skill lessons. REQUIRED if any risk severity is "high".
-4. **motivation_support** (5-10% of time): Autonomy-supportive activities. Include if motivation scores are low.
-
-## Constraints
-
-- EVERY day must have at least 1 core_practice block.
-- Total planned minutes across ALL blocks must equal approximately ${totalWeeklyMinutes} (+/- 10%).
-- Each block must be between 5 and 120 minutes.
-- Use the learner's preferred strategies: ${input.studyStrategies.join(", ")}.
-- Days with no study (if daysPerWeek < 7) should still have dailySummaries with 0 minutes and "Rest day" as focus.
-- Distribute concepts across the week, with harder/newer concepts earlier in the week.
-- Include interleaving in days 4-7 to mix concepts.
-- Each day's total minutes should not exceed ${input.minutesPerDay} (+/- 10%).${input.sourceContent ? `\n\n## Reference Material\nUse this material as the primary content source for concepts and examples:\n${input.sourceContent}` : ""}`;
-}
-
-export type { GuideInput };

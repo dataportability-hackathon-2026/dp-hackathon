@@ -137,7 +137,7 @@ const guideGenerationInputSchema = z.object({
   userId: z.string().optional().describe("User ID for source content access"),
 });
 
-type GuideGenerationInput = z.infer<typeof guideGenerationInputSchema>;
+export type GuideGenerationInput = z.infer<typeof guideGenerationInputSchema>;
 
 // ── Tools ──
 
@@ -554,7 +554,7 @@ LOW utility:
 
 // ── Prompt builder ──
 
-function buildGuidePrompt(
+export function buildGuidePrompt(
   input: GuideGenerationInput,
   totalWeeklyMinutes: number,
 ): string {

@@ -3,14 +3,16 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { assessment } from "@/db/schema";
 import { getCitationGuardrails } from "@/lib/ai/citations";
+import type { ClientStateSnapshot } from "@/lib/ai/client-state-snapshot";
 import { model } from "@/lib/ai/provider";
-import { stateTools } from "@/lib/ai/state-tools";
+import { buildStateReadTools, stateTools } from "@/lib/ai/state-tools";
 import { tools } from "@/lib/ai/tools";
 import { getEffectiveUserId } from "@/lib/impersonate";
 import { getImportedDataSummary } from "@/lib/sources/get-imported-data-summary";
 
 export async function POST(req: Request) {
-  const { messages, priorContext, topicSlug } = await req.json();
+  const { messages, priorContext, topicSlug, clientState } = await req.json();
+  const stateSnapshot: ClientStateSnapshot | null = clientState ?? null;
 
   // If there is prior conversation context (e.g. from a voice session),
   // inject it into the system prompt so the text agent understands the full history
@@ -123,6 +125,16 @@ If the student says "create flashcards", "quiz me", "make a mind map", "generate
 - Student asks for slides or a presentation → create_slides
 - Student asks for a problem set or mixed practice → create_interleaved_problem_set
 
+## State Reading Tools (Inspect Current App State)
+- read_app_state: Check which view, topic, project are active and how many artifacts/guide blocks exist
+- read_all_artifacts: List all artifacts (optionally filtered by type) — returns summaries
+- read_artifact_detail: Get the full content of a specific artifact by ID (questions, cards, nodes, etc.)
+- read_guide_blocks: Read the 7-day study guide with completion status
+- read_learner_profile: Read cognitive strengths, motivation, calibration, and system adaptations
+- read_mastery_scores: Read per-concept mastery scores and average
+
+Use these read tools proactively to understand the learner's current state before making suggestions or generating new artifacts. For example, check existing artifacts before creating duplicates, or review mastery scores to identify weak areas.
+
 When a student asks to see their progress, use show_progress.
 When they ask about their study plan or guide, use show_guide.
 When they ask about their files or materials, use show_sources.
@@ -159,7 +171,7 @@ When imported data context is available, weave patterns from the learner's data 
 - Use lifelog patterns to suggest optimal study times
 ${profileContext}${dataContext}${priorContextSummary}`,
     messages: allMessages,
-    tools: { ...tools, ...stateTools },
+    tools: { ...tools, ...stateTools, ...buildStateReadTools(stateSnapshot) },
     stopWhen: stepCountIs(5),
   });
 

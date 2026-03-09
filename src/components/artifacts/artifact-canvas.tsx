@@ -15,8 +15,13 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Copy,
+  MoreVertical,
   Pause,
+  Pencil,
   Play,
+  Share2,
+  Trash2,
   Volume2,
   XCircle,
 } from "lucide-react";
@@ -29,7 +34,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useDataStore } from "@/lib/data-store";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { dataStore, useDataStore } from "@/lib/data-store";
 import {
   type Artifact,
   type ArtifactType,
@@ -90,10 +102,18 @@ export function ArtifactCanvas({
   onClose: () => void;
 }) {
   const artifacts = useDataStore((s) =>
-    Array.from(s.artifacts.values()).filter(
-      (a) => a.type === activeType && (!topicSlug || a.topicSlug === topicSlug),
-    ),
+    Array.from(s.artifacts.values())
+      .filter(
+        (a) =>
+          a.type === activeType && (!topicSlug || a.topicSlug === topicSlug),
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      ),
   );
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -151,12 +171,121 @@ export function ArtifactCanvas({
                 data-artifact-id={artifact.id}
                 className="scroll-mt-4"
               >
+                <ArtifactActions
+                  artifact={artifact}
+                  renamingId={renamingId}
+                  renameValue={renameValue}
+                  onStartRename={(id, title) => {
+                    setRenamingId(id);
+                    setRenameValue(title);
+                  }}
+                  onCancelRename={() => setRenamingId(null)}
+                  onCommitRename={() => {
+                    if (renamingId && renameValue.trim()) {
+                      dataStore.updateArtifact(renamingId, {
+                        title: renameValue.trim(),
+                      });
+                    }
+                    setRenamingId(null);
+                  }}
+                  onRenameChange={setRenameValue}
+                />
                 <ArtifactRenderer artifact={artifact} />
               </div>
             ))
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Actions dropdown ──
+
+function ArtifactActions({
+  artifact,
+  renamingId,
+  renameValue,
+  onStartRename,
+  onCancelRename,
+  onCommitRename,
+  onRenameChange,
+}: {
+  artifact: Artifact;
+  renamingId: string | null;
+  renameValue: string;
+  onStartRename: (id: string, title: string) => void;
+  onCancelRename: () => void;
+  onCommitRename: () => void;
+  onRenameChange: (v: string) => void;
+}) {
+  const isRenaming = renamingId === artifact.id;
+
+  const handleShare = () => {
+    const url = `${window.location.origin}${window.location.pathname}?artifact=${artifact.type}&id=${artifact.id}`;
+    navigator.clipboard.writeText(url);
+  };
+
+  const handleDuplicate = () => {
+    const clone: Artifact = {
+      ...artifact,
+      id: `${artifact.id}-copy-${Date.now()}`,
+      title: `${artifact.title} (Copy)`,
+      createdAt: new Date().toISOString().slice(0, 10),
+    } as Artifact;
+    dataStore.addArtifact(clone);
+  };
+
+  const handleDelete = () => {
+    dataStore.removeArtifact(artifact.id);
+  };
+
+  return (
+    <div className="mb-1 flex items-center justify-between">
+      {isRenaming ? (
+        <input
+          ref={(el) => el?.focus()}
+          className="flex-1 rounded border bg-background px-2 py-1 text-sm font-semibold outline-none focus:ring-1 focus:ring-primary"
+          value={renameValue}
+          onChange={(e) => onRenameChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") onCommitRename();
+            if (e.key === "Escape") onCancelRename();
+          }}
+          onBlur={onCommitRename}
+        />
+      ) : (
+        <span className="text-sm font-semibold truncate">{artifact.title}</span>
+      )}
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className="ml-2 inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+          aria-label="Artifact actions"
+        >
+          <MoreVertical className="size-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            onClick={() => onStartRename(artifact.id, artifact.title)}
+          >
+            <Pencil className="mr-2 size-4" />
+            Rename
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleDuplicate}>
+            <Copy className="mr-2 size-4" />
+            Duplicate
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleShare}>
+            <Share2 className="mr-2 size-4" />
+            Copy link
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem variant="destructive" onClick={handleDelete}>
+            <Trash2 className="mr-2 size-4" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
