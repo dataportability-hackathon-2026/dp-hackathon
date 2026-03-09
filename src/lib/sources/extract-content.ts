@@ -7,13 +7,15 @@ const TEXT_EXTENSIONS = new Set([
   ".tsv",
   ".log",
   ".json",
+  ".jsonl",
 ]);
 
 function isTextMime(mimeType: string): boolean {
   return (
     mimeType.startsWith("text/") ||
     mimeType === "application/json" ||
-    mimeType === "application/xml"
+    mimeType === "application/xml" ||
+    mimeType === "application/x-ndjson"
   );
 }
 
