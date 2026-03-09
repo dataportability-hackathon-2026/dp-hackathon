@@ -783,6 +783,7 @@ export function SinglePageApp({
                 <ArtifactGrid
                   onOpenType={handleOpenArtifactType}
                   activeType={activeArtifactType}
+                  topicSlug={slugify(selectedTopic.name)}
                 />
               </div>
             </aside>
@@ -791,6 +792,7 @@ export function SinglePageApp({
             <main className="relative flex-1 overflow-hidden">
               {activeArtifactType ? (
                 <ArtifactCanvas
+                  key={activeArtifactType}
                   activeType={activeArtifactType}
                   scrollToId={scrollToArtifactId}
                   topicSlug={slugify(selectedTopic.name)}
@@ -3537,9 +3539,11 @@ const ARTIFACT_TYPES = [
 function ArtifactGrid({
   onOpenType,
   activeType,
+  topicSlug,
 }: {
   onOpenType: (type: ArtifactType) => void;
   activeType: ArtifactType | null;
+  topicSlug?: string;
 }) {
   const gridId = useId();
   const artifactState = useDataStore((s) => s.artifacts);
@@ -3559,7 +3563,9 @@ function ArtifactGrid({
         const artifactType = artifactTypeFromLabel(artifact.label);
         const realCount = artifactType
           ? Array.from(artifactState.values()).filter(
-              (a) => a.type === artifactType,
+              (a) =>
+                a.type === artifactType &&
+                (!topicSlug || !a.topicSlug || a.topicSlug === topicSlug),
             ).length
           : 0;
         const unreadCount = artifactType
