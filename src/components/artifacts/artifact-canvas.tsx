@@ -92,7 +92,7 @@ export function ArtifactCanvas({
     Array.from(s.artifacts.values()).filter(
       (a) =>
         a.type === activeType &&
-        (!a.topicSlug || !topicSlug || a.topicSlug === topicSlug),
+        (!topicSlug || a.topicSlug === topicSlug),
     ),
   );
   const scrollRef = useRef<HTMLDivElement>(null);

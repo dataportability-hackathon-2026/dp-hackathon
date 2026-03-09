@@ -117,6 +117,32 @@ Create a slide deck with 4-8 slides that:
 - Uses clear, educational language appropriate for the student level
 - Progresses logically from foundational to advanced material${sourceContentBlock(input.sourceContent)}`,
 
+  audioScriptGeneration: (input: ArtifactPromptInput): string =>
+    `You are an expert educator narrating a structured audio lesson. Write a natural, spoken-word script that will be read aloud by a text-to-speech voice.
+
+**Subject:** ${input.subject}
+**Concepts:** ${input.concepts.length > 0 ? input.concepts.join(", ") : "key concepts from the source material"}
+**Student Level:** ${input.priorKnowledgeLevel}
+**Goal:** ${input.goalType}
+
+Write a script in three sections, totaling 550-700 words (about 4 minutes when spoken at a natural pace):
+
+SECTION 1 — Introduction (~80 words):
+Start with "Welcome to this lesson on [subject]." Briefly explain what the student will learn and why it matters.
+
+SECTION 2 — Core Concepts (~450 words):
+Cover 3-4 key concepts. For each one: introduce it by name, explain it clearly in plain language, give a concrete example or analogy, and connect it to the broader topic.
+
+SECTION 3 — Summary (~80 words):
+Recap the key takeaways. End with an encouraging closing line like "You now have a solid foundation in [topic]. Keep practicing, and it will become second nature."
+
+RULES:
+- Write in a warm, conversational teacher voice (not bullet points, not formal prose)
+- No markdown, no headers, no asterisks — pure spoken text only
+- Avoid jargon without explanation
+- Keep sentences short and clear for listening (not reading)
+- Output ONLY the script text, nothing else${input.sourceContent ? `\n\n## Reference Material\nUse this as your primary source for facts and examples:\n${input.sourceContent}` : ""}`,
+
   spatialGeneration: (input: ArtifactPromptInput): string =>
     `You are an expert educator creating a 3D spatial visualization.
 

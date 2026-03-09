@@ -319,10 +319,13 @@ const BLOCK_TYPE_LABELS: Record<string, { label: string; color: string }> = {
 
 export function SinglePageApp({
   topicId,
+  topicSlug: topicSlugProp,
   projectId,
   isAdmin = false,
 }: {
   topicId?: string;
+  /** Real DB slug — when provided, takes priority over slugify(topic.name) */
+  topicSlug?: string;
   projectId?: string;
   isAdmin?: boolean;
 }) {
@@ -460,7 +463,9 @@ export function SinglePageApp({
       deadline: "",
     };
 
-  const currentTopicSlug = slugify(selectedTopic.name);
+  // Use the DB slug from the route if provided (avoids slugify("Topic") collision
+  // when a user-created topic is not in the static TOPICS array)
+  const currentTopicSlug = topicSlugProp ?? slugify(selectedTopic.name);
 
   const handleAgentToolResult = useCallback(
     (toolName: string, result: Record<string, unknown>) => {
@@ -787,6 +792,7 @@ export function SinglePageApp({
                 <ArtifactGrid
                   onOpenType={handleOpenArtifactType}
                   activeType={activeArtifactType}
+                  topicSlug={currentTopicSlug}
                 />
               </div>
             </aside>
@@ -795,9 +801,10 @@ export function SinglePageApp({
             <main className="relative flex-1 overflow-hidden">
               {activeArtifactType ? (
                 <ArtifactCanvas
+                  key={`${currentTopicSlug}-${activeArtifactType}`}
                   activeType={activeArtifactType}
                   scrollToId={scrollToArtifactId}
-                  topicSlug={slugify(selectedTopic.name)}
+                  topicSlug={currentTopicSlug}
                   topicName={selectedTopic.name}
                   topicConcepts={selectedTopic.masteryData.map(
                     (m) => m.concept,
@@ -812,7 +819,7 @@ export function SinglePageApp({
 
                   <TabsContent value="sources" className="p-4 sm:p-6">
                     <SourcesTab
-                      topicSlug={slugify(selectedTopic.name)}
+                      topicSlug={currentTopicSlug}
                       topicName={selectedTopic.name}
                       fallbackFiles={selectedTopic.files}
                     />
@@ -3601,9 +3608,11 @@ const ARTIFACT_TYPES = [
 function ArtifactGrid({
   onOpenType,
   activeType,
+  topicSlug,
 }: {
   onOpenType: (type: ArtifactType) => void;
   activeType: ArtifactType | null;
+  topicSlug?: string;
 }) {
   const gridId = useId();
   const artifactState = useDataStore((s) => s.artifacts);
@@ -3623,7 +3632,9 @@ function ArtifactGrid({
         const artifactType = artifactTypeFromLabel(artifact.label);
         const realCount = artifactType
           ? Array.from(artifactState.values()).filter(
-              (a) => a.type === artifactType,
+              (a) =>
+                a.type === artifactType &&
+                (!topicSlug || !a.topicSlug || a.topicSlug === topicSlug),
             ).length
           : 0;
         const unreadCount = artifactType
