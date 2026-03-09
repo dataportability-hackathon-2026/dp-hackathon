@@ -815,6 +815,10 @@ export function SinglePageApp({
                 <div className="h-full overflow-y-auto">
                   <TabsContent value="guide" className="p-4 sm:p-6">
                     <GuideTab blocks={guideBlocks} />
+                    <GenerateMaterialsSection
+                      className="mx-auto mt-6 max-w-2xl"
+                      onGenerate={handleOpenArtifactType}
+                    />
                   </TabsContent>
 
                   <TabsContent value="sources" className="p-4 sm:p-6">
@@ -3674,6 +3678,76 @@ function ArtifactGrid({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+// ── Generate Materials Section ──
+
+const GENERATE_MATERIAL_TYPES = [
+  {
+    type: "flashcards" as ArtifactType,
+    label: "Flashcards",
+    icon: FlipHorizontal,
+    description: "Study cards to test recall",
+  },
+  {
+    type: "quiz" as ArtifactType,
+    label: "Quiz",
+    icon: HelpCircle,
+    description: "Multiple-choice questions",
+  },
+  {
+    type: "mindmap" as ArtifactType,
+    label: "Mind Map",
+    icon: Map,
+    description: "Visual concept overview",
+  },
+  {
+    type: "slidedeck" as ArtifactType,
+    label: "Slides",
+    icon: Presentation,
+    description: "Presentation slides",
+  },
+  {
+    type: "audio" as ArtifactType,
+    label: "Audio Lesson",
+    icon: AudioLines,
+    description: "Listen while you learn",
+  },
+] as const;
+
+function GenerateMaterialsSection({
+  onGenerate,
+  className,
+}: {
+  onGenerate: (type: ArtifactType) => void;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <div className="mb-3 flex items-center gap-2">
+        <Sparkles className="size-4 text-primary" />
+        <h2 className="text-sm font-semibold">Generate Learning Materials</h2>
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:hidden">
+        {GENERATE_MATERIAL_TYPES.map(({ type, label, icon: Icon, description }) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => onGenerate(type)}
+            className="flex flex-col items-start gap-1.5 rounded-xl border p-3 text-left transition-colors hover:bg-muted hover:border-border"
+          >
+            <Icon className="size-4 text-primary" />
+            <span className="text-sm font-medium">{label}</span>
+            <span className="text-xs text-muted-foreground">{description}</span>
+          </button>
+        ))}
+      </div>
+      {/* On lg+, the left sidebar already shows the grid — show a compact hint */}
+      <p className="hidden text-xs text-muted-foreground lg:block">
+        Use the panel on the left to open and generate any material type.
+      </p>
     </div>
   );
 }
