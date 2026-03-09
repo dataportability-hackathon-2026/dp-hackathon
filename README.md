@@ -145,6 +145,31 @@ src/
 | Hosting | Railway (separate microservice) |
 | Animation | Manim Community Edition |
 
+## Architecture
+```mermaid
+graph TD
+    A[Browser] -->|requests| B[Next.js 15]
+    
+    B -->|auth| C[Better Auth]
+    B -->|billing| D[Stripe]
+    B -->|data| E[Drizzle + Turso]
+    B -->|media| K[Vercel Blob]
+    B -->|generate| F[Vercel AI SDK]
+
+    F --> G[GPT-4o-mini/artifacts]
+    F --> H[GPT-4o/Manim code]
+    F --> I[OpenAI TTS/audio]
+
+    H -->|code| J[Manim - Railway]
+    J -->|MP4| B
+    I -->|MP3| B
+
+    M[Learning DNA Profile] -->|personalizes| F
+```
+Learning DNA Profile Flow:
+[Quiz] → [Profile Generation] → [Injected into every AI prompt]
+                        → [Adapts: tone, structure, depth, format]
+
 ## Datasets & Frameworks Used
 
 No external datasets were used. The system is grounded in the following psychological and academic frameworks:
