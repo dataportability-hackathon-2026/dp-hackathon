@@ -224,7 +224,7 @@ export async function generateManim(
       code: manimCode.code,
       scene: manimCode.sceneName,
       topic_slug: input.subject.toLowerCase().replace(/\s+/g, "-"),
-      quality: "low",   // use low quality for speed; upgrade to "medium" for production
+      quality: "low",
     }),
     signal: AbortSignal.timeout(150_000),  // 2.5 min hard cap
   });
@@ -236,18 +236,21 @@ export async function generateManim(
     );
   }
 
-  const renderData = (await renderRes.json()) as {
-    videoUrl: string;
-    duration: string;
-    code: string;
-  };
+  // Railway returns raw MP4 bytes — Next.js uploads to Vercel Blob
+  const duration = renderRes.headers.get("X-Duration") ?? "unknown";
+  const mp4Buffer = Buffer.from(await renderRes.arrayBuffer());
+  const filename = `manim-${Date.now()}.mp4`;
+  const blob = await put(filename, mp4Buffer, {
+    access: "public",
+    contentType: "video/mp4",
+  });
 
   return {
     title: manimCode.title,
     description: manimCode.description,
-    code: renderData.code ?? manimCode.code,
-    videoUrl: renderData.videoUrl,
-    duration: renderData.duration,
+    code: manimCode.code,
+    videoUrl: blob.url,
+    duration,
   };
 }
 
