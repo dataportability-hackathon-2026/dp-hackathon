@@ -22,6 +22,19 @@ export const COMMUNITY_TOPICS = [
   { name: "Property Law", domain: "Law", parentGroup: "Law", icon: "Home" },
   { name: "Evidence Law", domain: "Law", parentGroup: "Law", icon: "Search" },
   { name: "Civil Procedure", domain: "Law", parentGroup: "Law", icon: "Scale" },
+  {
+    name: "Constitutional Law",
+    domain: "Law",
+    parentGroup: "Law",
+    icon: "BookOpen",
+  },
+  { name: "Data Privacy Law", domain: "Law", parentGroup: "Law", icon: "Lock" },
+  {
+    name: "Intellectual Property",
+    domain: "Law",
+    parentGroup: "Law",
+    icon: "Lightbulb",
+  },
 
   // ── Psychology ──
   {

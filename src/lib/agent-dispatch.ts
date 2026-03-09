@@ -12,6 +12,8 @@ import type { MockGuideBlock, MockMastery } from "@/lib/topics";
 export type DispatchContext = {
   setActiveTab: (tab: string | null) => void;
   setArtifactParam: (artifact: string | null) => void;
+  /** Current topic slug — injected into artifacts so they are scoped per topic */
+  topicSlug?: string;
 };
 
 type ToolResult = Record<string, unknown>;
@@ -30,6 +32,10 @@ export function dispatchAgentResult(
   // Domain tool routing
   switch (toolName) {
     case "create_adaptive_quiz":
+    case "create_adaptive_flashcards":
+    case "create_mind_map":
+    case "create_slides":
+    case "create_spatial":
     case "create_flashcards":
     case "create_mindmap":
     case "create_video":
@@ -38,11 +44,14 @@ export function dispatchAgentResult(
     case "create_report":
     case "create_infographic":
     case "create_slidedeck":
-    case "create_spatial":
     case "create_manim":
     case "create_geo": {
       const artifact = result as unknown as Artifact;
       if (artifact.id && artifact.type) {
+        // Inject topicSlug from dispatch context if the artifact doesn't already have one
+        if (!artifact.topicSlug && ctx.topicSlug) {
+          artifact.topicSlug = ctx.topicSlug;
+        }
         dataStore.addArtifact(artifact);
         ctx.setArtifactParam(artifact.type);
         ctx.setActiveTab("");

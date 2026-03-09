@@ -158,6 +158,7 @@ import {
 } from "@/components/artifacts/artifact-store";
 import { CreditBadge } from "@/components/billing/credit-badge";
 import { LearningProfileForm } from "@/components/learning-profile-form";
+import { PersonaImportDialog } from "@/components/persona-import-dialog";
 import { ProfileSheetContent } from "@/components/profile-sheet-content";
 import { dispatchAgentResult } from "@/lib/agent-dispatch";
 import { authClient } from "@/lib/auth-client";
@@ -432,16 +433,6 @@ export function SinglePageApp({
     setScrollToArtifactId(null);
   }, [setArtifactParam]);
 
-  const handleAgentToolResult = useCallback(
-    (toolName: string, result: Record<string, unknown>) => {
-      dispatchAgentResult(toolName, result, {
-        setActiveTab: (tab) => void setActiveTab(tab),
-        setArtifactParam: (artifact) => void setArtifactParam(artifact),
-      });
-    },
-    [setActiveTab, setArtifactParam],
-  );
-
   const selectedTopic = TOPICS.find((t) => t.id === selectedTopicId) ?? {
     id: selectedTopicId,
     name: "Topic",
@@ -468,6 +459,19 @@ export function SinglePageApp({
       daysPerWeek: 5,
       deadline: "",
     };
+
+  const currentTopicSlug = slugify(selectedTopic.name);
+
+  const handleAgentToolResult = useCallback(
+    (toolName: string, result: Record<string, unknown>) => {
+      dispatchAgentResult(toolName, result, {
+        setActiveTab: (tab) => void setActiveTab(tab),
+        setArtifactParam: (artifact) => void setArtifactParam(artifact),
+        topicSlug: currentTopicSlug,
+      });
+    },
+    [setActiveTab, setArtifactParam, currentTopicSlug],
+  );
 
   return (
     <TooltipProvider delay={400}>
@@ -797,7 +801,9 @@ export function SinglePageApp({
                   scrollToId={scrollToArtifactId}
                   topicSlug={slugify(selectedTopic.name)}
                   topicName={selectedTopic.name}
-                  topicConcepts={selectedTopic.masteryData.map((m) => m.concept)}
+                  topicConcepts={selectedTopic.masteryData.map(
+                    (m) => m.concept,
+                  )}
                   onClose={handleCloseCanvas}
                 />
               ) : (
@@ -809,6 +815,7 @@ export function SinglePageApp({
                   <TabsContent value="sources" className="p-4 sm:p-6">
                     <SourcesTab
                       topicSlug={slugify(selectedTopic.name)}
+                      topicName={selectedTopic.name}
                       fallbackFiles={selectedTopic.files}
                     />
                   </TabsContent>
@@ -865,6 +872,7 @@ export function SinglePageApp({
                 <VoiceAgent />
               ) : (
                 <AgentTab
+                  topicSlug={currentTopicSlug}
                   onOpenArtifact={handleOpenArtifactType}
                   onToolResult={handleAgentToolResult}
                 />
@@ -2488,9 +2496,11 @@ const STATE_TOOL_NAMES = new Set([
 ]);
 
 function AgentTab({
+  topicSlug,
   onOpenArtifact,
   onToolResult,
 }: {
+  topicSlug: string;
   onOpenArtifact: (type: ArtifactType, scrollToId?: string) => void;
   onToolResult?: (toolName: string, result: Record<string, unknown>) => void;
 }) {
@@ -2577,7 +2587,7 @@ function AgentTab({
           !entry.id.startsWith("chat-assistant-"),
       )
       .map((entry) => ({ role: entry.role, content: entry.text }));
-    sendMessage({ text: input }, { body: { priorContext } });
+    sendMessage({ text: input }, { body: { priorContext, topicSlug } });
     setInput("");
   };
 
@@ -2847,11 +2857,25 @@ type SourceRow = {
   createdAt: string;
 };
 
+const LAW_TOPIC_NAMES = new Set([
+  "Constitutional Law",
+  "Data Privacy Law",
+  "Intellectual Property",
+  "Tort Law",
+  "Criminal Law",
+  "Contract Law",
+  "Property Law",
+  "Evidence Law",
+  "Civil Procedure",
+]);
+
 function SourcesTab({
   topicSlug,
+  topicName,
   fallbackFiles,
 }: {
   topicSlug: string;
+  topicName: string;
   fallbackFiles: MockFile[];
 }) {
   const fileId = useId();
@@ -2864,6 +2888,9 @@ function SourcesTab({
   const [renameValue, setRenameValue] = useState("");
   const [quotaError, setQuotaError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [seedingLegal, setSeedingLegal] = useState(false);
+
+  const isLawTopic = LAW_TOPIC_NAMES.has(topicName);
 
   // Fetch sources from API
   const fetchSources = useCallback(async () => {
@@ -3101,6 +3128,43 @@ function SourcesTab({
           data-testid="file-input"
         />
       </label>
+
+      {/* Import & Seed actions */}
+      <div className="flex flex-wrap gap-2">
+        <PersonaImportDialog
+          topicSlug={topicSlug}
+          onImportComplete={fetchSources}
+        />
+        {isLawTopic && (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={seedingLegal}
+            onClick={async () => {
+              setSeedingLegal(true);
+              try {
+                const res = await fetch("/api/sources/seed-legal", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ topicSlug }),
+                });
+                if (res.ok) {
+                  fetchSources();
+                }
+              } finally {
+                setSeedingLegal(false);
+              }
+            }}
+          >
+            {seedingLegal ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <BookOpen className="mr-2 h-4 w-4" />
+            )}
+            Load Law Library
+          </Button>
+        )}
+      </div>
 
       {/* Uploading files */}
       {uploads.length > 0 && (
