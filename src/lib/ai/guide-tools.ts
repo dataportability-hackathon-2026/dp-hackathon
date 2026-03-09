@@ -2,7 +2,7 @@ import { generateText, Output, tool } from "ai";
 import { z } from "zod";
 import { loadSourceContent } from "@/lib/sources/load-sources";
 import { getCitationBlock, getCitationGuardrails } from "./citations";
-import { openai } from "./provider";
+import { model } from "./provider";
 import { GuideBlockSchema, LearningGuideSchema } from "./schemas";
 
 // ── Guide-specific schemas ──
@@ -161,7 +161,7 @@ export const guideTools = {
           : "");
 
       const result = await generateText({
-        model: openai("gpt-4o-mini"),
+        model: model("openai/gpt-4o-mini"),
         output: Output.object({ schema: LearningGuideSchema }),
         prompt,
       });
@@ -204,7 +204,7 @@ export const guideTools = {
             : "once at start";
 
       const result = await generateText({
-        model: openai("gpt-4o-mini"),
+        model: model("openai/gpt-4o-mini"),
         output: Output.object({ schema: PracticeSessionSchema }),
         prompt: `You are an evidence-based learning guide generating a practice session.
 
@@ -296,7 +296,7 @@ ${getCitationBlock([
         input.conceptsAttempted.reduce((sum, c) => sum + c.itemsAttempted, 0);
 
       const result = await generateText({
-        model: openai("gpt-4o-mini"),
+        model: model("openai/gpt-4o-mini"),
         output: Output.object({ schema: SessionWrapSchema }),
         prompt: `You are an evidence-based learning coach generating a session wrap-up.
 
@@ -383,7 +383,7 @@ ${input.conceptsAttempted.map((c) => `- ${c.concept}: ${c.itemsAttempted} items,
       };
 
       const result = await generateText({
-        model: openai("gpt-4o-mini"),
+        model: model("openai/gpt-4o-mini"),
         output: Output.object({ schema: AdaptiveGuideAdjustmentSchema }),
         prompt: `You are an evidence-based adaptive learning system adjusting a learning guide.
 
@@ -496,7 +496,7 @@ ${policyRuleMap[input.triggerEvent.type] ?? "No direct rule match — use closes
       });
 
       const result = await generateText({
-        model: openai("gpt-4o-mini"),
+        model: model("openai/gpt-4o-mini"),
         output: Output.object({ schema: StrategyRecommendationSchema }),
         prompt: `You are an evidence-based learning scientist recommending study strategies.
 

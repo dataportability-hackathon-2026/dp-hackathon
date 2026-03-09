@@ -1,5 +1,5 @@
 import { generateText, Output } from "ai";
-import { openai } from "./provider";
+import { model } from "./provider";
 import type { LearningProfileAnalysis } from "./schemas";
 import { LearningProfileAnalysisSchema } from "./schemas";
 
@@ -46,7 +46,7 @@ export async function generateLearningProfile(
   profile: LearningProfileInput,
 ): Promise<LearningProfileAnalysis> {
   const result = await generateText({
-    model: openai("gpt-4o-mini"),
+    model: model("openai/gpt-4o-mini"),
     output: Output.object({ schema: LearningProfileAnalysisSchema }),
     prompt: buildProfilePrompt(profile),
   });

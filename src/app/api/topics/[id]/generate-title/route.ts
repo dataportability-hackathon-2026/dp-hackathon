@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { source, topic } from "@/db/schema";
-import { openai } from "@/lib/ai/provider";
+import { model } from "@/lib/ai/provider";
 import { getEffectiveUserId } from "@/lib/impersonate";
 import { slugify } from "@/lib/topics";
 
@@ -40,7 +40,7 @@ export async function POST(_req: NextRequest, ctx: Ctx) {
   const filenames = sources.map((s) => s.filename).join(", ");
 
   const { text: generatedName } = await generateText({
-    model: openai("gpt-4o-mini"),
+    model: model("openai/gpt-4o-mini"),
     prompt: `Given these uploaded file names for a learning topic, suggest a concise topic title (2-4 words, no quotes):\n\nFiles: ${filenames}`,
   });
 

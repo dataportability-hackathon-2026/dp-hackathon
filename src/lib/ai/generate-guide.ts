@@ -1,5 +1,5 @@
 import { generateText, Output } from "ai";
-import { openai } from "./provider";
+import { model } from "./provider";
 import type { LearningGuide, LearningProfileAnalysis } from "./schemas";
 import { LearningGuideSchema } from "./schemas";
 
@@ -22,7 +22,7 @@ export async function generateLearningGuide(
   input: GuideInput,
 ): Promise<LearningGuide> {
   const result = await generateText({
-    model: openai("gpt-4o-mini"),
+    model: model("openai/gpt-4o-mini"),
     output: Output.object({ schema: LearningGuideSchema }),
     prompt: buildGuidePrompt(input),
   });

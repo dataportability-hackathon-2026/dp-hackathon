@@ -2,7 +2,7 @@ import { generateText, Output } from "ai";
 import type { LearningProfileData } from "@/components/learning-profile-form";
 import type { ProfileAssessmentInput } from "@/lib/ai/profile-tools";
 import { buildProfileAnalysisPrompt } from "@/lib/ai/profile-tools";
-import { openai } from "@/lib/ai/provider";
+import { model } from "@/lib/ai/provider";
 import {
   type LearningProfileAnalysis,
   LearningProfileAnalysisSchema,
@@ -13,7 +13,7 @@ export async function generateFingerprintFromInput(
   input: ProfileAssessmentInput,
 ): Promise<LearningProfileAnalysis> {
   const result = await generateText({
-    model: openai("gpt-4o-mini"),
+    model: model("openai/gpt-4o-mini"),
     output: Output.object({ schema: LearningProfileAnalysisSchema }),
     prompt: buildProfileAnalysisPrompt(input),
   });

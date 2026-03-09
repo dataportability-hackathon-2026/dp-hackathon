@@ -3,7 +3,7 @@ import { generateObject, generateText } from "ai";
 import OpenAI from "openai";
 import { loadSourceContent } from "@/lib/sources/load-sources";
 import { prompts } from "./prompts";
-import { openai } from "./provider";
+import { model } from "./provider";
 import type {
   FlashcardArtifactData,
   MindMapArtifactData,
@@ -53,7 +53,7 @@ export async function generateQuiz(
 ): Promise<QuizArtifactData> {
   const sourceContent = await resolveSourceContent(input);
   const { object } = await generateObject({
-    model: openai("gpt-4o-mini"),
+    model: model("openai/gpt-4o-mini"),
     schema: QuizArtifactSchema,
     prompt: prompts.quizGeneration({ ...input, sourceContent }),
   });
@@ -65,7 +65,7 @@ export async function generateFlashcards(
 ): Promise<FlashcardArtifactData> {
   const sourceContent = await resolveSourceContent(input);
   const { object } = await generateObject({
-    model: openai("gpt-4o-mini"),
+    model: model("openai/gpt-4o-mini"),
     schema: FlashcardArtifactSchema,
     prompt: prompts.flashcardGeneration({ ...input, sourceContent }),
   });
@@ -77,7 +77,7 @@ export async function generateMindMap(
 ): Promise<MindMapArtifactData> {
   const sourceContent = await resolveSourceContent(input);
   const { object } = await generateObject({
-    model: openai("gpt-4o-mini"),
+    model: model("openai/gpt-4o-mini"),
     schema: MindMapArtifactSchema,
     prompt: prompts.mindmapGeneration({ ...input, sourceContent }),
   });
@@ -89,7 +89,7 @@ export async function generateSlides(
 ): Promise<SlideArtifactData> {
   const sourceContent = await resolveSourceContent(input);
   const { object } = await generateObject({
-    model: openai("gpt-4o-mini"),
+    model: model("openai/gpt-4o-mini"),
     schema: SlideArtifactSchema,
     prompt: prompts.slideGeneration({ ...input, sourceContent }),
   });
@@ -101,7 +101,7 @@ export async function generateSpatial(
 ): Promise<SpatialArtifactData> {
   const sourceContent = await resolveSourceContent(input);
   const { object } = await generateObject({
-    model: openai("gpt-4o-mini"),
+    model: model("openai/gpt-4o-mini"),
     schema: SpatialArtifactSchema,
     prompt: prompts.spatialGeneration({ ...input, sourceContent }),
   });
@@ -115,7 +115,7 @@ export async function generateAudio(
 
   // Step 1: Generate the spoken lesson script
   const scriptResult = await generateText({
-    model: openai("gpt-4o-mini"),
+    model: model("openai/gpt-4o-mini"),
     prompt: prompts.audioScriptGeneration({ ...input, sourceContent }),
   });
   const script = scriptResult.text.trim();

@@ -5,7 +5,7 @@ import {
   getCitationBlock,
   getCitationGuardrails,
 } from "./citations";
-import { openai } from "./provider";
+import { model } from "./provider";
 import { LearningProfileAnalysisSchema } from "./schemas";
 
 // ── Shared citation sets for profile generation ──
@@ -176,7 +176,7 @@ export const profileTools = {
     inputSchema: profileAssessmentInputSchema,
     execute: async (input: ProfileAssessmentInput) => {
       const { object } = await generateObject({
-        model: openai("gpt-4o-mini"),
+        model: model("openai/gpt-4o-mini"),
         schema: LearningProfileAnalysisSchema,
         prompt: buildProfileAnalysisPrompt(input),
       });
@@ -228,7 +228,7 @@ export const profileTools = {
         }, 0) / input.confidencePredictions.length;
 
       const { object } = await generateObject({
-        model: openai("gpt-4o-mini"),
+        model: model("openai/gpt-4o-mini"),
         schema: CalibrationAnalysisSchema,
         prompt: `You are an evidence-based learning scientist analyzing metacognitive calibration.
 
@@ -293,7 +293,7 @@ ${getCitationBlock(["SCHRAW_1994", "DUNLOSKY_2013", "BJORK_2011"])}
     }),
     execute: async (input) => {
       const { object } = await generateObject({
-        model: openai("gpt-4o-mini"),
+        model: model("openai/gpt-4o-mini"),
         schema: CognitiveLoadRiskSchema,
         prompt: `You are an evidence-based learning scientist assessing cognitive load risk.
 
@@ -361,7 +361,7 @@ ${getCitationBlock(["SWELLER_1988", "BJORK_2011"])}
       ].sort((a, b) => a.score - b.score)[0];
 
       const { object } = await generateObject({
-        model: openai("gpt-4o-mini"),
+        model: model("openai/gpt-4o-mini"),
         schema: DropoutRiskSchema,
         prompt: `You are an evidence-based learning scientist assessing dropout risk using Self-Determination Theory.
 
@@ -495,7 +495,7 @@ ${getCitationBlock(["RYAN_DECI_2000", "PINTRICH_1991", "ZIMMERMAN_2002"])}
       );
 
       const { object } = await generateObject({
-        model: openai("gpt-4o-mini"),
+        model: model("openai/gpt-4o-mini"),
         schema: SelfRegulationSchema,
         prompt: `You are an evidence-based learning scientist assessing self-regulation capacity.
 

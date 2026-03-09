@@ -45,7 +45,10 @@ export async function POST(req: NextRequest) {
     const pathname = `sources/${userId}/${topicSlug}/${filename}`;
 
     try {
-      const blob = await put(pathname, file, { access: "public" });
+      const blob = await put(pathname, file, {
+        access: "public",
+        addRandomSuffix: true,
+      });
 
       const [row] = await db
         .insert(source)

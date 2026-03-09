@@ -28,6 +28,7 @@ function createConversationStore() {
   let conversationId: string | null = null;
   let pendingFlush: MessageEntry[] = [];
   let flushTimer: ReturnType<typeof setTimeout> | null = null;
+  let hydratePromise: Promise<void> | null = null;
 
   function getSnapshot(): MessageEntry[] {
     return entries;
@@ -162,37 +163,45 @@ function createConversationStore() {
   }
 
   /** Hydrate store from persisted messages on the server. */
-  async function hydrate(convId: string) {
-    try {
-      const res = await fetch(`/api/conversations/${convId}/messages`);
-      if (!res.ok) return;
-      const rows = (await res.json()) as Array<{
-        id: string;
-        role: string;
-        text: string;
-        modality: string;
-        timestamp: number;
-      }>;
-      for (const row of rows) {
-        if (knownIds.has(row.id)) continue;
-        knownIds.add(row.id);
-        entries = [
-          ...entries,
-          {
-            id: row.id,
-            role: row.role as "user" | "assistant",
-            text: row.text,
-            timestamp: row.timestamp,
-            modality: row.modality as MessageModality,
-            isFinal: true,
-          },
-        ];
+  function hydrate(convId: string): Promise<void> {
+    hydratePromise = (async () => {
+      try {
+        const res = await fetch(`/api/conversations/${convId}/messages`);
+        if (!res.ok) return;
+        const rows = (await res.json()) as Array<{
+          id: string;
+          role: string;
+          text: string;
+          modality: string;
+          timestamp: number;
+        }>;
+        for (const row of rows) {
+          if (knownIds.has(row.id)) continue;
+          knownIds.add(row.id);
+          entries = [
+            ...entries,
+            {
+              id: row.id,
+              role: row.role as "user" | "assistant",
+              text: row.text,
+              timestamp: row.timestamp,
+              modality: row.modality as MessageModality,
+              isFinal: true,
+            },
+          ];
+        }
+        entries.sort((a, b) => a.timestamp - b.timestamp);
+        notify();
+      } catch {
+        // Silently fail — messages just won't be restored
       }
-      entries.sort((a, b) => a.timestamp - b.timestamp);
-      notify();
-    } catch {
-      // Silently fail — messages just won't be restored
-    }
+    })();
+    return hydratePromise;
+  }
+
+  /** Wait for any in-progress hydration to complete. */
+  function whenHydrated(): Promise<void> {
+    return hydratePromise ?? Promise.resolve();
   }
 
   function clear() {
@@ -246,6 +255,7 @@ function createConversationStore() {
     setConversationId,
     getConversationId,
     hydrate,
+    whenHydrated,
     flushSync,
   };
 }

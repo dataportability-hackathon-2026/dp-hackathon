@@ -70,6 +70,7 @@ import {
   SiOpenai,
   SiSlack,
 } from "react-icons/si";
+import { Streamdown } from "streamdown";
 import { ShortcutKbd } from "@/components/shortcut-kbd";
 import {
   Accordion,
@@ -2505,6 +2506,9 @@ const STATE_TOOL_NAMES = new Set([
   "get_current_state",
 ]);
 
+/** Wrapper that hydrates initial messages from the conversation store before
+ *  rendering the chat UI. This ensures useChat receives initialMessages on mount
+ *  so that conversations survive page refreshes. */
 function AgentTab({
   topicSlug,
   onOpenArtifact,
@@ -2514,9 +2518,63 @@ function AgentTab({
   onOpenArtifact: (type: ArtifactType, scrollToId?: string) => void;
   onToolResult?: (toolName: string, result: Record<string, unknown>) => void;
 }) {
+  const [initialMessages, setInitialMessages] = useState<UIMessage[] | null>(
+    null,
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    conversationStore.whenHydrated().then(() => {
+      if (cancelled) return;
+      // Convert conversation store entries → UIMessage[] for useChat
+      const entries = conversationStore.getSnapshot();
+      const uiMessages: UIMessage[] = entries
+        .filter((e) => e.isFinal)
+        .map((e) => ({
+          id: e.id,
+          role: e.role,
+          parts: [{ type: "text" as const, text: e.text }],
+        }));
+      setInitialMessages(uiMessages);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (initialMessages === null) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <Loader2 className="size-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <AgentTabInner
+      topicSlug={topicSlug}
+      onOpenArtifact={onOpenArtifact}
+      onToolResult={onToolResult}
+      initialMessages={initialMessages}
+    />
+  );
+}
+
+function AgentTabInner({
+  topicSlug,
+  onOpenArtifact,
+  onToolResult,
+  initialMessages,
+}: {
+  topicSlug: string;
+  onOpenArtifact: (type: ArtifactType, scrollToId?: string) => void;
+  onToolResult?: (toolName: string, result: Record<string, unknown>) => void;
+  initialMessages: UIMessage[];
+}) {
   const msgId = useId();
   const scrollRef = useRef<HTMLDivElement>(null);
   const { messages, sendMessage, status, error } = useChat({
+    messages: initialMessages,
     onFinish: ({ message }) => {
       // Sync assistant responses into the unified conversation store
       const textContent = message.parts
@@ -2637,7 +2695,16 @@ function AgentTab({
                             : "bg-muted"
                         }`}
                       >
-                        {part.text}
+                        {msg.role === "assistant" ? (
+                          <Streamdown
+                            animated
+                            isAnimating={status === "streaming"}
+                          >
+                            {part.text}
+                          </Streamdown>
+                        ) : (
+                          part.text
+                        )}
                       </div>
                     );
                   }

@@ -3,7 +3,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { assessment } from "@/db/schema";
 import { getCitationGuardrails } from "@/lib/ai/citations";
-import { openai } from "@/lib/ai/provider";
+import { model } from "@/lib/ai/provider";
 import { stateTools } from "@/lib/ai/state-tools";
 import { tools } from "@/lib/ai/tools";
 import { getEffectiveUserId } from "@/lib/impersonate";
@@ -70,7 +70,7 @@ Use this profile to adapt your responses: match the coaching tone, address risks
   const allMessages = await convertToModelMessages(messages);
 
   const result = streamText({
-    model: openai("gpt-4o-mini"),
+    model: model("openai/gpt-4o-mini"),
     system: `You are CoreModel, an evidence-based learning assistant.
 You help students learn effectively using validated cognitive science research.
 You have access to three categories of tools — use them proactively:
@@ -101,17 +101,27 @@ You also have tools to navigate the app UI — switch views, select topics, show
 - create_slides: Review slide deck (consolidation, not primary learning)
 - create_spatial: 3D spatial visualization (for inherently spatial content only)
 
+## IMPORTANT: Do NOT ask for profile fields
+When using artifact tools (flashcards, quizzes, etc.), infer subject and concepts from the conversation context and uploaded materials. Do NOT ask the user for calibrationAccuracy, cognitiveLoadRisk, metacognitiveAwareness, coachingTone, or other profile fields — the tools have sensible defaults. If a learner profile is available above, use those values; otherwise just call the tool with subject and concepts.
+
+## CRITICAL: Always use artifact tools — NEVER generate artifacts as plain text
+When a student asks for any learning material (flashcards, quizzes, slides, mind maps, worked examples, problem sets, etc.), you MUST call the appropriate artifact tool. NEVER respond with plain-text or markdown versions of these materials. The artifact tools render interactive UI components — plain text bypasses this entirely.
+
+If the student says "create flashcards", "quiz me", "make a mind map", "generate slides", or anything requesting learning materials, you MUST call the corresponding tool below. Do NOT write out flashcards, quiz questions, or study materials as markdown in your response.
+
 ## When to use which tool
-- Student asks to be quizzed → create_adaptive_quiz
-- Student wants flashcards → create_adaptive_flashcards
+- Student asks to be quizzed or tested → create_adaptive_quiz
+- Student wants flashcards or study cards → create_adaptive_flashcards
 - Student needs a study plan → generate_learning_guide
 - Student wants to practice → generate_practice_session
 - Student finished a session → generate_session_wrap
-- Student wants to understand relationships → create_mind_map
+- Student wants to understand relationships or see a concept map → create_mind_map
 - Student is struggling (errors rising) → assess_cognitive_load_risk, then adjust_guide
 - Student asks about their profile → assess_learning_profile
 - Student asks for strategy help → recommend_study_strategies
 - Student needs step-by-step help → create_worked_example
+- Student asks for slides or a presentation → create_slides
+- Student asks for a problem set or mixed practice → create_interleaved_problem_set
 
 When a student asks to see their progress, use show_progress.
 When they ask about their study plan or guide, use show_guide.
@@ -138,6 +148,7 @@ Always explain what you're creating and WHY it helps (cite the evidence basis).
 Keep text responses concise and focused on the learning objective.
 NEVER claim that format preferences improve learning outcomes.
 Present estimates with uncertainty, not false precision.
+REMINDER: When generating any learning material (flashcards, quizzes, slides, mind maps, worked examples, problem sets), you MUST use the artifact tools. Never output these as markdown text.
 
 Note: The conversation may include messages from a prior voice session. Treat these as part of the ongoing conversation and maintain continuity.
 

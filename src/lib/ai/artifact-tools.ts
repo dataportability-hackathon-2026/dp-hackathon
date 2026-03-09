@@ -2,7 +2,7 @@ import { generateObject, tool } from "ai";
 import { z } from "zod";
 import { loadSourceContent } from "@/lib/sources/load-sources";
 import { getCitationBlock, getCitationGuardrails } from "./citations";
-import { openai } from "./provider";
+import { model } from "./provider";
 import {
   FlashcardArtifactSchema,
   MindMapArtifactSchema,
@@ -129,22 +129,34 @@ const profileAwareInputSchema = z.object({
   concepts: z.array(z.string()).min(1).describe("Key concepts to cover"),
   priorKnowledgeLevel: z
     .enum(["beginner", "intermediate", "advanced"])
-    .describe("Learner's current knowledge level"),
+    .optional()
+    .describe(
+      "Learner's current knowledge level. Omit if unknown — defaults to intermediate.",
+    ),
   goalType: z
     .string()
-    .describe("The learner's goal (exam prep, deep understanding, etc.)"),
+    .optional()
+    .describe(
+      "The learner's goal (exam prep, deep understanding, etc.). Omit if unknown — defaults to 'deep understanding'.",
+    ),
   calibrationAccuracy: z
     .enum(["under-confident", "well-calibrated", "over-confident"])
-    .describe("Learner's calibration status from profile"),
+    .optional()
+    .describe(
+      "Learner's calibration status from profile. Omit if no profile exists.",
+    ),
   cognitiveLoadRisk: z
     .enum(["low", "medium", "high"])
-    .describe("Cognitive load risk from profile"),
+    .optional()
+    .describe("Cognitive load risk from profile. Omit if no profile exists."),
   metacognitiveAwareness: z
     .enum(["low", "medium", "high"])
-    .describe("Metacognitive awareness level"),
+    .optional()
+    .describe("Metacognitive awareness level. Omit if no profile exists."),
   coachingTone: z
     .enum(["direct", "encouraging", "socratic", "collaborative"])
-    .describe("Preferred coaching tone"),
+    .optional()
+    .describe("Preferred coaching tone. Omit if no profile exists."),
   sourceIds: z
     .array(z.string())
     .optional()
@@ -157,6 +169,32 @@ const profileAwareInputSchema = z.object({
 });
 
 type ProfileAwareInput = z.infer<typeof profileAwareInputSchema>;
+
+type ResolvedProfileInput = {
+  subject: string;
+  concepts: string[];
+  priorKnowledgeLevel: "beginner" | "intermediate" | "advanced";
+  goalType: string;
+  calibrationAccuracy: "under-confident" | "well-calibrated" | "over-confident";
+  cognitiveLoadRisk: "low" | "medium" | "high";
+  metacognitiveAwareness: "low" | "medium" | "high";
+  coachingTone: "direct" | "encouraging" | "socratic" | "collaborative";
+  sourceIds?: string[];
+  userId?: string;
+  topicSlug?: string;
+};
+
+function withDefaults(input: ProfileAwareInput): ResolvedProfileInput {
+  return {
+    ...input,
+    priorKnowledgeLevel: input.priorKnowledgeLevel ?? "intermediate",
+    goalType: input.goalType ?? "deep understanding",
+    calibrationAccuracy: input.calibrationAccuracy ?? "well-calibrated",
+    cognitiveLoadRisk: input.cognitiveLoadRisk ?? "medium",
+    metacognitiveAwareness: input.metacognitiveAwareness ?? "medium",
+    coachingTone: input.coachingTone ?? "encouraging",
+  };
+}
 
 async function resolveSourceContent(input: ProfileAwareInput): Promise<string> {
   if (!input.sourceIds?.length || !input.userId) return "";
@@ -172,10 +210,11 @@ export const artifactTools = {
     description:
       "Create a quiz adapted to the learner's profile. Uses retrieval practice [ROEDIGER_KARPICKE_2006] as the primary learning mechanism — testing is a learning event, not just assessment. Questions span Bloom's taxonomy levels appropriate to knowledge level. Includes confidence predictions for calibration training [SCHRAW_1994]. Adjusts difficulty based on cognitive load risk [SWELLER_1988].",
     inputSchema: profileAwareInputSchema,
-    execute: async (input: ProfileAwareInput) => {
+    execute: async (rawInput: ProfileAwareInput) => {
+      const input = withDefaults(rawInput);
       const sourceBlock = await resolveSourceContent(input);
       const { object } = await generateObject({
-        model: openai("gpt-4o-mini"),
+        model: model("openai/gpt-4o-mini"),
         schema: QuizArtifactSchema,
         prompt: `You are an expert educator creating an adaptive practice quiz.
 
@@ -231,10 +270,11 @@ ${getCitationBlock(["ROEDIGER_KARPICKE_2006", "DUNLOSKY_2013", "SWELLER_1988", "
     description:
       "Create flashcards optimized for active recall and spaced repetition [ROEDIGER_KARPICKE_2006, CEPEDA_2006]. Cards use elaborative interrogation prompts [DUNLOSKY_2013] — not just 'define X' but 'why does X work this way?' Adapted to learner's knowledge level and calibration needs.",
     inputSchema: profileAwareInputSchema,
-    execute: async (input: ProfileAwareInput) => {
+    execute: async (rawInput: ProfileAwareInput) => {
+      const input = withDefaults(rawInput);
       const sourceBlock = await resolveSourceContent(input);
       const { object } = await generateObject({
-        model: openai("gpt-4o-mini"),
+        model: model("openai/gpt-4o-mini"),
         schema: FlashcardArtifactSchema,
         prompt: `You are an expert educator creating flashcards for evidence-based learning.
 
@@ -289,7 +329,13 @@ ${getCitationBlock(["ROEDIGER_KARPICKE_2006", "CEPEDA_2006", "DUNLOSKY_2013", "B
         .string()
         .describe("The specific problem or scenario to demonstrate"),
     }),
-    execute: async (input: ProfileAwareInput & { problemContext: string }) => {
+    execute: async (
+      rawInput: ProfileAwareInput & { problemContext: string },
+    ) => {
+      const input = {
+        ...withDefaults(rawInput),
+        problemContext: rawInput.problemContext,
+      };
       const sourceBlock = await resolveSourceContent(input);
       const fadeLevel: "full" | "partial" | "minimal" =
         input.priorKnowledgeLevel === "beginner"
@@ -299,7 +345,7 @@ ${getCitationBlock(["ROEDIGER_KARPICKE_2006", "CEPEDA_2006", "DUNLOSKY_2013", "B
             : "minimal";
 
       const { object } = await generateObject({
-        model: openai("gpt-4o-mini"),
+        model: model("openai/gpt-4o-mini"),
         schema: WorkedExampleSchema,
         prompt: `You are an expert educator creating a worked example with fading scaffolding.
 
@@ -352,10 +398,11 @@ ${getCitationBlock(["SWELLER_1988", "DUNLOSKY_2013", "BJORK_2011"])}
     description:
       "Create an elaborative interrogation exercise — 'Why does this make sense?' prompts that connect new facts to prior knowledge. Rated moderate-utility by Dunlosky et al. (2013). Particularly effective when learners have sufficient prior knowledge to generate explanations. Builds deeper encoding than simple review.",
     inputSchema: profileAwareInputSchema,
-    execute: async (input: ProfileAwareInput) => {
+    execute: async (rawInput: ProfileAwareInput) => {
+      const input = withDefaults(rawInput);
       const sourceBlock = await resolveSourceContent(input);
       const { object } = await generateObject({
-        model: openai("gpt-4o-mini"),
+        model: model("openai/gpt-4o-mini"),
         schema: ElaborativeInterrogationSchema,
         prompt: `You are an expert educator creating an elaborative interrogation exercise.
 
@@ -402,10 +449,11 @@ ${getCitationBlock(["DUNLOSKY_2013", "ROEDIGER_KARPICKE_2006", "BJORK_2011"])}
     description:
       "Create a prediction-reflection-repair exercise for calibration training. The learner predicts their confidence, attempts the problem, then reflects on the gap between prediction and outcome [SCHRAW_1994]. This is the core mechanism for improving metacognitive accuracy. Critical for over-confident learners.",
     inputSchema: profileAwareInputSchema,
-    execute: async (input: ProfileAwareInput) => {
+    execute: async (rawInput: ProfileAwareInput) => {
+      const input = withDefaults(rawInput);
       const sourceBlock = await resolveSourceContent(input);
       const { object } = await generateObject({
-        model: openai("gpt-4o-mini"),
+        model: model("openai/gpt-4o-mini"),
         schema: PredictionReflectionSchema,
         prompt: `You are an expert educator creating a prediction-reflection-repair exercise.
 
@@ -453,7 +501,8 @@ ${getCitationBlock(["SCHRAW_1994", "BJORK_2011", "FREDERICK_2005", "DUNLOSKY_201
     description:
       "Create an interleaved problem set mixing different problem types and concepts. Interleaving improves discrimination and transfer compared to blocked practice [ROHRER_TAYLOR_2007]. Problems are shuffled across concepts so learners must identify which strategy applies — the key skill blocked practice fails to develop.",
     inputSchema: profileAwareInputSchema,
-    execute: async (input: ProfileAwareInput) => {
+    execute: async (rawInput: ProfileAwareInput) => {
+      const input = withDefaults(rawInput);
       if (input.concepts.length < 2) {
         return {
           type: "interleaved_problem_set" as const,
@@ -465,7 +514,7 @@ ${getCitationBlock(["SCHRAW_1994", "BJORK_2011", "FREDERICK_2005", "DUNLOSKY_201
 
       const sourceBlock = await resolveSourceContent(input);
       const { object } = await generateObject({
-        model: openai("gpt-4o-mini"),
+        model: model("openai/gpt-4o-mini"),
         schema: InterleavedProblemSetSchema,
         prompt: `You are an expert educator creating an interleaved problem set.
 
@@ -516,10 +565,11 @@ ${getCitationBlock(["ROHRER_TAYLOR_2007", "BJORK_2011", "DUNLOSKY_2013"])}
     description:
       "Create a concept mind map showing prerequisite and co-requisite relationships. Helps learners visualize the knowledge graph structure and identify gaps. Uses elaboration [DUNLOSKY_2013] — connecting concepts builds deeper understanding than isolated study.",
     inputSchema: profileAwareInputSchema,
-    execute: async (input: ProfileAwareInput) => {
+    execute: async (rawInput: ProfileAwareInput) => {
+      const input = withDefaults(rawInput);
       const sourceBlock = await resolveSourceContent(input);
       const { object } = await generateObject({
-        model: openai("gpt-4o-mini"),
+        model: model("openai/gpt-4o-mini"),
         schema: MindMapArtifactSchema,
         prompt: `You are an expert educator creating a concept mind map.
 
@@ -554,10 +604,11 @@ ${getCitationBlock(["DUNLOSKY_2013", "BJORK_2011"])}
     description:
       "Create a review slide deck for structured overview. Best used for consolidation AFTER active learning, not as a primary learning tool [DUNLOSKY_2013]. Slides summarize and organize, but should always be paired with retrieval practice.",
     inputSchema: profileAwareInputSchema,
-    execute: async (input: ProfileAwareInput) => {
+    execute: async (rawInput: ProfileAwareInput) => {
+      const input = withDefaults(rawInput);
       const sourceBlock = await resolveSourceContent(input);
       const { object } = await generateObject({
-        model: openai("gpt-4o-mini"),
+        model: model("openai/gpt-4o-mini"),
         schema: SlideArtifactSchema,
         prompt: `You are an expert educator creating a review slide deck.
 
@@ -598,10 +649,11 @@ Passive reading of slides is a low-utility strategy. These slides should:
     description:
       "Create a 3D spatial visualization of concept relationships. Useful for subjects where spatial reasoning aids understanding (molecular structures, system architectures, mathematical spaces). Not a learning-style accommodation — spatial representations help when the content is inherently spatial [PASHLER_2008].",
     inputSchema: profileAwareInputSchema,
-    execute: async (input: ProfileAwareInput) => {
+    execute: async (rawInput: ProfileAwareInput) => {
+      const input = withDefaults(rawInput);
       const sourceBlock = await resolveSourceContent(input);
       const { object } = await generateObject({
-        model: openai("gpt-4o-mini"),
+        model: model("openai/gpt-4o-mini"),
         schema: SpatialArtifactSchema,
         prompt: `You are an expert educator creating a 3D spatial visualization.
 

@@ -1,20 +1,28 @@
+import { createGateway } from "@ai-sdk/gateway";
 import { createOpenAI } from "@ai-sdk/openai";
 
 /**
- * AI provider configured for the Vercel AI Gateway.
+ * AI model helper.
  *
- * Uses AI_GATEWAY_API_KEY and routes through the gateway at
- * https://ai-gateway.vercel.sh/v1. Falls back to direct OpenAI
- * if OPENAI_API_KEY is set and AI_GATEWAY_API_KEY is not.
+ * Uses the Vercel AI Gateway when AI_GATEWAY_API_KEY is set (automatic on
+ * Vercel deploys), otherwise falls back to direct OpenAI.
+ *
+ * Usage:  model("openai/gpt-4o-mini")
  */
 const gatewayKey = process.env.AI_GATEWAY_API_KEY;
 const openaiKey = process.env.OPENAI_API_KEY;
 
-export const openai = gatewayKey
-  ? createOpenAI({
-      apiKey: gatewayKey,
-      baseURL: "https://ai-gateway.vercel.sh/v1",
-    })
-  : createOpenAI({
-      apiKey: openaiKey,
-    });
+const gateway = gatewayKey ? createGateway({ apiKey: gatewayKey }) : null;
+
+const directOpenAI = createOpenAI({ apiKey: openaiKey ?? gatewayKey });
+
+/**
+ * Resolve a model ID like "openai/gpt-4o-mini".
+ * Prefers the gateway; falls back to direct OpenAI Chat Completions API.
+ */
+export function model(id: string) {
+  if (gateway) return gateway(id);
+  // Strip "openai/" prefix for direct provider
+  const bare = id.startsWith("openai/") ? id.slice("openai/".length) : id;
+  return directOpenAI.chat(bare);
+}

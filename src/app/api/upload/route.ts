@@ -47,7 +47,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
         const safeName = sanitizeFilename(filename);
 
+        console.log("[upload] generating token", {
+          pathname,
+          safeName,
+          userId,
+          topicSlug: payload.topicSlug,
+        });
+
         return {
+          addRandomSuffix: true,
           allowedContentTypes: ALLOWED_CONTENT_TYPES,
           maximumSizeInBytes: maxSizeForFile(safeName),
           tokenPayload: JSON.stringify({
