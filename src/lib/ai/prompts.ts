@@ -177,7 +177,7 @@ Generate a short, visually clear Manim animation that teaches a key concept from
 6. Use \`self.play()\` and \`self.wait()\` — no interactive or input elements
 7. Allowed animations: \`Write\`, \`FadeIn\`, \`FadeOut\`, \`Transform\`, \`Create\`, \`GrowFromCenter\`, \`MoveToTarget\`, \`animate\`
 8. Do NOT set background_color — use the default dark background
-9. All text strings must be plain ASCII or simple Unicode — no LaTeX markup (no backslashes, no \$...\$)
+9. All text strings must be plain ASCII or simple Unicode — no LaTeX markup (no backslashes, no $...$)
 
 ## Good example (follow this style)
 \`\`\`python

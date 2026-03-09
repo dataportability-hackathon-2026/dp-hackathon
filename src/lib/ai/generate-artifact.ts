@@ -199,7 +199,7 @@ export async function generateManim(
 
   // ── Step 1: Ask the LLM to write Manim Python code ───────────────────────
   const { object: manimCode } = await generateObject({
-    model: model("openai/gpt-4o"),      // use gpt-4o for better code quality
+    model: model("openai/gpt-4o"), // use gpt-4o for better code quality
     schema: ManimCodeSchema,
     prompt: prompts.manimGeneration({ ...input, sourceContent }),
   });
@@ -226,7 +226,7 @@ export async function generateManim(
       topic_slug: input.subject.toLowerCase().replace(/\s+/g, "-"),
       quality: "low",
     }),
-    signal: AbortSignal.timeout(150_000),  // 2.5 min hard cap
+    signal: AbortSignal.timeout(150_000), // 2.5 min hard cap
   });
 
   if (!renderRes.ok) {
