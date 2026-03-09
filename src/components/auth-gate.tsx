@@ -193,18 +193,22 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     <div className="min-h-dvh flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Brain className="h-6 w-6" />
           </div>
           <CardTitle className="text-2xl">
-            {isSignUp
-              ? siteConfig.auth.signUpHeading
-              : siteConfig.auth.signInHeading}
+            {isSignUp ? (
+              siteConfig.auth.signUpHeading
+            ) : (
+              <>
+                Sign in to
+                <br />
+                {siteConfig.name}
+              </>
+            )}
           </CardTitle>
           <CardDescription>
-            {isSignUp
-              ? siteConfig.auth.signUpCta
-              : `Sign in to ${siteConfig.name}`}
+            {isSignUp ? siteConfig.auth.signUpCta : siteConfig.tagline}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -298,28 +302,28 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             )}
           </div>
 
-          {isDev && (
-            <div className="mt-6 border-t pt-4">
-              <p className="mb-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Dev Quick Login
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {DEMO_PERSONAS.map((persona) => {
-                  const Icon = persona.icon;
-                  return (
-                    <button
-                      key={persona.email}
-                      type="button"
-                      onClick={() => loginAsPersona(persona)}
-                      disabled={loading}
-                      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${persona.color}`}
-                    >
-                      <Icon className="size-4 shrink-0" />
-                      <span className="truncate">{persona.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+          <div className="mt-6 border-t pt-4">
+            <p className="mb-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Quick Login
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {DEMO_PERSONAS.map((persona) => {
+                const Icon = persona.icon;
+                return (
+                  <button
+                    key={persona.email}
+                    type="button"
+                    onClick={() => loginAsPersona(persona)}
+                    disabled={loading}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors ${persona.color}`}
+                  >
+                    <Icon className="size-4 shrink-0" />
+                    <span className="truncate">{persona.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {isDev && (
               <button
                 type="button"
                 onClick={() => createFreshUser()}
@@ -329,8 +333,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                 <UserPlus className="size-4 shrink-0" />
                 <span>Empty User</span>
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

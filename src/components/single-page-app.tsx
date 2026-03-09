@@ -322,13 +322,19 @@ const BLOCK_TYPE_LABELS: Record<string, { label: string; color: string }> = {
 export function SinglePageApp({
   topicId,
   topicSlug: topicSlugProp,
+  topicName: topicNameProp,
   projectId,
+  projectName: projectNameProp,
   isAdmin = false,
 }: {
   topicId?: string;
   /** Real DB slug — when provided, takes priority over slugify(topic.name) */
   topicSlug?: string;
+  /** Real DB name — used when the topic isn't in the static TOPICS array */
+  topicName?: string;
   projectId?: string;
+  /** Real DB name — used when the project isn't in the static TOPICS array */
+  projectName?: string;
   isAdmin?: boolean;
 }) {
   const { data: session } = authClient.useSession();
@@ -440,7 +446,7 @@ export function SinglePageApp({
 
   const selectedTopic = TOPICS.find((t) => t.id === selectedTopicId) ?? {
     id: selectedTopicId,
-    name: "Topic",
+    name: topicNameProp ?? "Topic",
     domain: "",
     parentGroup: "",
     icon: "",
@@ -456,7 +462,7 @@ export function SinglePageApp({
   ) ??
     selectedTopic.projects[0] ?? {
       id: selectedProjectId,
-      name: "Project",
+      name: projectNameProp ?? "Project",
       goalType: "mastery" as const,
       mastery: 0,
       masteryUncertainty: 0,
@@ -2490,6 +2496,7 @@ const TOOL_TYPE_TO_ARTIFACT: Record<string, ArtifactType> = {
   create_quiz: "quiz",
   create_flashcards: "flashcards",
   create_mind_map: "mindmap",
+  create_remix: "remix",
   create_slides: "slidedeck",
   create_spatial: "spatial",
   create_learning_guide: "report",
@@ -3693,6 +3700,7 @@ const ARTIFACT_TYPES = [
   { label: "Reports", icon: FileText },
   { label: "Manim", icon: Clapperboard },
   { label: "Geo", icon: Globe },
+  { label: "Remix", icon: Sparkles },
 ] as const;
 
 function ArtifactGrid({
@@ -3800,6 +3808,12 @@ const GENERATE_MATERIAL_TYPES = [
     label: "Audio Lesson",
     icon: AudioLines,
     description: "Listen while you learn",
+  },
+  {
+    type: "remix" as ArtifactType,
+    label: "Remix",
+    icon: Sparkles,
+    description: "Remix source into new material",
   },
 ] as const;
 

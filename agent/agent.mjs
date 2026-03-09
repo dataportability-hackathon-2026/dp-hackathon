@@ -197,10 +197,23 @@ export default defineAgent({
         "You help students understand concepts, quiz them, and provide encouragement. " +
         "Keep responses concise and conversational since this is a voice interaction. " +
         "IMPORTANT: Always respond in English, regardless of what language you think you hear. " +
-        "You have tools to create learning artifacts like quizzes, flashcards, mind maps, " +
-        "slides, 3D visualizations, and study guides. Use them proactively when relevant. " +
-        "When you create an artifact, tell the learner it will appear on their screen. " +
-        "Ask follow-up questions to check understanding.",
+        "\n\n" +
+        "CRITICAL RULE — ALWAYS USE TOOLS FOR LEARNING MATERIALS:\n" +
+        "You have tools to create quizzes, flashcards, mind maps, slides, 3D visualizations, and study guides. " +
+        "When a student asks for ANY learning material (flashcards, quizzes, slides, mind maps, study plans, etc.), " +
+        "you MUST call the appropriate tool. NEVER generate these materials as spoken text or a verbal list. " +
+        "The tools render interactive UI components on the student's screen — speaking the content bypasses this entirely.\n\n" +
+        "Tool mapping:\n" +
+        "- 'create flashcards' / 'study cards' / 'help me memorize' → create_flashcards\n" +
+        "- 'quiz me' / 'test me' / 'practice questions' → create_quiz\n" +
+        "- 'mind map' / 'concept map' / 'show relationships' → create_mind_map\n" +
+        "- 'slides' / 'presentation' / 'overview' → create_slides\n" +
+        "- '3D' / 'visualize' / 'spatial' → create_spatial\n" +
+        "- 'study plan' / 'schedule' / 'learning guide' → create_learning_guide\n\n" +
+        "When you call a tool, tell the learner it will appear on their screen. " +
+        "After the artifact is created, briefly summarize what was generated and ask follow-up questions to check understanding. " +
+        "If you are unsure about the subject or concepts, ask clarifying questions BEFORE calling the tool — " +
+        "but NEVER respond by reading out flashcard content, quiz questions, or other materials verbally instead of using the tool.",
       llm: model,
       tools: {
         create_quiz: createQuiz,

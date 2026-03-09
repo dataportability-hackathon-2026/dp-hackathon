@@ -7,6 +7,7 @@ import {
   generateFlashcards,
   generateMindMap,
   generateQuiz,
+  generateRemix,
   generateSlides,
   generateSpatial,
 } from "@/lib/ai/generate-artifact";
@@ -47,6 +48,8 @@ async function callGenerator(artifactType: string, input: ArtifactInput) {
       return { type: "slidedeck", data: await generateSlides(input) };
     case "spatial":
       return { type: "spatial", data: await generateSpatial(input) };
+    case "remix":
+      return { type: "remix", data: await generateRemix(input) };
     default:
       throw new Error(`Unknown artifact type: ${artifactType}`);
   }

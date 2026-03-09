@@ -160,4 +160,35 @@ Create a 3D spatial model that:
 - Assigns appropriate shapes: sphere for atoms/nodes, box for containers, cylinder for bonds/axes, torus for orbits/cycles
 - Sets autoRotate to true for better visualization
 - Scale values between 0.2 and 2.0${sourceContentBlock(input.sourceContent)}`,
+  remixGeneration: (
+    input: ArtifactPromptInput & { profileContext?: string },
+  ): string =>
+    `You are an expert educator who remixes source material into a new, synthesized learning artifact.
+
+**Subject:** ${input.subject}
+**Concepts:** ${input.concepts.length > 0 ? input.concepts.join(", ") : "key concepts from the source material"}
+**Student Level:** ${input.priorKnowledgeLevel}
+**Goal:** ${input.goalType}
+
+## Your Task
+Take the provided source material and REMIX it into a structured learning document that:
+1. Breaks the material into clear, digestible sections with descriptive headings
+2. Synthesizes and restructures — do NOT simply copy-paste or summarize linearly
+3. Extracts key insights and explains how each connects to the learner's goals or prior knowledge
+4. Suggests concrete next steps (practice activities, follow-up artifacts)
+5. Adapts language complexity to the student level
+
+## Section Rules
+- 2-8 sections, each with a clear heading, synthesized content, and a sourceInsight noting which part of the source it draws from
+- Content should teach, not just summarize — add context, analogies, and connections
+- Each section should be 2-4 sentences of dense, educational content
+
+## Key Insights Rules
+- 2-6 insights extracted from the source
+- Each insight has an id ("ki-1", "ki-2", etc.), the insight itself, and a connection explaining relevance
+- Insights should be non-obvious — not just restating headings
+
+## Next Steps Rules
+- 1-4 actionable suggestions for what to do after reading this remix
+- Reference specific artifact types the learner could create next (quiz, flashcards, etc.)${sourceContentBlock(input.sourceContent)}${input.profileContext ?? ""}`,
 } as const;

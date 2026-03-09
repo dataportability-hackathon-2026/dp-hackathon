@@ -2,11 +2,14 @@ import { generateObject, tool } from "ai";
 import { z } from "zod";
 import { loadSourceContent } from "@/lib/sources/load-sources";
 import { getCitationBlock, getCitationGuardrails } from "./citations";
+import { buildProfileContextBlock } from "./learning-profile-context";
 import { model } from "./provider";
+import type { LearningProfileAnalysis } from "./schemas";
 import {
   FlashcardArtifactSchema,
   MindMapArtifactSchema,
   QuizArtifactSchema,
+  RemixArtifactSchema,
   SlideArtifactSchema,
   SpatialArtifactSchema,
 } from "./schemas";
@@ -681,6 +684,76 @@ Bad uses: memorizing vocabulary, learning historical dates (spatial adds no valu
       });
       return {
         type: "spatial" as const,
+        topicSlug: input.topicSlug,
+        data: object,
+      };
+    },
+  }),
+
+  create_remix: tool({
+    description:
+      "Remix source material into a new synthesized learning artifact. Takes one source document and restructures it into clear sections with key insights and next steps. Optionally imports the learner's profile to adapt tone, complexity, and focus. Uses elaboration [DUNLOSKY_2013] to connect source material to prior knowledge, and evidence-based restructuring to improve comprehension [SWELLER_1988].",
+    inputSchema: profileAwareInputSchema.extend({
+      learningProfile: z
+        .custom<LearningProfileAnalysis>()
+        .nullable()
+        .optional()
+        .describe(
+          "Optional learning profile to personalize the remix. When provided, the remix adapts to the learner's cognitive profile, strengths, risks, and coaching preferences.",
+        ),
+    }),
+    execute: async (
+      rawInput: ProfileAwareInput & {
+        learningProfile?: LearningProfileAnalysis | null;
+      },
+    ) => {
+      const input = withDefaults(rawInput);
+      const sourceBlock = await resolveSourceContent(input);
+      const profileBlock = buildProfileContextBlock(
+        rawInput.learningProfile ?? null,
+      );
+
+      const { object } = await generateObject({
+        model: model("openai/gpt-4o-mini"),
+        schema: RemixArtifactSchema,
+        prompt: `You are an expert educator who remixes source material into a new, synthesized learning artifact.
+
+${getCitationGuardrails()}
+
+## Academic Basis
+${getCitationBlock(["DUNLOSKY_2013", "SWELLER_1988", "BJORK_2011", "ROEDIGER_KARPICKE_2006"])}
+
+**Subject:** ${input.subject}
+**Concepts:** ${input.concepts.join(", ")}
+**Student Level:** ${input.priorKnowledgeLevel}
+**Goal:** ${input.goalType}
+**Cognitive Load Risk:** ${input.cognitiveLoadRisk}
+
+## Remix Design Rules
+
+### Elaboration [DUNLOSKY_2013]
+- Do NOT simply summarize — synthesize and restructure the source material.
+- Add connections between concepts that may not be explicit in the source.
+- Each section should teach, not just report what the source says.
+
+### Cognitive Load Management [SWELLER_1988]
+- ${input.cognitiveLoadRisk === "high" ? "Keep sections short (2-3 sentences). Maximum 4 sections. Focus on the most essential material." : input.cognitiveLoadRisk === "medium" ? "4-6 sections. Standard complexity. Connect related ideas across sections." : "6-8 sections. Include deeper analysis and cross-cutting themes."}
+
+### Key Insights
+- Extract non-obvious insights — not just section headings restated.
+- Each insight must have a connection explaining why it matters to THIS learner.
+
+### Next Steps
+- Suggest specific follow-up activities (create a quiz, make flashcards, try a worked example).
+- Reference evidence-based techniques [ROEDIGER_KARPICKE_2006]: retrieval practice > passive review.
+
+## Output Rules
+- Insight ids: "ki-1", "ki-2", etc.
+- Each section has heading, content (2-4 sentences), and sourceInsight (what part of the source it draws from).
+- Tone: ${input.coachingTone}.${sourceBlock}${profileBlock}`,
+      });
+      return {
+        type: "remix" as const,
         topicSlug: input.topicSlug,
         data: object,
       };

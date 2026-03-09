@@ -12,7 +12,8 @@ export type ArtifactType =
   | "slidedeck"
   | "spatial"
   | "manim"
-  | "geo";
+  | "geo"
+  | "remix";
 
 export type VideoArtifact = {
   id: string;
@@ -200,6 +201,30 @@ export type GeoArtifact = {
   createdAt: string;
 };
 
+export type RemixSection = {
+  heading: string;
+  content: string;
+  sourceInsight: string;
+};
+
+export type RemixInsight = {
+  id: string;
+  insight: string;
+  connection: string;
+};
+
+export type RemixArtifact = {
+  id: string;
+  type: "remix";
+  topicSlug?: string;
+  title: string;
+  description: string;
+  sections: RemixSection[];
+  keyInsights: RemixInsight[];
+  suggestedNextSteps: string[];
+  createdAt: string;
+};
+
 export type Artifact =
   | VideoArtifact
   | AudioArtifact
@@ -212,7 +237,8 @@ export type Artifact =
   | SlideArtifact
   | SpatialArtifact
   | ManimArtifact
-  | GeoArtifact;
+  | GeoArtifact
+  | RemixArtifact;
 
 // ── Mock Data ──
 
@@ -993,6 +1019,59 @@ export const MOCK_GEOS: GeoArtifact[] = [
   },
 ];
 
+export const MOCK_REMIXES: RemixArtifact[] = [
+  {
+    id: "remix-1",
+    type: "remix",
+    title: "Eigenvalue Decomposition — Remixed from Lecture Notes",
+    description:
+      "A synthesized breakdown of eigenvalue decomposition concepts, adapted from uploaded lecture notes with connections to prior linear algebra knowledge.",
+    sections: [
+      {
+        heading: "Core Decomposition Process",
+        content:
+          "Eigenvalue decomposition factors a matrix A into PDP⁻¹ where P contains eigenvectors and D is a diagonal matrix of eigenvalues. This reveals the fundamental 'directions' along which a linear transformation acts by simple scaling.",
+        sourceInsight: "Drawn from Section 3: Matrix Factorizations",
+      },
+      {
+        heading: "Geometric Interpretation",
+        content:
+          "Each eigenvector defines an invariant direction under the transformation — the matrix only stretches or compresses along these axes, never rotates them. The eigenvalue tells you the stretch factor.",
+        sourceInsight: "Adapted from the visual examples in Section 2",
+      },
+      {
+        heading: "When Decomposition Fails",
+        content:
+          "Not every matrix is diagonalizable. Defective matrices have repeated eigenvalues without enough independent eigenvectors. In these cases, Jordan normal form provides an alternative factorization.",
+        sourceInsight:
+          "Extended from the 'edge cases' discussion at the end of the notes",
+      },
+    ],
+    keyInsights: [
+      {
+        id: "ki-1",
+        insight:
+          "Diagonalization is really about finding a coordinate system where the transformation is trivial",
+        connection:
+          "Connects to your understanding of change-of-basis from Chapter 2",
+      },
+      {
+        id: "ki-2",
+        insight:
+          "The trace equals the sum of eigenvalues, the determinant equals their product",
+        connection:
+          "Useful for quick-checking your eigenvalue computations on exams",
+      },
+    ],
+    suggestedNextSteps: [
+      "Practice diagonalizing 3x3 matrices with distinct eigenvalues",
+      "Create flashcards for the conditions under which decomposition fails",
+      "Try the prediction-reflection exercise on Jordan normal form",
+    ],
+    createdAt: "2026-03-05",
+  },
+];
+
 // Helper to get all artifacts of a given type
 export function getArtifactsByType(type: ArtifactType): Artifact[] {
   switch (type) {
@@ -1020,6 +1099,8 @@ export function getArtifactsByType(type: ArtifactType): Artifact[] {
       return MOCK_MANIMS;
     case "geo":
       return MOCK_GEOS;
+    case "remix":
+      return MOCK_REMIXES;
   }
 }
 
@@ -1037,6 +1118,7 @@ export function artifactTypeFromLabel(label: string): ArtifactType | null {
     "3D Spatial": "spatial",
     Manim: "manim",
     Geo: "geo",
+    Remix: "remix",
   };
   return map[label] ?? null;
 }
@@ -1055,6 +1137,7 @@ export function artifactTypeLabel(type: ArtifactType): string {
     spatial: "3D Spatial",
     manim: "Manim",
     geo: "Geo",
+    remix: "Remix",
   };
   return map[type];
 }

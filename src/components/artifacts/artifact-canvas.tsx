@@ -42,6 +42,7 @@ import {
   type ManimArtifact,
   type MindMapArtifact,
   type QuizArtifact,
+  type RemixArtifact,
   type ReportArtifact,
   type SlideArtifact,
   type VideoArtifact,
@@ -188,6 +189,8 @@ function ArtifactRenderer({ artifact }: { artifact: Artifact }) {
       return <ManimCard artifact={artifact} />;
     case "geo":
       return <GeoCard artifact={artifact} />;
+    case "remix":
+      return <RemixCard artifact={artifact} />;
   }
 }
 
@@ -831,6 +834,74 @@ function ManimCard({ artifact }: { artifact: ManimArtifact }) {
               <code>{artifact.code}</code>
             </pre>
           )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Remix ──
+
+function RemixCard({ artifact }: { artifact: RemixArtifact }) {
+  const insightId = useId();
+  const stepId = useId();
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{artifact.title}</CardTitle>
+        <CardDescription>{artifact.description}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6" data-testid={`remix-${artifact.id}`}>
+        {/* Sections */}
+        {artifact.sections.map((section) => (
+          <div key={section.heading} className="space-y-1">
+            <h4 className="text-sm font-semibold">{section.heading}</h4>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {section.content}
+            </p>
+            <p className="text-xs italic text-muted-foreground/70">
+              Source: {section.sourceInsight}
+            </p>
+          </div>
+        ))}
+
+        {/* Key Insights */}
+        <div className="space-y-2">
+          <h4 className="text-sm font-semibold">Key Insights</h4>
+          <div className="grid gap-2">
+            {artifact.keyInsights.map((ki) => (
+              <div
+                key={`${insightId}-${ki.id}`}
+                className="rounded-lg border bg-primary/5 p-3"
+              >
+                <p className="text-sm font-medium">{ki.insight}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {ki.connection}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Next Steps */}
+        <div className="space-y-2">
+          <h4 className="text-sm font-semibold">Suggested Next Steps</h4>
+          <ul className="space-y-1.5">
+            {artifact.suggestedNextSteps.map((step) => (
+              <li
+                key={`${stepId}-${step}`}
+                className="flex items-start gap-2 text-sm text-muted-foreground"
+              >
+                <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />
+                {step}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="text-xs text-muted-foreground text-right">
+          {artifact.createdAt}
         </div>
       </CardContent>
     </Card>

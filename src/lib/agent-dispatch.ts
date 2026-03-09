@@ -45,7 +45,8 @@ export function dispatchAgentResult(
     case "create_infographic":
     case "create_slidedeck":
     case "create_manim":
-    case "create_geo": {
+    case "create_geo":
+    case "create_remix": {
       const artifact = result as unknown as Artifact;
       if (artifact.id && artifact.type) {
         // Inject topicSlug from dispatch context if the artifact doesn't already have one

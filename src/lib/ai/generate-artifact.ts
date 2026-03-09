@@ -8,6 +8,7 @@ import type {
   FlashcardArtifactData,
   MindMapArtifactData,
   QuizArtifactData,
+  RemixArtifactData,
   SlideArtifactData,
   SpatialArtifactData,
 } from "./schemas";
@@ -15,6 +16,7 @@ import {
   FlashcardArtifactSchema,
   MindMapArtifactSchema,
   QuizArtifactSchema,
+  RemixArtifactSchema,
   SlideArtifactSchema,
   SpatialArtifactSchema,
 } from "./schemas";
@@ -153,6 +155,22 @@ export async function generateAudio(
     audioUrl: blob.url,
     duration,
   };
+}
+
+export async function generateRemix(
+  input: ArtifactInput & { profileContext?: string },
+): Promise<RemixArtifactData> {
+  const sourceContent = await resolveSourceContent(input);
+  const { object } = await generateObject({
+    model: model("openai/gpt-4o-mini"),
+    schema: RemixArtifactSchema,
+    prompt: prompts.remixGeneration({
+      ...input,
+      sourceContent,
+      profileContext: input.profileContext,
+    }),
+  });
+  return object;
 }
 
 export type { ArtifactInput };

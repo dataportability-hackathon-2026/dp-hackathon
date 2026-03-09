@@ -8,6 +8,7 @@ import {
   generateFlashcards,
   generateMindMap,
   generateQuiz,
+  generateRemix,
   generateSlides,
 } from "@/lib/ai/generate-artifact";
 import { getEffectiveUserId } from "@/lib/impersonate";
@@ -60,6 +61,10 @@ export async function POST(req: Request) {
       case "audio": {
         const data = await generateAudio(enrichedInput);
         return NextResponse.json({ type: "audio", data });
+      }
+      case "remix": {
+        const data = await generateRemix(enrichedInput);
+        return NextResponse.json({ type: "remix", data });
       }
       default:
         return NextResponse.json(

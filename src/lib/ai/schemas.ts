@@ -249,3 +249,49 @@ export const SpatialArtifactSchema = z.object({
 });
 
 export type SpatialArtifactData = z.infer<typeof SpatialArtifactSchema>;
+
+// ── Remix Artifact Schema ──
+
+export const RemixArtifactSchema = z.object({
+  title: z.string(),
+  description: z
+    .string()
+    .describe(
+      "Brief overview of what this remix covers and how it was adapted",
+    ),
+  sections: z
+    .array(
+      z.object({
+        heading: z.string(),
+        content: z.string().describe("Synthesized content for this section"),
+        sourceInsight: z
+          .string()
+          .describe(
+            "Which part of the source material this section draws from",
+          ),
+      }),
+    )
+    .min(2)
+    .max(8),
+  keyInsights: z
+    .array(
+      z.object({
+        id: z.string(),
+        insight: z.string().describe("A key insight extracted from the source"),
+        connection: z
+          .string()
+          .describe(
+            "How this connects to the learner's goals or prior knowledge",
+          ),
+      }),
+    )
+    .min(2)
+    .max(6),
+  suggestedNextSteps: z
+    .array(z.string())
+    .min(1)
+    .max(4)
+    .describe("Recommended follow-up activities based on the remix"),
+});
+
+export type RemixArtifactData = z.infer<typeof RemixArtifactSchema>;

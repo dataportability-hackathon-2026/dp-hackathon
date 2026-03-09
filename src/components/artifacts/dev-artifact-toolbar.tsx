@@ -10,6 +10,7 @@ import type {
   FlashcardArtifact,
   MindMapArtifact,
   QuizArtifact,
+  RemixArtifact,
   SlideArtifact,
 } from "./artifact-store";
 
@@ -20,6 +21,7 @@ const SUPPORTED_TYPES = new Set<ArtifactType>([
   "mindmap",
   "slidedeck",
   "audio",
+  "remix",
 ]);
 
 const TYPE_LABEL: Partial<Record<ArtifactType, string>> = {
@@ -28,6 +30,7 @@ const TYPE_LABEL: Partial<Record<ArtifactType, string>> = {
   mindmap: "Generate Mind Map",
   slidedeck: "Generate Slides",
   audio: "Generate Audio Lesson",
+  remix: "Generate Remix",
 };
 
 export function DevArtifactToolbar({
@@ -125,6 +128,19 @@ export function DevArtifactToolbar({
           description: result.data.description,
           audioUrl: result.data.audioUrl,
           duration: result.data.duration,
+          createdAt: new Date().toISOString().slice(0, 10),
+        };
+        dataStore.addArtifact(artifact);
+      } else if (activeType === "remix") {
+        const artifact: RemixArtifact = {
+          id: `dev-remix-${Date.now()}`,
+          type: "remix",
+          topicSlug,
+          title: result.data.title,
+          description: result.data.description,
+          sections: result.data.sections,
+          keyInsights: result.data.keyInsights,
+          suggestedNextSteps: result.data.suggestedNextSteps,
           createdAt: new Date().toISOString().slice(0, 10),
         };
         dataStore.addArtifact(artifact);
