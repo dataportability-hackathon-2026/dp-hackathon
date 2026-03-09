@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="public/logos/logo-readme.png" alt="CoreModel" width="150" />
-</p>
+<img src="public/logos/logo-readme.png" alt="CoreModel" width="300" />
 
 
 Adaptive learning platform powered by MCP and AI chat, with artifact generation, and learning profile DNA.
@@ -60,7 +58,7 @@ bun install
 cp .env.local.example .env.local
 ```
 
-Open `.env.local` in a text editor and fill in your keys. Ask a teammate if you don't have them.
+Open `.env.local` in a text editor and fill in your keys. Email [matt@insite.works](mailto:matt@insite.works) if you don't have them.
 
 ### 4. Install agent dependencies
 
@@ -169,9 +167,11 @@ graph TD
 
     M[Learning DNA Profile] -->|personalizes| F
 ```
-Learning DNA Profile Flow:
-[Quiz] → [Profile Generation] → [Injected into every AI prompt]
-                        → [Adapts: tone, structure, depth, format]
+### Learning DNA Profile Flow
+1. Quiz
+2. Profile Generation
+3. Injected into every AI prompt
+4. Adapts: tone, structure, depth, format
 
 ## Datasets & Frameworks Used
 
@@ -201,4 +201,4 @@ No external datasets were used. The system is grounded in the following psycholo
 
 **Port 3000 already in use** — Another app is using it. Kill it with `lsof -ti:3000 | xargs kill` or run `bun dev -- -p 3001`.
 
-**Missing environment variables** — The app will crash on startup if keys are missing. Make sure `.env.local` is filled in.
+**Missing environment variables** — The app will crash on startup if keys are missing. Make sure `.env.local` is filled in. Email [matt@insite.works](mailto:matt@insite.works) if you don't have them.
