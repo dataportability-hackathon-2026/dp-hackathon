@@ -1,6 +1,9 @@
-# dp-hackathon
+<p align="center">
+  <img src="public/logos/logo-readme.png" alt="CoreModel" width="150" />
+</p>
 
-Next.js 16 adaptive learning platform with AI chat, artifact generation, and learning profile DNA.
+
+Adaptive learning platform powered by MCP and AI chat, with artifact generation, and learning profile DNA.
 
 ## Prerequisites (Mac)
 
@@ -115,7 +118,7 @@ src/
 ### Frontend / App
 | | |
 |---|---|
-| Framework | Next.js 15 (App Router, React 19, React Compiler) |
+| Framework | Next.js 16 (App Router, React 19, React Compiler) |
 | Language | TypeScript |
 | Styling | Tailwind CSS v4 + shadcn/ui |
 | State | Zustand (in-memory `data-store` for real-time artifact state) |
@@ -148,7 +151,7 @@ src/
 ## Architecture
 ```mermaid
 graph TD
-    A[Browser] -->|requests| B[Next.js 15]
+    A[Browser] -->|requests| B[Next.js 16]
     
     B -->|auth| C[Better Auth]
     B -->|billing| D[Stripe]
