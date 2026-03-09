@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { dataStore } from "@/lib/data-store";
 import type {
   ArtifactType,
+  AudioArtifact,
   FlashcardArtifact,
   MindMapArtifact,
   QuizArtifact,
@@ -18,6 +19,7 @@ const SUPPORTED_TYPES = new Set<ArtifactType>([
   "quiz",
   "mindmap",
   "slidedeck",
+  "audio",
 ]);
 
 const TYPE_LABEL: Partial<Record<ArtifactType, string>> = {
@@ -25,6 +27,7 @@ const TYPE_LABEL: Partial<Record<ArtifactType, string>> = {
   quiz: "Generate Quiz",
   mindmap: "Generate Mind Map",
   slidedeck: "Generate Slides",
+  audio: "Generate Audio Lesson",
 };
 
 export function DevArtifactToolbar({
@@ -110,6 +113,18 @@ export function DevArtifactToolbar({
           title: result.data.title,
           description: result.data.description,
           slides: result.data.slides,
+          createdAt: new Date().toISOString().slice(0, 10),
+        };
+        dataStore.addArtifact(artifact);
+      } else if (activeType === "audio") {
+        const artifact: AudioArtifact = {
+          id: `dev-audio-${Date.now()}`,
+          type: "audio",
+          topicSlug,
+          title: result.data.title,
+          description: result.data.description,
+          audioUrl: result.data.audioUrl,
+          duration: result.data.duration,
           createdAt: new Date().toISOString().slice(0, 10),
         };
         dataStore.addArtifact(artifact);
