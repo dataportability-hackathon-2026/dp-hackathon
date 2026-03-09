@@ -2009,6 +2009,17 @@ function VoiceAgentUI({ onDisconnect }: { onDisconnect: () => void }) {
   } = useVoiceAssistant();
   const connectionState = useConnectionState();
   const room = useRoomContext();
+
+  // Log connection state and agent state changes
+  useEffect(() => {
+    console.log("[VoiceAgentUI] Connection state:", connectionState);
+  }, [connectionState]);
+  useEffect(() => {
+    console.log("[VoiceAgentUI] Agent state:", agentState);
+  }, [agentState]);
+  useEffect(() => {
+    console.log("[VoiceAgentUI] Room participants:", room.numParticipants);
+  }, [room.numParticipants]);
   const [isMuted, setIsMuted] = useState(false);
   const [vizType, setVizType] = usePreference("vizType");
   const [elapsed, setElapsed] = useState(0);
@@ -2338,15 +2349,23 @@ function VoiceAgent() {
     )
       return;
     fetchingRef.current = true;
+    console.log("[VoiceAgent] Fetching LiveKit token...");
     fetch("/api/livekit-token", { method: "POST" })
       .then((res) => {
+        console.log("[VoiceAgent] Token response status:", res.status);
         if (!res.ok) throw new Error(`Failed to get token: ${res.status}`);
         return res.json();
       })
       .then((data: LiveKitConnection) => {
+        console.log("[VoiceAgent] Token received:", {
+          hasToken: !!data.token,
+          wsUrl: data.wsUrl,
+          roomName: data.roomName,
+        });
         setConnection(data);
       })
       .catch((err: unknown) => {
+        console.error("[VoiceAgent] Token fetch failed:", err);
         setTokenError(err instanceof Error ? err.message : "Connection failed");
         fetchingRef.current = false;
       });

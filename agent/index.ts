@@ -4,8 +4,19 @@ import * as openai from "@livekit/agents-plugin-openai";
 const AI_GATEWAY_BASE_URL = "https://ai-gateway.vercel.sh/v1";
 const AI_GATEWAY_API_KEY = process.env.AI_GATEWAY_API_KEY ?? "";
 
+console.log("[voice-agent] Starting up...");
+console.log("[voice-agent] env check:", {
+  hasAiGatewayKey: !!AI_GATEWAY_API_KEY,
+  aiGatewayBaseUrl: AI_GATEWAY_BASE_URL,
+  hasLivekitUrl: !!process.env.LIVEKIT_URL,
+  hasLivekitApiKey: !!process.env.LIVEKIT_API_KEY,
+  hasLivekitApiSecret: !!process.env.LIVEKIT_API_SECRET,
+  nodeEnv: process.env.NODE_ENV,
+});
+
 export default class LearningAgent extends voice.Agent {
   constructor() {
+    console.log("[voice-agent] LearningAgent constructor called");
     super({
       instructions:
         "You are a friendly and knowledgeable learning assistant. " +
@@ -28,9 +39,11 @@ export default class LearningAgent extends voice.Agent {
         baseURL: AI_GATEWAY_BASE_URL,
       }),
     });
+    console.log("[voice-agent] LearningAgent initialized with STT, LLM, TTS");
   }
 
   override async onEnter() {
+    console.log("[voice-agent] onEnter - participant joined, saying greeting");
     this.session.say(
       "Hi! I'm your learning assistant. What would you like to study today?",
       { allowInterruptions: true },
@@ -38,8 +51,10 @@ export default class LearningAgent extends voice.Agent {
   }
 }
 
+console.log("[voice-agent] Registering CLI app...");
 cli.runApp(
   new ServerOptions({
     agent: import.meta.filename,
   }),
 );
+console.log("[voice-agent] CLI app registered");

@@ -9,7 +9,20 @@ export async function POST(request: NextRequest) {
   const apiSecret = process.env.LIVEKIT_API_SECRET;
   const wsUrl = process.env.LIVEKIT_URL;
 
+  console.log("[livekit-token] POST request received");
+  console.log("[livekit-token] env check:", {
+    hasApiKey: !!apiKey,
+    hasApiSecret: !!apiSecret,
+    hasWsUrl: !!wsUrl,
+    wsUrl: wsUrl ? `${wsUrl.slice(0, 20)}...` : "MISSING",
+  });
+
   if (!apiKey || !apiSecret || !wsUrl) {
+    console.error("[livekit-token] Missing env vars:", {
+      LIVEKIT_API_KEY: apiKey ? "set" : "MISSING",
+      LIVEKIT_API_SECRET: apiSecret ? "set" : "MISSING",
+      LIVEKIT_URL: wsUrl ? "set" : "MISSING",
+    });
     return NextResponse.json(
       { error: "LiveKit environment variables not configured" },
       { status: 500 },
@@ -29,18 +42,36 @@ export async function POST(request: NextRequest) {
 
   const participantIdentity = `user-${crypto.randomUUID()}`;
 
-  const at = new AccessToken(apiKey, apiSecret, {
-    identity: participantIdentity,
+  console.log("[livekit-token] Creating token:", {
+    roomName,
+    participantIdentity,
     ttl: "10m",
   });
-  at.addGrant({
-    roomJoin: true,
-    room: roomName,
-    canPublish: true,
-    canSubscribe: true,
-  });
 
-  const token = await at.toJwt();
+  try {
+    const at = new AccessToken(apiKey, apiSecret, {
+      identity: participantIdentity,
+      ttl: "10m",
+    });
+    at.addGrant({
+      roomJoin: true,
+      room: roomName,
+      canPublish: true,
+      canSubscribe: true,
+    });
 
-  return NextResponse.json({ token, wsUrl, roomName });
+    const token = await at.toJwt();
+
+    console.log(
+      "[livekit-token] Token created successfully, length:",
+      token.length,
+    );
+    return NextResponse.json({ token, wsUrl, roomName });
+  } catch (err) {
+    console.error("[livekit-token] Token creation failed:", err);
+    return NextResponse.json(
+      { error: "Failed to create LiveKit token", details: String(err) },
+      { status: 500 },
+    );
+  }
 }

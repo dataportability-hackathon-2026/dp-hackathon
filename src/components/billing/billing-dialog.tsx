@@ -186,7 +186,7 @@ export function BillingDialog({
                   <Gift className="size-4 text-amber-500" />
                   <AlertTitle>You're out of credits</AlertTitle>
                   <AlertDescription className="flex items-center justify-between gap-4">
-                    <span>Claim 20 free credits to keep going.</span>
+                    <span>Claim 5 free credits to keep going.</span>
                     <Button
                       size="sm"
                       variant="default"
@@ -202,7 +202,7 @@ export function BillingDialog({
                       ) : (
                         <Gift className="size-3" data-icon="inline-start" />
                       )}
-                      Claim 20 Credits
+                      Claim 5 Credits
                     </Button>
                   </AlertDescription>
                   {claimError && (

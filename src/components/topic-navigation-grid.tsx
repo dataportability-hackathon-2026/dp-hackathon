@@ -26,6 +26,15 @@ import { ConnectDialog } from "@/components/single-page-app";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -91,6 +100,7 @@ function sortTopics(topics: Topic[], sortBy: SortOption): Topic[] {
 export function TopicNavigationGrid() {
   const { userTopics, communityTopics, isLoading, mutate } = useTopics();
   const { createTopic, isCreating } = useCreateTopic();
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("recently-updated");
   const [viewMode, setViewMode] = useState<ViewMode>("bento");
@@ -203,12 +213,8 @@ export function TopicNavigationGrid() {
                 </div>
                 <div className="flex items-center gap-2">
                   {hasUserTopics && (
-                    <Button onClick={() => createTopic()} disabled={isCreating}>
-                      {isCreating ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <Plus className="size-4" />
-                      )}
+                    <Button onClick={() => setCreateDialogOpen(true)}>
+                      <Plus className="size-4" />
                       Create New Topic
                     </Button>
                   )}
@@ -275,16 +281,8 @@ export function TopicNavigationGrid() {
                     Create your first topic to organize sources, track progress,
                     and get AI-powered study guidance.
                   </p>
-                  <Button
-                    size="lg"
-                    onClick={() => createTopic()}
-                    disabled={isCreating}
-                  >
-                    {isCreating ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <Plus className="size-4" />
-                    )}
+                  <Button size="lg" onClick={() => setCreateDialogOpen(true)}>
+                    <Plus className="size-4" />
                     Create Your First Topic
                   </Button>
                 </SpotlightCard>
@@ -332,7 +330,85 @@ export function TopicNavigationGrid() {
           </>
         )}
       </div>
+
+      <CreateTopicDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        createTopic={createTopic}
+        isCreating={isCreating}
+      />
     </div>
+  );
+}
+
+function CreateTopicDialog({
+  open,
+  onOpenChange,
+  createTopic,
+  isCreating,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  createTopic: (opts?: {
+    name?: string;
+    domain?: string;
+  }) => Promise<Topic | undefined>;
+  isCreating: boolean;
+}) {
+  const [name, setName] = useState("");
+  const nameId = useId();
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const trimmed = name.trim();
+    await createTopic(trimmed ? { name: trimmed } : undefined);
+    setName("");
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        onOpenChange(v);
+        if (!v) setName("");
+      }}
+    >
+      <DialogContent className="sm:max-w-md">
+        <form onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>New Topic</DialogTitle>
+            <DialogDescription>
+              Give your topic a name. You can change it later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor={nameId}>Name</Label>
+            <Input
+              id={nameId}
+              placeholder="e.g. Linear Algebra, React Patterns..."
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+              className="mt-1.5"
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose render={<Button variant="ghost" type="button" />}>
+              Cancel
+            </DialogClose>
+            <Button type="submit" disabled={isCreating}>
+              {isCreating ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Plus className="size-4" />
+              )}
+              Create
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

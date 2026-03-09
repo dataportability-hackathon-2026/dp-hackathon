@@ -5,10 +5,25 @@ import { z } from "zod";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY ?? "";
 const APP_URL = process.env.APP_URL ?? "http://localhost:3000";
 
+console.log("[voice-agent] Starting up...");
+console.log("[voice-agent] env check:", {
+  hasOpenAiKey: !!OPENAI_API_KEY,
+  appUrl: APP_URL,
+  hasLivekitUrl: !!process.env.LIVEKIT_URL,
+  hasLivekitApiKey: !!process.env.LIVEKIT_API_KEY,
+  hasLivekitApiSecret: !!process.env.LIVEKIT_API_SECRET,
+  nodeEnv: process.env.NODE_ENV,
+});
+
 // Room reference captured during agent entry
 let currentRoom = null;
 
 async function callAppApi(toolName, input) {
+  console.log("[voice-agent] callAppApi:", {
+    toolName,
+    appUrl: APP_URL,
+    input,
+  });
   try {
     const res = await fetch(`${APP_URL}/api/agent-tools`, {
       method: "POST",
@@ -17,6 +32,11 @@ async function callAppApi(toolName, input) {
     });
     if (!res.ok) {
       const errorText = await res.text().catch(() => "");
+      console.error("[voice-agent] callAppApi failed:", {
+        toolName,
+        status: res.status,
+        errorText,
+      });
       return `Sorry, I couldn't do that right now. The server returned an error (${res.status}). ${errorText ? `Details: ${errorText}` : "Please try again."}`;
     }
 
@@ -58,6 +78,11 @@ async function callAppApi(toolName, input) {
 
     const label =
       result.type || toolName.replace(/_/g, " ").replace(/^create /, "");
+    console.log("[voice-agent] callAppApi success:", {
+      toolName,
+      label,
+      hasRoom: !!currentRoom,
+    });
     return `I've created a ${label} for you. It should appear on your screen now.`;
   } catch (err) {
     return `Sorry, I wasn't able to create that right now. Error: ${err.message}`;
@@ -147,7 +172,9 @@ const createLearningGuide = llm.tool({
 
 export default defineAgent({
   entry: async (ctx) => {
+    console.log("[voice-agent] Agent entry called, connecting...");
     await ctx.connect();
+    console.log("[voice-agent] Connected to room:", ctx.room.name);
 
     // Capture room reference for tool data channel messages
     currentRoom = ctx.room;
@@ -186,16 +213,19 @@ export default defineAgent({
     });
 
     const session = new voice.AgentSession({});
+    console.log("[voice-agent] Starting agent session...");
     await session.start({
       agent,
       room: ctx.room,
     });
+    console.log("[voice-agent] Agent session started successfully");
 
     // Listen for text messages sent from the frontend via data channel
     ctx.room.on("dataReceived", (payload, _participant) => {
       try {
         const decoder = new TextDecoder();
         const data = JSON.parse(decoder.decode(payload));
+        console.log("[voice-agent] Data received from frontend:", data.type);
         if (data.type === "text_input" && typeof data.text === "string") {
           // Inject typed text as user input so the voice agent can respond
           session.generateReply({
@@ -205,8 +235,8 @@ export default defineAgent({
               "You can acknowledge that they typed it if relevant, but don't make a big deal of it.",
           });
         }
-      } catch {
-        // Ignore malformed data
+      } catch (err) {
+        console.warn("[voice-agent] Failed to parse data message:", err);
       }
     });
 
@@ -220,8 +250,10 @@ export default defineAgent({
   },
 });
 
+console.log("[voice-agent] Registering CLI app...");
 cli.runApp(
   new ServerOptions({
     agent: import.meta.filename,
   }),
 );
+console.log("[voice-agent] CLI app registered");

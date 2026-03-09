@@ -109,13 +109,17 @@ export async function POST(req: Request) {
     input: Record<string, unknown>;
   };
 
+  console.log("[agent-tools] POST request:", { toolName, input });
+
   // Check state tools first
   if (toolName in stateHandlers) {
     const result = stateHandlers[toolName](input);
+    console.log("[agent-tools] State handler result:", { toolName, result });
     return NextResponse.json(result);
   }
 
   if (!(toolName in tools)) {
+    console.warn("[agent-tools] Unknown tool requested:", toolName);
     return NextResponse.json(
       {
         error: `Unknown tool: ${toolName}`,
@@ -127,14 +131,31 @@ export async function POST(req: Request) {
 
   const selectedTool = tools[toolName as ToolName];
   if (!selectedTool?.execute) {
+    console.error("[agent-tools] Tool has no execute method:", toolName);
     return NextResponse.json(
       { error: `Tool "${toolName}" has no execute method` },
       { status: 400 },
     );
   }
-  const result = await selectedTool.execute(input as never, {
-    toolCallId: `agent-${toolName}-${Date.now()}`,
-    messages: [],
-  });
-  return NextResponse.json(result);
+
+  try {
+    const result = await selectedTool.execute(input as never, {
+      toolCallId: `agent-${toolName}-${Date.now()}`,
+      messages: [],
+    });
+    console.log("[agent-tools] Tool executed successfully:", {
+      toolName,
+      resultType: typeof result,
+    });
+    return NextResponse.json(result);
+  } catch (err) {
+    console.error("[agent-tools] Tool execution failed:", {
+      toolName,
+      error: String(err),
+    });
+    return NextResponse.json(
+      { error: `Tool "${toolName}" execution failed`, details: String(err) },
+      { status: 500 },
+    );
+  }
 }

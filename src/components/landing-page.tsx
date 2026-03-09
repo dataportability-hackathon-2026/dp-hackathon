@@ -13,6 +13,7 @@ import {
   Map,
   Microscope,
   Palette,
+  Pause,
   Play,
   Presentation,
   Quote,
@@ -185,9 +186,9 @@ const personas = [
     bgColor: "bg-rose-50 dark:bg-rose-950/30",
     borderColor: "border-rose-200 dark:border-rose-800",
     challenge:
-      "Transitioning from wet lab research to computational biology while maintaining clinical workload.",
+      "Moving from wet lab to computational biology while juggling a clinical workload.",
     quote:
-      "Core Model showed me I was overconfident in my stats knowledge but underestimating my programming ability.",
+      "It showed me I was overconfident in stats but underestimating my coding ability.",
     metric: "42% \u2192 81%",
     metricLabel: "Calibration accuracy",
     weeks: 14,
@@ -201,10 +202,9 @@ const personas = [
     color: "from-violet-500 to-purple-600",
     bgColor: "bg-violet-50 dark:bg-violet-950/30",
     borderColor: "border-violet-200 dark:border-violet-800",
-    challenge:
-      "Balancing full-time UX role with MFA thesis on generative design systems.",
+    challenge: "Balancing a full-time UX role with an MFA thesis.",
     quote:
-      "I learn by doing. Core Model adapted by giving me project-based retrieval challenges instead of flashcards.",
+      "It adapted to my style — project-based challenges instead of flashcards.",
     metric: "3 weeks",
     metricLabel: "Ahead of schedule",
     weeks: 9,
@@ -219,9 +219,9 @@ const personas = [
     bgColor: "bg-emerald-50 dark:bg-emerald-950/30",
     borderColor: "border-emerald-200 dark:border-emerald-800",
     challenge:
-      "Preparing for qualifying exams covering ML theory, causal inference, and Bayesian statistics.",
+      "Preparing for qualifying exams across ML theory, causal inference, and Bayesian stats.",
     quote:
-      "Core Model's uncertainty tracking showed me exactly where my knowledge had gaps I didn't even know existed.",
+      "The uncertainty tracking revealed knowledge gaps I didn't know I had.",
     metric: "61% \u2192 97%",
     metricLabel: "Knowledge coverage",
     weeks: 12,
@@ -393,6 +393,8 @@ export function LandingPage() {
   const { data: session } = authClient.useSession();
   const isSignedIn = !!session?.user;
   const [colorRevealed, setColorRevealed] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -404,7 +406,7 @@ export function LandingPage() {
   const heroY = useTransform(scrollYProgress, [0, 1], [0, 100]);
 
   return (
-    <div className="min-h-dvh bg-background text-foreground relative">
+    <div className="min-h-dvh bg-background text-foreground relative overflow-x-hidden">
       <MegaMenu landingAnchors />
       <div
         className={`${colorRevealed ? "" : "grayscale"} relative z-10 overflow-x-hidden transition-[filter] duration-1000`}
@@ -487,12 +489,27 @@ export function LandingPage() {
         <section className="py-6 sm:py-10">
           <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
             <FadeInOnScroll>
-              <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/20">
+              <div
+                className="group relative rounded-2xl overflow-hidden shadow-2xl shadow-black/20 cursor-pointer"
+                onClick={() => {
+                  const vid = videoRef.current;
+                  if (!vid) return;
+                  if (vid.paused) {
+                    vid.play();
+                    setIsPlaying(true);
+                  } else {
+                    vid.pause();
+                    setIsPlaying(false);
+                  }
+                }}
+              >
                 <video
+                  ref={videoRef}
                   className="w-full aspect-video"
-                  controls
                   preload="metadata"
                   playsInline
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
                   onTimeUpdate={(e) => {
                     const past7 = e.currentTarget.currentTime >= 7;
                     if (past7 !== colorRevealed) setColorRevealed(past7);
@@ -504,6 +521,22 @@ export function LandingPage() {
                   />
                   Your browser does not support the video tag.
                 </video>
+                {/* Play / Pause overlay */}
+                <div
+                  className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${
+                    isPlaying
+                      ? "opacity-0 group-hover:opacity-100"
+                      : "opacity-100"
+                  }`}
+                >
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-black/60 backdrop-blur-sm text-white transition-transform duration-200 group-hover:scale-110">
+                    {isPlaying ? (
+                      <Pause className="h-8 w-8 fill-white" />
+                    ) : (
+                      <Play className="h-8 w-8 fill-white ml-1" />
+                    )}
+                  </div>
+                </div>
               </div>
             </FadeInOnScroll>
           </div>
@@ -712,7 +745,7 @@ export function LandingPage() {
                   direction={i % 2 === 0 ? "left" : "right"}
                 >
                   <motion.div
-                    className="rounded-2xl overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-white/5 p-6"
+                    className="rounded-2xl overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-white/5 border border-border/50 p-6"
                     whileHover={{ y: -4 }}
                     transition={{ type: "spring", stiffness: 200, damping: 20 }}
                   >
