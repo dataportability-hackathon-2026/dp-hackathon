@@ -1,6 +1,7 @@
 import { put } from "@vercel/blob";
 import { generateObject, generateText } from "ai";
 import OpenAI from "openai";
+import { z } from "zod/v4";
 import { loadSourceContent } from "@/lib/sources/load-sources";
 import { prompts } from "./prompts";
 import { model } from "./provider";
@@ -171,6 +172,86 @@ export async function generateRemix(
     }),
   });
   return object;
+}
+
+// ── Manim ─────────────────────────────────────────────────────────────────────
+
+export type ManimArtifactData = {
+  title: string;
+  description: string;
+  code: string;
+  videoUrl?: string;
+  duration?: string;
+};
+
+/** Schema for the LLM's structured response when generating Manim code */
+const ManimCodeSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  sceneName: z.string(),
+  code: z.string(),
+});
+
+export async function generateManim(
+  input: ArtifactInput,
+): Promise<ManimArtifactData> {
+  const sourceContent = await resolveSourceContent(input);
+
+  // ── Step 1: Ask the LLM to write Manim Python code ───────────────────────
+  const { object: manimCode } = await generateObject({
+    model: model("openai/gpt-4o"),      // use gpt-4o for better code quality
+    schema: ManimCodeSchema,
+    prompt: prompts.manimGeneration({ ...input, sourceContent }),
+  });
+
+  // ── Step 2: Send code to Railway render service ───────────────────────────
+  const serviceUrl = process.env.MANIM_SERVICE_URL;
+  const apiKey = process.env.MANIM_API_KEY ?? "";
+
+  if (!serviceUrl) {
+    throw new Error(
+      "MANIM_SERVICE_URL is not configured. Add it to your environment variables.",
+    );
+  }
+
+  const renderRes = await fetch(`${serviceUrl}/render`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(apiKey ? { "X-Api-Key": apiKey } : {}),
+    },
+    body: JSON.stringify({
+      code: manimCode.code,
+      scene: manimCode.sceneName,
+      topic_slug: input.subject.toLowerCase().replace(/\s+/g, "-"),
+      quality: "low",
+    }),
+    signal: AbortSignal.timeout(150_000),  // 2.5 min hard cap
+  });
+
+  if (!renderRes.ok) {
+    const errBody = await renderRes.text().catch(() => "");
+    throw new Error(
+      `Manim render service returned ${renderRes.status}: ${errBody.slice(0, 300)}`,
+    );
+  }
+
+  // Railway returns raw MP4 bytes — Next.js uploads to Vercel Blob
+  const duration = renderRes.headers.get("X-Duration") ?? "unknown";
+  const mp4Buffer = Buffer.from(await renderRes.arrayBuffer());
+  const filename = `manim-${Date.now()}.mp4`;
+  const blob = await put(filename, mp4Buffer, {
+    access: "public",
+    contentType: "video/mp4",
+  });
+
+  return {
+    title: manimCode.title,
+    description: manimCode.description,
+    code: manimCode.code,
+    videoUrl: blob.url,
+    duration,
+  };
 }
 
 export type { ArtifactInput };

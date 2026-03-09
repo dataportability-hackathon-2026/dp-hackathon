@@ -160,6 +160,55 @@ Create a 3D spatial model that:
 - Assigns appropriate shapes: sphere for atoms/nodes, box for containers, cylinder for bonds/axes, torus for orbits/cycles
 - Sets autoRotate to true for better visualization
 - Scale values between 0.2 and 2.0${sourceContentBlock(input.sourceContent)}`,
+  manimGeneration: (input: ArtifactPromptInput): string =>
+    `You are an expert Manim (Community Edition) developer and educator.
+Generate a short, visually clear Manim animation that teaches a key concept from the subject.
+
+**Subject:** ${input.subject}
+**Concepts to cover:** ${input.concepts.length > 0 ? input.concepts.slice(0, 3).join(", ") : "core concepts"}
+**Student Level:** ${input.priorKnowledgeLevel}
+
+## CRITICAL RULES — follow these exactly or the render will fail
+1. Import ONLY from \`manim\` — no numpy, no matplotlib, no external libraries
+2. Class must extend \`Scene\` and be named \`EducationScene\` exactly
+3. **NEVER use \`MathTex\` or \`Tex\`** — they require LaTeX which is not available. Use ONLY \`Text()\` for all text and equations written in plain Unicode (e.g. "f(x) = x²", "E = mc²", "∑", "∫")
+4. Use only these Manim primitives: \`Text\`, \`Circle\`, \`Square\`, \`Rectangle\`, \`Arrow\`, \`Line\`, \`Dot\`, \`NumberLine\`, \`Axes\`, \`VGroup\`, \`always_redraw\`
+5. Animation must run 8–20 seconds total — keep it short and focused
+6. Use \`self.play()\` and \`self.wait()\` — no interactive or input elements
+7. Allowed animations: \`Write\`, \`FadeIn\`, \`FadeOut\`, \`Transform\`, \`Create\`, \`GrowFromCenter\`, \`MoveToTarget\`, \`animate\`
+8. Do NOT set background_color — use the default dark background
+9. All text strings must be plain ASCII or simple Unicode — no LaTeX markup (no backslashes, no \$...\$)
+
+## Good example (follow this style)
+\`\`\`python
+from manim import *
+
+class EducationScene(Scene):
+    def construct(self):
+        title = Text("Newton's First Law", font_size=40)
+        self.play(Write(title))
+        self.wait(1)
+        self.play(title.animate.to_edge(UP))
+
+        obj = Circle(radius=0.4, color=BLUE, fill_opacity=0.8)
+        label = Text("Object at rest", font_size=28).next_to(obj, DOWN)
+        self.play(FadeIn(obj), FadeIn(label))
+        self.wait(2)
+
+        arrow = Arrow(LEFT * 2, RIGHT * 2, color=YELLOW)
+        force_label = Text("Apply force", font_size=24).next_to(arrow, UP)
+        self.play(Create(arrow), Write(force_label))
+        self.play(obj.animate.shift(RIGHT * 3), run_time=2)
+        self.wait(1)
+\`\`\`
+
+## Output format
+Return a JSON object with:
+- \`title\`: short animation title (5-8 words)
+- \`description\`: one sentence explaining what the animation shows
+- \`sceneName\`: must be exactly "EducationScene"
+- \`code\`: the complete runnable Python file (include all imports)${sourceContentBlock(input.sourceContent)}`,
+
   remixGeneration: (
     input: ArtifactPromptInput & { profileContext?: string },
   ): string =>

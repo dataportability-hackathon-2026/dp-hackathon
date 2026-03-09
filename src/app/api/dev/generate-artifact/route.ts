@@ -6,12 +6,16 @@ import {
   type ArtifactInput,
   generateAudio,
   generateFlashcards,
+  generateManim,
   generateMindMap,
   generateQuiz,
   generateRemix,
   generateSlides,
 } from "@/lib/ai/generate-artifact";
 import { getEffectiveUserId } from "@/lib/impersonate";
+
+// Manim renders can take up to 2 min — allow up to 5 min on Vercel Pro
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
   const userId = await getEffectiveUserId();
@@ -71,6 +75,10 @@ export async function POST(req: Request) {
       case "remix": {
         const data = await generateRemix(enrichedInput);
         return NextResponse.json({ type: "remix", data });
+      }
+      case "manim": {
+        const data = await generateManim(enrichedInput);
+        return NextResponse.json({ type: "manim", data });
       }
       default:
         return NextResponse.json(

@@ -8,6 +8,7 @@ import type {
   ArtifactType,
   AudioArtifact,
   FlashcardArtifact,
+  ManimArtifact,
   MindMapArtifact,
   QuizArtifact,
   RemixArtifact,
@@ -22,6 +23,7 @@ const SUPPORTED_TYPES = new Set<ArtifactType>([
   "slidedeck",
   "audio",
   "remix",
+  "manim",
 ]);
 
 const TYPE_LABEL: Partial<Record<ArtifactType, string>> = {
@@ -31,6 +33,11 @@ const TYPE_LABEL: Partial<Record<ArtifactType, string>> = {
   slidedeck: "Generate Slides",
   audio: "Generate Audio Lesson",
   remix: "Generate Remix",
+  manim: "Generate Math Animation",
+};
+
+const TYPE_LOADING_LABEL: Partial<Record<ArtifactType, string>> = {
+  manim: "Rendering… (~60s)",
 };
 
 export function DevArtifactToolbar({
@@ -144,6 +151,18 @@ export function DevArtifactToolbar({
           createdAt: new Date().toISOString().slice(0, 10),
         };
         dataStore.addArtifact(artifact);
+      } else if (activeType === "manim") {
+        const artifact: ManimArtifact = {
+          id: `dev-manim-${Date.now()}`,
+          type: "manim",
+          topicSlug,
+          title: result.data.title,
+          description: result.data.description,
+          code: result.data.code,
+          videoUrl: result.data.videoUrl,
+          createdAt: new Date().toISOString().slice(0, 10),
+        };
+        dataStore.addArtifact(artifact);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Generation failed";
@@ -168,7 +187,7 @@ export function DevArtifactToolbar({
           <Sparkles className="size-3" />
         )}
         {loading
-          ? "Generating…"
+          ? (TYPE_LOADING_LABEL[activeType] ?? "Generating…")
           : (TYPE_LABEL[activeType] ?? `Generate ${activeType}`)}
       </Button>
       {topicName && (
