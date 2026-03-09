@@ -18,5 +18,5 @@ export default async function TopicPage({
 
   if (!topicRow) notFound();
 
-  return <SinglePageApp topicId={topicRow.id} />;
+  return <SinglePageApp topicId={topicRow.id} topicSlug={topicSlug} />;
 }

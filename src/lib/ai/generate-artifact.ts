@@ -1,4 +1,6 @@
-import { generateObject } from "ai";
+import { put } from "@vercel/blob";
+import { generateText, Output, generateObject } from "ai";
+import OpenAI from "openai";
 import { loadSourceContent } from "@/lib/sources/load-sources";
 import { prompts } from "./prompts";
 import { openai } from "./provider";
@@ -16,6 +18,13 @@ import {
   SlideArtifactSchema,
   SpatialArtifactSchema,
 } from "./schemas";
+
+export type AudioArtifactData = {
+  title: string;
+  description: string;
+  audioUrl: string;
+  duration: string;
+};
 
 type ArtifactInput = {
   subject: string;
@@ -97,6 +106,53 @@ export async function generateSpatial(
     prompt: prompts.spatialGeneration({ ...input, sourceContent }),
   });
   return object;
+}
+
+export async function generateAudio(
+  input: ArtifactInput,
+): Promise<AudioArtifactData> {
+  const sourceContent = await resolveSourceContent(input);
+
+  // Step 1: Generate the spoken lesson script
+  const scriptResult = await generateText({
+    model: openai("gpt-4o-mini"),
+    prompt: prompts.audioScriptGeneration({ ...input, sourceContent }),
+  });
+  const script = scriptResult.text.trim();
+  if (!script) throw new Error("Failed to generate audio script");
+
+  // Step 2: Convert script to speech (OpenAI TTS, ~150 wpm → ~4 min for 600 words)
+  const openaiClient = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+  const ttsResponse = await openaiClient.audio.speech.create({
+    model: "tts-1",
+    voice: "nova",
+    input: script,
+  });
+
+  const audioBuffer = Buffer.from(await ttsResponse.arrayBuffer());
+
+  // Step 3: Upload to Vercel Blob
+  const filename = `audio-lesson-${Date.now()}.mp3`;
+  const blob = await put(filename, audioBuffer, {
+    access: "public",
+    contentType: "audio/mpeg",
+  });
+
+  // Estimate duration from word count (~150 words per minute)
+  const wordCount = script.split(/\s+/).length;
+  const totalSeconds = Math.round((wordCount / 150) * 60);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const duration = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+  return {
+    title: `Audio Lesson: ${input.subject}`,
+    description: "Structured lesson: intro → core concepts → summary",
+    audioUrl: blob.url,
+    duration,
+  };
 }
 
 export type { ArtifactInput };
