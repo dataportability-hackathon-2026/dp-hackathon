@@ -1,5 +1,6 @@
 "use client";
 
+import { upload as blobUpload } from "@vercel/blob/client";
 import { FileUp, Loader2, MessageSquare, Pencil } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { useUpdateTopic } from "@/lib/hooks/use-topics";
@@ -46,27 +47,43 @@ export function TopicEmptyState({
       if (!files || files.length === 0) return;
       setUploading(true);
       try {
-        const formData = new FormData();
-        formData.set("topicSlug", topicSlug);
+        const clientPayload = JSON.stringify({ topicSlug });
+
         for (const file of Array.from(files)) {
-          formData.append("files", file);
-        }
-        const res = await fetch("/api/sources", {
-          method: "POST",
-          body: formData,
-        });
-        if (res.ok) {
-          // Check if title was auto-generated
-          const data = (await res.json()) as {
-            results: Array<{ id: string; filename: string }>;
-            generatedTitle?: string;
-          };
-          if (data.generatedTitle) {
-            setName(data.generatedTitle);
+          // Upload directly to Vercel Blob (bypasses Next.js body limit)
+          const blob = await blobUpload(file.name, file, {
+            access: "public",
+            handleUploadUrl: "/api/upload",
+            clientPayload,
+            multipart: file.size > 4 * 1024 * 1024,
+          });
+
+          // Register in DB
+          const regRes = await fetch("/api/sources/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              blobUrl: blob.url,
+              filename: file.name,
+              mimeType: file.type || "application/octet-stream",
+              sizeBytes: file.size,
+              topicSlug,
+            }),
+          });
+
+          if (regRes.ok) {
+            const data = (await regRes.json()) as {
+              source: { id: string };
+              generatedTitle?: string;
+            };
+            if (data.generatedTitle) {
+              setName(data.generatedTitle);
+            }
           }
-          // Reload to show sources
-          window.location.reload();
         }
+
+        // Reload to show sources
+        window.location.reload();
       } finally {
         setUploading(false);
       }

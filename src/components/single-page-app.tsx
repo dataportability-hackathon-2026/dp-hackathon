@@ -1,5 +1,6 @@
 "use client";
 
+import { upload as blobUpload } from "@vercel/blob/client";
 import {
   AlertCircle,
   ArrowLeft,
@@ -2936,85 +2937,84 @@ function SourcesTab({
 
       setUploads((prev) => [...prev, ...newUploads]);
 
-      // Upload all files in a single request
-      const formData = new FormData();
-      formData.append("topicSlug", topicSlug);
-      for (const file of files) {
-        formData.append("files", file);
-      }
+      // Upload each file directly to Vercel Blob (bypasses Next.js body limit)
+      const clientPayload = JSON.stringify({ topicSlug });
 
-      // Use a shared abort controller for the batch
-      const controller = new AbortController();
-      for (const u of newUploads) {
-        u.abortController = controller;
-      }
+      await Promise.allSettled(
+        files.map(async (file, i) => {
+          const uploadItem = newUploads[i];
+          try {
+            const blob = await blobUpload(file.name, file, {
+              access: "public",
+              handleUploadUrl: "/api/upload",
+              clientPayload,
+              multipart: file.size > 4 * 1024 * 1024,
+              abortSignal: uploadItem.abortController?.signal,
+              onUploadProgress: ({ percentage }) => {
+                setUploads((prev) =>
+                  prev.map((u) =>
+                    u.tempId === uploadItem.tempId
+                      ? { ...u, progress: percentage }
+                      : u,
+                  ),
+                );
+              },
+            });
 
-      try {
-        const res = await fetch("/api/sources", {
-          method: "POST",
-          body: formData,
-          signal: controller.signal,
-        });
+            // Register the uploaded file in the database
+            const regRes = await fetch("/api/sources/register", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                blobUrl: blob.url,
+                filename: file.name,
+                mimeType: file.type || "application/octet-stream",
+                sizeBytes: file.size,
+                topicSlug,
+              }),
+            });
 
-        if (!res.ok) {
-          const err = await res
-            .json()
-            .catch(() => ({ error: "Upload failed" }));
-          if (res.status === 413) {
-            setQuotaError(err.error ?? "Storage quota exceeded");
+            if (!regRes.ok) {
+              const err = await regRes
+                .json()
+                .catch(() => ({ error: "Registration failed" }));
+              if (regRes.status === 413) {
+                setQuotaError(
+                  (err as { error?: string }).error ?? "Storage quota exceeded",
+                );
+              }
+              throw new Error(
+                (err as { error?: string }).error ?? "Registration failed",
+              );
+            }
+
+            // Remove from upload list on success
+            setUploads((prev) =>
+              prev.filter((u) => u.tempId !== uploadItem.tempId),
+            );
+          } catch (err) {
+            if ((err as Error).name === "AbortError") {
+              setUploads((prev) =>
+                prev.filter((u) => u.tempId !== uploadItem.tempId),
+              );
+              return;
+            }
+            setUploads((prev) =>
+              prev.map((u) =>
+                u.tempId === uploadItem.tempId
+                  ? {
+                      ...u,
+                      status: "error" as const,
+                      error: (err as Error).message || "Upload failed",
+                    }
+                  : u,
+              ),
+            );
           }
-          setUploads((prev) =>
-            prev.map((u) =>
-              newUploads.some((n) => n.tempId === u.tempId)
-                ? {
-                    ...u,
-                    status: "error" as const,
-                    error: err.error ?? "Upload failed",
-                  }
-                : u,
-            ),
-          );
-          return;
-        }
+        }),
+      );
 
-        const data = await res.json();
-        // Remove completed uploads from the upload list
-        setUploads((prev) =>
-          prev.filter((u) => !newUploads.some((n) => n.tempId === u.tempId)),
-        );
-
-        // Check for per-file errors
-        const errors = data.results.filter((r: { error?: string }) => r.error);
-        if (errors.length > 0) {
-          setUploads((prev) => [
-            ...prev,
-            ...errors.map((e: { filename: string; error: string }) => ({
-              tempId: crypto.randomUUID(),
-              filename: e.filename,
-              sizeBytes: 0,
-              progress: 0,
-              status: "error" as const,
-              error: e.error,
-            })),
-          ]);
-        }
-
-        fetchSources();
-      } catch (err) {
-        if ((err as Error).name === "AbortError") {
-          setUploads((prev) =>
-            prev.filter((u) => !newUploads.some((n) => n.tempId === u.tempId)),
-          );
-          return;
-        }
-        setUploads((prev) =>
-          prev.map((u) =>
-            newUploads.some((n) => n.tempId === u.tempId)
-              ? { ...u, status: "error" as const, error: "Network error" }
-              : u,
-          ),
-        );
-      }
+      fetchSources();
     },
     [topicSlug, fetchSources],
   );
@@ -3731,18 +3731,22 @@ function GenerateMaterialsSection({
         <h2 className="text-sm font-semibold">Generate Learning Materials</h2>
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:hidden">
-        {GENERATE_MATERIAL_TYPES.map(({ type, label, icon: Icon, description }) => (
-          <button
-            key={type}
-            type="button"
-            onClick={() => onGenerate(type)}
-            className="flex flex-col items-start gap-1.5 rounded-xl border p-3 text-left transition-colors hover:bg-muted hover:border-border"
-          >
-            <Icon className="size-4 text-primary" />
-            <span className="text-sm font-medium">{label}</span>
-            <span className="text-xs text-muted-foreground">{description}</span>
-          </button>
-        ))}
+        {GENERATE_MATERIAL_TYPES.map(
+          ({ type, label, icon: Icon, description }) => (
+            <button
+              key={type}
+              type="button"
+              onClick={() => onGenerate(type)}
+              className="flex flex-col items-start gap-1.5 rounded-xl border p-3 text-left transition-colors hover:bg-muted hover:border-border"
+            >
+              <Icon className="size-4 text-primary" />
+              <span className="text-sm font-medium">{label}</span>
+              <span className="text-xs text-muted-foreground">
+                {description}
+              </span>
+            </button>
+          ),
+        )}
       </div>
       {/* On lg+, the left sidebar already shows the grid — show a compact hint */}
       <p className="hidden text-xs text-muted-foreground lg:block">

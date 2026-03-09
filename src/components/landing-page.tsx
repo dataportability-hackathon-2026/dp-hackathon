@@ -392,6 +392,7 @@ export function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const { data: session } = authClient.useSession();
   const isSignedIn = !!session?.user;
+  const [colorRevealed, setColorRevealed] = useState(false);
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -405,7 +406,9 @@ export function LandingPage() {
   return (
     <div className="min-h-dvh bg-background text-foreground relative">
       <MegaMenu landingAnchors />
-      <div className="grayscale relative z-10 overflow-x-hidden">
+      <div
+        className={`${colorRevealed ? "" : "grayscale"} relative z-10 overflow-x-hidden transition-[filter] duration-1000`}
+      >
         {/* ── Hero ── */}
         <section
           ref={heroRef}
@@ -480,6 +483,32 @@ export function LandingPage() {
           </motion.div>
         </section>
 
+        {/* ── Demo Video ── */}
+        <section className="py-6 sm:py-10">
+          <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-12">
+            <FadeInOnScroll>
+              <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/20">
+                <video
+                  className="w-full aspect-video"
+                  controls
+                  preload="metadata"
+                  playsInline
+                  onTimeUpdate={(e) => {
+                    const past7 = e.currentTarget.currentTime >= 7;
+                    if (past7 !== colorRevealed) setColorRevealed(past7);
+                  }}
+                >
+                  <source
+                    src="https://zstsbdsoi12f5d6w.public.blob.vercel-storage.com/marketing/final-video.mp4"
+                    type="video/mp4"
+                  />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+            </FadeInOnScroll>
+          </div>
+        </section>
+
         {/* ── Integrations ── */}
         <section className="py-16 sm:py-20 overflow-hidden">
           <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
@@ -514,7 +543,9 @@ export function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <FadeInOnScroll>
             <div className="flex flex-col items-center justify-center gap-2">
-              <div className="grayscale">
+              <div
+                className={`${colorRevealed ? "" : "grayscale"} transition-[filter] duration-1000`}
+              >
                 <p className="text-sm text-gray-500">Trusted Partner</p>
               </div>
               <Image
@@ -529,7 +560,9 @@ export function LandingPage() {
         </div>
       </section>
 
-      <div className="grayscale">
+      <div
+        className={`${colorRevealed ? "" : "grayscale"} transition-[filter] duration-1000`}
+      >
         {/* ── How It Works ── */}
         <section
           id="how-it-works"

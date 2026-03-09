@@ -1,18 +1,16 @@
 import { and, eq, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { source } from "@/db/schema";
+import { source, topic } from "@/db/schema";
 import { getEffectiveUserId } from "@/lib/impersonate";
-
-const MAX_STORAGE_PER_USER = 2 * 1024 * 1024 * 1024; // 2 GB
+import { MAX_STORAGE_PER_USER } from "@/lib/sources/upload-validation";
 
 /**
  * POST /api/sources/register
  *
  * Called by the client immediately after a successful Vercel Blob
- * client-side upload. Creates the DB record synchronously so the file
- * appears in the list right away — without waiting for the async
- * onUploadCompleted webhook (which is unreliable in local dev).
+ * client-side upload. Creates the DB record and updates the topic's
+ * sourceCount so the file appears in the list right away.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const userId = await getEffectiveUserId();
@@ -75,6 +73,48 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       blobUrl,
     })
     .returning();
+
+  // Update sourceCount on the topic
+  const [topicRow] = await db
+    .select({ id: topic.id, name: topic.name })
+    .from(topic)
+    .where(eq(topic.slug, topicSlug));
+
+  if (topicRow) {
+    const [countResult] = await db
+      .select({ total: sql<number>`count(*)` })
+      .from(source)
+      .where(and(eq(source.userId, userId), eq(source.topicSlug, topicSlug)));
+
+    await db
+      .update(topic)
+      .set({ sourceCount: Number(countResult.total), updatedAt: new Date() })
+      .where(eq(topic.id, topicRow.id));
+
+    // Auto-generate title if topic is still "Untitled"
+    if (topicRow.name === "Untitled") {
+      try {
+        const titleRes = await fetch(
+          new URL(
+            `/api/topics/${topicRow.id}/generate-title`,
+            process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+          ),
+          { method: "POST", headers: { cookie: "" } },
+        );
+        if (titleRes.ok) {
+          const titleData = (await titleRes.json()) as {
+            generatedName: string;
+          };
+          return NextResponse.json({
+            source: row,
+            generatedTitle: titleData.generatedName,
+          });
+        }
+      } catch {
+        // Non-critical — title generation failure shouldn't break registration
+      }
+    }
+  }
 
   return NextResponse.json({ source: row });
 }
