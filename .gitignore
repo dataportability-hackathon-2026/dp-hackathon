@@ -17,6 +17,7 @@ mcp-latest-test
 # next.js
 /.next/
 /out/
+.swc
 
 # production
 /build
@@ -49,3 +50,4 @@ local.db
 *.tsbuildinfo
 next-env.d.ts
 .env*.local
+Hackathon
