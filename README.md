@@ -5,6 +5,8 @@ Adaptive learning platform powered by MCP and AI chat, with artifact generation,
 
 ![CoreModel Screenshot](public/screenshot.png)
 
+[![How It Works](public/pdf-screengrab.png)](public/CoreModel.pdf)
+
 ## How It Works
 
 1. **Take an assessment** — Complete a learning profile quiz so CoreModel understands how you learn best.
