@@ -3,6 +3,14 @@
 
 Adaptive learning platform powered by MCP and AI chat, with artifact generation, and learning profile DNA.
 
+![CoreModel Screenshot](public/screenshot.png)
+
+## How It Works
+
+1. **Take an assessment** — Complete a learning profile quiz so CoreModel understands how you learn best.
+2. **Upload your materials** — Add your course PDFs, textbooks, and lecture notes as sources.
+3. **Generate learning materials** — Your AI learning agent creates personalized mind maps, flashcards, quizzes, slides, audio, video, and more — all adapted to your unique learning profile.
+
 ## Prerequisites (Mac)
 
 If you've never coded on this Mac before, run these one at a time in Terminal:
